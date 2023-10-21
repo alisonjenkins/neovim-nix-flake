@@ -57,7 +57,24 @@
     "root": {
       "inputs": {
         "neovim": "neovim",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "telescope-recent-files-src": "telescope-recent-files-src"
+      }
+    },
+    "telescope-recent-files-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1668872770,
+        "narHash": "sha256-RSbB+fODF7o+n1aF9rYKP4ANPkyxQgi+3ZymTFd2BMI=",
+        "owner": "smartpde",
+        "repo": "telescope-recent-files",
+        "rev": "6893cda11625254cc7dc2ea76e0a100c7deeb028",
+        "type": "github"
+      },
+      "original": {
+        "owner": "smartpde",
+        "repo": "telescope-recent-files",
+        "type": "github"
       }
     }
   },
