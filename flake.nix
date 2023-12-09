@@ -44,6 +44,9 @@
           cursorline = true;
           expandtab = true;
           foldenable = true;
+          foldexpr = "nvim_treesitter#foldexpr()";
+          foldlevel = 5;
+          foldmethod = "expr";
           ignorecase = true;
           laststatus = 3;
           mouse = "a";
