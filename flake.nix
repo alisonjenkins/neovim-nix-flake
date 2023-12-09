@@ -107,7 +107,7 @@
             mode = "n";
             key = "<leader>gb";
             options.silent = true;
-            action = "<cmd>Telescope branches<CR>";
+            action = "<cmd>Telescope git_branches<CR>";
           }
           {
             mode = "n";
@@ -292,7 +292,6 @@
               };
             };
           };
-
 
         };
       };
