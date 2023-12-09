@@ -105,6 +105,12 @@
           }
           {
             mode = "n";
+            key = "<leader>gb";
+            options.silent = true;
+            action = "<cmd>Telescope branches<CR>";
+          }
+          {
+            mode = "n";
             key = "<leader>gl";
             options.silent = true;
             action = "<cmd>Git log<CR>";
