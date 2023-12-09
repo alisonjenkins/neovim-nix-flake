@@ -44,6 +44,9 @@
           cursorline = true;
           expandtab = true;
           foldenable = true;
+          foldexpr = "nvim_treesitter#foldexpr()";
+          foldlevel = 5;
+          foldmethod = "expr";
           ignorecase = true;
           laststatus = 3;
           mouse = "a";
@@ -99,6 +102,12 @@
             key = "<leader>ga";
             options.silent = true;
             action = "<cmd>Gwrite<CR>";
+          }
+          {
+            mode = "n";
+            key = "<leader>gb";
+            options.silent = true;
+            action = "<cmd>Telescope branches<CR>";
           }
           {
             mode = "n";
