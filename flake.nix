@@ -146,6 +146,18 @@
             options.silent = true;
             action = ''<cmd>Oil<cr>'';
           }
+          {
+            mode = "n";
+            key = "[b";
+            options.silent = true;
+            action = ''<cmd>bprevious<cr>'';
+          }
+          {
+            mode = "n";
+            key = "]b";
+            options.silent = true;
+            action = ''<cmd>bnext<cr>'';
+          }
         ];
 
         plugins = {
@@ -281,9 +293,10 @@
             enable = true;
             servers = {
 
+              bashls.enable = true;
+              jsonls.enable = true;
               nil_ls.enable = true;
               rnix-lsp.enable = true;
-              jsonls.enable = true;
 
               rust-analyzer = {
                 enable = true;
