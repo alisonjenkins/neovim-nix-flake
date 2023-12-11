@@ -150,13 +150,37 @@
             mode = "n";
             key = "[b";
             options.silent = true;
-            action = ''<cmd>bprevious<cr>'';
+            action = ''<cmd>BufferPrevious<cr>'';
+          }
+          {
+            mode = "n";
+            key = "[B";
+            options.silent = true;
+            action = ''<cmd>BufferMovePrevious<cr>'';
           }
           {
             mode = "n";
             key = "]b";
             options.silent = true;
-            action = ''<cmd>bnext<cr>'';
+            action = ''<cmd>BufferNext<cr>'';
+          }
+          {
+            mode = "n";
+            key = "]B";
+            options.silent = true;
+            action = ''<cmd>BufferMoveNext<cr>'';
+          }
+          {
+            mode = "n";
+            key = "<leader>bd";
+            options.silent = true;
+            action = ''<cmd>BufferClose<cr>'';
+          }
+          {
+            mode = "n";
+            key = "<leader>bp";
+            options.silent = true;
+            action = ''<cmd>BufferPick<cr>'';
           }
         ];
 
