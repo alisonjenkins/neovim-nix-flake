@@ -2,6 +2,7 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs.nixvim.url = "github:nix-community/nixvim";
+  # inputs.nixvim.url = "git+file:///home/ali/git/nixvim";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixvim, flake-utils, }:
