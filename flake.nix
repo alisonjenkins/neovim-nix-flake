@@ -81,6 +81,12 @@
           }
           {
             mode = "n";
+            key = "<leader>st";
+            options.silent = true;
+            action = "<cmd>Telescope live_grep<CR>";
+          }
+          {
+            mode = "n";
             key = "<leader>sp";
             options.silent = true;
             action = "<cmd>Telescope projects<CR>";
