@@ -17,21 +17,21 @@
 
         autoCmd = [
           {
-            event = ["TextYankPost"];
-            pattern = ["*"];
+            event = [ "TextYankPost" ];
+            pattern = [ "*" ];
             command = "silent! lua vim.highlight.on_yank()";
           }
         ];
 
         extraConfigLua = ''
-        vim.loop.fs_mkdir(vim.o.backupdir, 750)
-        vim.loop.fs_mkdir(vim.o.directory, 750)
-        vim.loop.fs_mkdir(vim.o.undodir, 750)
+          vim.loop.fs_mkdir(vim.o.backupdir, 750)
+          vim.loop.fs_mkdir(vim.o.directory, 750)
+          vim.loop.fs_mkdir(vim.o.undodir, 750)
 
-        vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
-        vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
-        vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
-        vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
+          vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
+          vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
+          vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
+          vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
         '';
 
         options = {
@@ -239,7 +239,7 @@
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
               go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-              javascript = [[ "prettierd" "prettier" ]];
+              javascript = [ [ "prettierd" "prettier" ] ];
               json = [ "jq" ];
               lua = [ "stylua" ];
               nix = [ "nixfmt" ];
@@ -272,7 +272,7 @@
           };
 
           copilot-cmp = {
-            event = ["InsertEnter" "LspAttach" ];
+            event = [ "InsertEnter" "LspAttach" ];
             fixPairs = true;
           };
 
@@ -302,23 +302,23 @@
 
             snippet = {
               expand.__raw = ''
-              function(args)
-              require("luasnip").lsp_expand(args.body)
-              end
+                function(args)
+                require("luasnip").lsp_expand(args.body)
+                end
               '';
             };
 
             sources = [
-              {name = "copilot";}
-              {name = "nvim_lsp";}
+              { name = "copilot"; }
+              { name = "nvim_lsp"; }
               {
                 name = "luasnip";
                 option = {
                   show_autosnippets = true;
                 };
               }
-              {name = "path";}
-              {name = "buffer";}
+              { name = "path"; }
+              { name = "buffer"; }
             ];
           };
 
@@ -366,11 +366,13 @@
 
         };
       };
-    in flake-utils.lib.eachDefaultSystem (system:
+    in
+    flake-utils.lib.eachDefaultSystem (system:
       let
         nixvim' = nixvim.legacyPackages."${system}";
         nvim = nixvim'.makeNixvim config;
-      in {
+      in
+      {
         packages = {
           inherit nvim;
           default = nvim;
