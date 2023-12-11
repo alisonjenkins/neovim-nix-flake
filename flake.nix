@@ -164,7 +164,6 @@
 
           # flash.enable = true;
           # nvim-navbudy.enable = true;
-          barbar.enable = true;
           comment-nvim.enable = true;
           fidget.enable = true;
           fugitive.enable = true;
@@ -196,6 +195,12 @@
           #   iconsEnabled = true;
           #
           # };
+
+          barbar = {
+            enable = true;
+            animation = true;
+            autoHide = true;
+          };
 
           conform-nvim = {
             enable = true;
