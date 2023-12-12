@@ -15,13 +15,11 @@
         globals.mapleader = " ";
         luaLoader.enable = true;
 
-        autoCmd = [
-          {
-            event = [ "TextYankPost" ];
-            pattern = [ "*" ];
-            command = "silent! lua vim.highlight.on_yank()";
-          }
-        ];
+        autoCmd = [{
+          event = [ "TextYankPost" ];
+          pattern = [ "*" ];
+          command = "silent! lua vim.highlight.on_yank()";
+        }];
 
         extraConfigLua = ''
           vim.loop.fs_mkdir(vim.o.backupdir, 750)
@@ -151,43 +149,98 @@
             mode = "n";
             key = "-";
             options.silent = true;
-            action = ''<cmd>Oil<cr>'';
+            action = "<cmd>Oil<cr>";
           }
           {
             mode = "n";
             key = "[b";
             options.silent = true;
-            action = ''<cmd>BufferPrevious<cr>'';
+            action = "<cmd>BufferPrevious<cr>";
           }
           {
             mode = "n";
             key = "[B";
             options.silent = true;
-            action = ''<cmd>BufferMovePrevious<cr>'';
+            action = "<cmd>BufferMovePrevious<cr>";
           }
           {
             mode = "n";
             key = "]b";
             options.silent = true;
-            action = ''<cmd>BufferNext<cr>'';
+            action = "<cmd>BufferNext<cr>";
           }
           {
             mode = "n";
             key = "]B";
             options.silent = true;
-            action = ''<cmd>BufferMoveNext<cr>'';
+            action = "<cmd>BufferMoveNext<cr>";
           }
           {
             mode = "n";
             key = "<leader>bd";
             options.silent = true;
-            action = ''<cmd>BufferClose<cr>'';
+            action = "<cmd>BufferClose<cr>";
           }
           {
             mode = "n";
             key = "<leader>bp";
             options.silent = true;
-            action = ''<cmd>BufferPick<cr>'';
+            action = "<cmd>BufferPick<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zI";
+            options.silent = true;
+            action = "<cmd>ZkIndex<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zc";
+            options.silent = true;
+            action = "<cmd>ZkCd<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zn";
+            options.silent = true;
+            action = "<cmd>ZkNotes<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zN";
+            options.silent = true;
+            action = "<cmd>ZkNew<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zb";
+            options.silent = true;
+            action = "<cmd>ZkBacklinks<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zl";
+            options.silent = true;
+            action = "<cmd>ZkLinks<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zi";
+            options.silent = true;
+            action = "<cmd>ZkInsertLink<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zt";
+            options.silent = true;
+            action = "<cmd>ZkTags<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>zo";
+            options.silent = true;
+            action =
+              "<cmd>ZkNotes { sort = { 'modified' }, match = { vim.fn.input('Search: ') } }<cr>";
           }
         ];
 
@@ -220,6 +273,7 @@
           ts-context-commentstring.enable = true;
           typst-vim.enable = true;
           wilder.enable = true;
+          zk.enable = true;
 
           # alpha = {
           #   enable = true;
@@ -239,7 +293,7 @@
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
               go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-              javascript = [ [ "prettierd" "prettier" ] ];
+              javascript = [[ "prettierd" "prettier" ]];
               json = [ "jq" ];
               lua = [ "stylua" ];
               nix = [ "nixfmt" ];
@@ -313,9 +367,7 @@
               { name = "nvim_lsp"; }
               {
                 name = "luasnip";
-                option = {
-                  show_autosnippets = true;
-                };
+                option = { show_autosnippets = true; };
               }
               { name = "path"; }
               { name = "buffer"; }
@@ -325,9 +377,7 @@
           oil = {
             enable = true;
             deleteToTrash = true;
-            viewOptions = {
-              showHidden = true;
-            };
+            viewOptions = { showHidden = true; };
             skipConfirmForSimpleEdits = true;
             useDefaultKeymaps = false;
 
@@ -358,7 +408,10 @@
 
           which-key = {
             enable = true;
-            registrations = { "<leader>s" = "Search using Telescope"; };
+            registrations = {
+              "<leader>s" = "Search using Telescope";
+              "<leader>z" = "Zettelkasten";
+            };
           };
 
           lsp = {
@@ -378,16 +431,13 @@
             };
           };
 
-
         };
       };
-    in
-    flake-utils.lib.eachDefaultSystem (system:
+    in flake-utils.lib.eachDefaultSystem (system:
       let
         nixvim' = nixvim.legacyPackages."${system}";
         nvim = nixvim'.makeNixvim config;
-      in
-      {
+      in {
         packages = {
           inherit nvim;
           default = nvim;
