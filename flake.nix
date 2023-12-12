@@ -325,7 +325,9 @@
           oil = {
             enable = true;
             deleteToTrash = true;
-            showHidden = true;
+            viewOptions = {
+              showHidden = true;
+            };
             skipConfirmForSimpleEdits = true;
             useDefaultKeymaps = false;
 
