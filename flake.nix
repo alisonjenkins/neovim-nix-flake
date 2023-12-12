@@ -325,6 +325,19 @@
           oil = {
             enable = true;
             deleteToTrash = true;
+            showHidden = true;
+            skipConfirmForSimpleEdits = true;
+            useDefaultKeymaps = false;
+
+            keymaps = {
+              "g?" = "actions.show_help";
+              "<CR>" = "actions.select";
+              "-" = "actions.parent";
+              "_" = "actions.open_cwd";
+              "`" = "actions.cd";
+              "~" = "actions.tcd";
+              "g." = "actions.toggle_hidden";
+            };
           };
 
           telescope = {
