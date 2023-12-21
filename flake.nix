@@ -260,7 +260,7 @@
           molten.enable = true;
           nix.enable = true;
           noice.enable = true;
-          notify.enable = true;
+          notify.enable = false;
           nvim-osc52.enable = true;
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
