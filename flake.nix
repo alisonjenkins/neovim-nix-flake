@@ -2,7 +2,6 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs.nixvim.url = "github:nix-community/nixvim";
-  # inputs.nixvim.url = "git+file:///home/ali/git/nixvim";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixvim, flake-utils, }:
@@ -26,7 +25,7 @@
           vim.loop.fs_mkdir(vim.o.directory, 750)
           vim.loop.fs_mkdir(vim.o.undodir, 750)
 
-          vim.o.backupdir = vim.fn.stdpath("dat/a") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
+          vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
           vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
           vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
           vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
