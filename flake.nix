@@ -274,11 +274,6 @@
           wilder.enable = true;
           zk.enable = true;
 
-          # alpha = {
-          #   enable = true;
-          #   iconsEnabled = true;
-          # };
-
           barbar = {
             enable = true;
             animation = true;
