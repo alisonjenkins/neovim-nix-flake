@@ -346,7 +346,7 @@
               "<C-n>" = "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
               "<C-u>" = "cmp.mapping.complete({})";
               "<C-p>" = "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
-              "<C-y>" = ''cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c")'';
+              "<C-y>" = ''cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c"})'';
               "<C-space>" = ''
                 cmp.mapping {
                   i = cmp.mapping.complete(),
