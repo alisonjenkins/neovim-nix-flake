@@ -272,7 +272,6 @@
           ts-context-commentstring.enable = true;
           typst-vim.enable = true;
           wilder.enable = true;
-          zk.enable = true;
 
           barbar = {
             enable = true;
@@ -446,6 +445,11 @@
                 installCargo = true;
               };
             };
+          };
+
+          zk = {
+            enable = true;
+            picker = "telescope";
           };
 
         };
