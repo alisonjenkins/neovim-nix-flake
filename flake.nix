@@ -285,7 +285,7 @@
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
               go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-              javascript = [ [ "prettierd" "prettier" ] ];
+              javascript = [[ "prettierd" "prettier" ]];
               json = [ "jq" ];
               lua = [ "stylua" ];
               nix = [ "nixfmt" ];
@@ -342,10 +342,13 @@
               "<C-d>" = "cmp.mapping.scroll_docs(-4)";
               "<C-e>" = "cmp.mapping.abort()";
               "<C-f>" = "cmp.mapping.scroll_docs(4)";
-              "<C-n>" = "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
+              "<C-n>" =
+                "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
               "<C-u>" = "cmp.mapping.complete({})";
-              "<C-p>" = "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
-              "<C-y>" = ''cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c"})'';
+              "<C-p>" =
+                "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
+              "<C-y>" = ''
+                cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c"})'';
               "<C-space>" = ''
                 cmp.mapping {
                   i = cmp.mapping.complete(),
@@ -447,6 +450,8 @@
             };
           };
 
+          lspsaga = { enable = true; };
+
           zk = {
             enable = true;
             picker = "telescope";
@@ -454,13 +459,11 @@
 
         };
       };
-    in
-    flake-utils.lib.eachDefaultSystem (system:
+    in flake-utils.lib.eachDefaultSystem (system:
       let
         nixvim' = nixvim.legacyPackages."${system}";
         nvim = nixvim'.makeNixvim config;
-      in
-      {
+      in {
         packages = {
           inherit nvim;
           default = nvim;
