@@ -476,6 +476,7 @@
               nushell.enable = true;
               rnix-lsp.enable = true;
               ruff-lsp.enable = true;
+              tailwindcss.enable = true;
               terraformls.enable = true;
 
               rust-analyzer = {
