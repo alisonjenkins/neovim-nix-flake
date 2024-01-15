@@ -268,6 +268,7 @@
           lspkind.enable = true;
           lualine.enable = true;
           molten.enable = true;
+          navic.enable = true;
           nix.enable = true;
           noice.enable = true;
           notify.enable = false;
