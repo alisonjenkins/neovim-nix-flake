@@ -466,7 +466,7 @@
               ansiblels.enable = true;
               bashls.enable = true;
               cssls.enable = true;
-              docker.enable = true;
+              dockerls.enable = true;
               gopls.enable = true;
               html.enable = true;
               java-language-server.enable = true;
