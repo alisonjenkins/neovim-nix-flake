@@ -468,6 +468,7 @@
               nil_ls.enable = true;
               nushell.enable = true;
               rnix-lsp.enable = true;
+              terraformls.enable = true;
 
               rust-analyzer = {
                 enable = true;
