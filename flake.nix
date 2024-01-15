@@ -257,7 +257,6 @@
 
         plugins = {
 
-          # flash.enable = true;
           comment-nvim.enable = true;
           fidget.enable = true;
           fugitive.enable = true;
@@ -343,6 +342,16 @@
             enable = true;
             panel.enabled = false;
             suggestion.enabled = false;
+          };
+
+          flash = {
+            enable = true;
+            search = {
+              automatic = true;
+              incremental = true;
+            };
+            jump = { autojump = true; };
+            label.rainbow.enabled = true;
           };
 
           luasnip = {
