@@ -479,6 +479,7 @@
               tailwindcss.enable = true;
               terraformls.enable = true;
               yamlls.enable = true;
+              zls.enable = true;
 
               rust-analyzer = {
                 enable = true;
