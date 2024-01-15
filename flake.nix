@@ -466,6 +466,7 @@
               bashls.enable = true;
               jsonls.enable = true;
               nil_ls.enable = true;
+              nushell.enable = true;
               rnix-lsp.enable = true;
 
               rust-analyzer = {
