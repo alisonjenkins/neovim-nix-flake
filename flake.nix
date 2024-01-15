@@ -463,6 +463,7 @@
             enable = true;
             servers = {
 
+              ansiblels.enable = true;
               bashls.enable = true;
               jsonls.enable = true;
               nil_ls.enable = true;
