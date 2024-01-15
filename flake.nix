@@ -67,6 +67,12 @@
         keymaps = [
           {
             mode = "n";
+            key = "<leader>;";
+            options.silent = true;
+            action = "<cmd>Alpha<CR>";
+          }
+          {
+            mode = "n";
             key = "<leader>sb";
             options.silent = true;
             action = "<cmd>Telescope buffers<CR>";
@@ -273,6 +279,11 @@
           typst-vim.enable = true;
           wilder.enable = true;
 
+          alpha = {
+            enable = true;
+            theme = "startify";
+          };
+
           barbar = {
             enable = true;
             animation = true;
@@ -404,11 +415,6 @@
               "~" = "actions.tcd";
               "g." = "actions.toggle_hidden";
             };
-          };
-
-          startup = {
-            enable = true;
-            theme = "startify";
           };
 
           telescope = {
