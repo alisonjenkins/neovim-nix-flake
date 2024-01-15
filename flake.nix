@@ -471,6 +471,7 @@
               html.enable = true;
               java-language-server.enable = true;
               jsonls.enable = true;
+              lua-ls.enable = true;
               nil_ls.enable = true;
               nushell.enable = true;
               rnix-lsp.enable = true;
