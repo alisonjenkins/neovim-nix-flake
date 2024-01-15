@@ -469,6 +469,7 @@
               docker.enable = true;
               gopls.enable = true;
               html.enable = true;
+              java-language-server.enable = true;
               jsonls.enable = true;
               nil_ls.enable = true;
               nushell.enable = true;
