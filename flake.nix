@@ -200,6 +200,12 @@
           }
           {
             mode = "n";
+            key = "<leader>ln";
+            options.silent = true;
+            action = "<cmd>Navbuddy<cr>";
+          }
+          {
+            mode = "n";
             key = "<leader>zc";
             options.silent = true;
             action = "<cmd>ZkCd<cr>";
@@ -252,7 +258,6 @@
         plugins = {
 
           # flash.enable = true;
-          # nvim-navbudy.enable = true;
           comment-nvim.enable = true;
           fidget.enable = true;
           fugitive.enable = true;
@@ -397,6 +402,11 @@
               { name = "path"; }
               { name = "buffer"; }
             ];
+          };
+
+          navbuddy = {
+            enable = true;
+            lsp.autoAttach = true;
           };
 
           oil = {
