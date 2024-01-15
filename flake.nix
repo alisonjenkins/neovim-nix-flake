@@ -465,6 +465,7 @@
 
               ansiblels.enable = true;
               bashls.enable = true;
+              cssls.enable = true;
               jsonls.enable = true;
               nil_ls.enable = true;
               nushell.enable = true;
