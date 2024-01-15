@@ -478,6 +478,7 @@
               ruff-lsp.enable = true;
               tailwindcss.enable = true;
               terraformls.enable = true;
+              yamlls.enable = true;
 
               rust-analyzer = {
                 enable = true;
