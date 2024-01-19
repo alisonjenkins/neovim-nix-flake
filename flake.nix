@@ -344,16 +344,6 @@
             suggestion.enabled = false;
           };
 
-          flash = {
-            enable = true;
-            search = {
-              automatic = true;
-              incremental = true;
-            };
-            jump = { autojump = true; };
-            label.rainbow.enabled = true;
-          };
-
           luasnip = {
             enable = true;
             # paths = [];
