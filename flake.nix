@@ -379,7 +379,7 @@
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
               go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-              javascript = [ [ "prettierd" "prettier" ] ];
+              javascript = [[ "prettierd" "prettier" ]];
               json = [ "jq" ];
               lua = [ "stylua" ];
               nix = [ "nixfmt" ];
@@ -533,6 +533,7 @@
 
               ansiblels.enable = true;
               bashls.enable = true;
+              ccls.enable = true;
               cssls.enable = true;
               dockerls.enable = true;
               gopls.enable = true;
@@ -566,13 +567,11 @@
 
         };
       };
-    in
-    flake-utils.lib.eachDefaultSystem (system:
+    in flake-utils.lib.eachDefaultSystem (system:
       let
         nixvim' = nixvim.legacyPackages."${system}";
         nvim = nixvim'.makeNixvim config;
-      in
-      {
+      in {
         packages = {
           inherit nvim;
           default = nvim;
