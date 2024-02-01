@@ -67,6 +67,12 @@
         keymaps = [
           {
             mode = "n";
+            key = "K";
+            options.silent = true;
+            action = "<cmd>Lspsaga hover_doc<CR>";
+          }
+          {
+            mode = "n";
             key = "<leader>;";
             options.silent = true;
             action = "<cmd>Alpha<CR>";
@@ -182,6 +188,18 @@
           }
           {
             mode = "n";
+            key = "]d";
+            options.silent = true;
+            action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
+          }
+          {
+            mode = "n";
+            key = "[d";
+            options.silent = true;
+            action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
+          }
+          {
+            mode = "n";
             key = "<leader>bd";
             options.silent = true;
             action = "<cmd>BufferClose<cr>";
@@ -200,9 +218,69 @@
           }
           {
             mode = "n";
+            key = "gd";
+            options.silent = true;
+            action = "<cmd>Lspsaga goto_definition<cr>";
+          }
+          {
+            mode = "n";
+            key = "gD";
+            options.silent = true;
+            action = "<cmd>Lspsaga goto_type_definition<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lc";
+            options.silent = true;
+            action = "<cmd>Lspsaga code_action<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lff";
+            options.silent = true;
+            action = "<cmd>Lspsaga finder<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lfi";
+            options.silent = true;
+            action = "<cmd>Lspsaga finder imp<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lhi";
+            options.silent = true;
+            action = "<cmd>Lspsaga incoming_calls<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lhi";
+            options.silent = true;
+            action = "<cmd>Lspsaga outgoing_calls<cr>";
+          }
+          {
+            mode = "n";
             key = "<leader>ln";
             options.silent = true;
             action = "<cmd>Navbuddy<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lr";
+            options.silent = true;
+            action = "<cmd>Lspsaga rename<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lpd";
+            options.silent = true;
+            action = "<cmd>Lspsaga peek_definition<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>lpd";
+            options.silent = true;
+            action = "<cmd>Lspsaga peek_type_definition<cr>";
           }
           {
             mode = "n";
@@ -301,7 +379,7 @@
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
               go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-              javascript = [[ "prettierd" "prettier" ]];
+              javascript = [ [ "prettierd" "prettier" ] ];
               json = [ "jq" ];
               lua = [ "stylua" ];
               nix = [ "nixfmt" ];
@@ -488,11 +566,13 @@
 
         };
       };
-    in flake-utils.lib.eachDefaultSystem (system:
+    in
+    flake-utils.lib.eachDefaultSystem (system:
       let
         nixvim' = nixvim.legacyPackages."${system}";
         nvim = nixvim'.makeNixvim config;
-      in {
+      in
+      {
         packages = {
           inherit nvim;
           default = nvim;
