@@ -538,6 +538,7 @@
               cssls.enable = true;
               dockerls.enable = true;
               gopls.enable = true;
+              helm-ls.enable = true;
               html.enable = true;
               java-language-server.enable = true;
               jsonls.enable = true;
