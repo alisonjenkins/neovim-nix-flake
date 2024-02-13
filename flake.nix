@@ -336,6 +336,7 @@
         plugins = {
 
           comment-nvim.enable = true;
+          committia.enable = true;
           fidget.enable = true;
           fugitive.enable = true;
           gitlinker.enable = true;
