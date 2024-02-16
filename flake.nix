@@ -489,11 +489,6 @@
             lsp.autoAttach = true;
           };
 
-          neogit = {
-            enable = true;
-            graphStyle = "unicode";
-          };
-
           oil = {
             enable = true;
             deleteToTrash = true;
