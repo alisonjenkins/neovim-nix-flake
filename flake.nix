@@ -158,6 +158,18 @@
           }
           {
             mode = "n";
+            key = "<leader>gwc";
+            options.silent = true;
+            action = "<cmd>Telescope git_worktree create_git_worktree<cr>";
+          }
+          {
+            mode = "n";
+            key = "<leader>gww";
+            options.silent = true;
+            action = "<cmd>Telescope git_worktree git_worktrees<cr>";
+          }
+          {
+            mode = "n";
             key = "-";
             options.silent = true;
             action = "<cmd>Oil<cr>";
@@ -422,6 +434,12 @@
             enable = true;
             panel.enabled = false;
             suggestion.enabled = false;
+          };
+
+          git-worktree = {
+            enable = true;
+            enableTelescope = true;
+            changeDirectoryCommand = "tcd";
           };
 
           luasnip = {
