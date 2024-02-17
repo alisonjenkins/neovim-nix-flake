@@ -68,282 +68,126 @@
           {
             mode = "n";
             key = "K";
-            options.silent = true;
             action = "<cmd>Lspsaga hover_doc<CR>";
+            options = {
+              desc = "Show docs for hovered item.";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "<leader>;";
-            options.silent = true;
             action = "<cmd>Alpha<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>sb";
-            options.silent = true;
-            action = "<cmd>Telescope buffers<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>sf";
-            options.silent = true;
-            action = "<cmd>Telescope find_files<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>st";
-            options.silent = true;
-            action = "<cmd>Telescope live_grep<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>sp";
-            options.silent = true;
-            action = "<cmd>Telescope projects<CR>";
+            options = {
+              desc = "Open Alpha (Splash Screen)";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "<leader>f";
-            options.silent = true;
             action = "<cmd>Telescope find_files<CR>";
+            options = {
+              desc = "Find files using Telescope";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "<leader>r";
-            options.silent = true;
             action = "<cmd>Telescope frecency<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>ga";
-            options.silent = true;
-            action = "<cmd>Gwrite<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>gb";
-            options.silent = true;
-            action = "<cmd>Telescope branches<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>gl";
-            options.silent = true;
-            action = "<cmd>Git log<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>gs";
-            options.silent = true;
-            action = "<cmd>Git<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>gp";
-            options.silent = true;
-            action = "<cmd>Git push<CR>";
-          }
-          {
-            mode = "n";
-            key = "<leader>gll";
-            options.silent = true;
-            action = ''lua require"gitlinker".get_repo_url()<cr>'';
-          }
-          {
-            mode = "n";
-            key = "<leader>glb";
-            options.silent = true;
-            action = ''
-              lua require"gitlinker".get_repo_url({action_callback = require"gitlinker.actions".open_in_browser})<cr>'';
-          }
-          {
-            mode = "n";
-            key = "<leader>gwc";
-            options.silent = true;
-            action = "<cmd>Telescope git_worktree create_git_worktree<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>gww";
-            options.silent = true;
-            action = "<cmd>Telescope git_worktree git_worktrees<cr>";
+            options = {
+              desc = "Find frecently used files";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "-";
-            options.silent = true;
             action = "<cmd>Oil<cr>";
+            options = {
+              desc = "Open File Browser in current directory";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "[b";
-            options.silent = true;
             action = "<cmd>BufferPrevious<cr>";
+            options = {
+              desc = "Open previous buffer";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "[B";
-            options.silent = true;
             action = "<cmd>BufferMovePrevious<cr>";
+            options = {
+              desc = "Move buffer back in list";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "]b";
-            options.silent = true;
             action = "<cmd>BufferNext<cr>";
+            options = {
+              desc = "Move to next buffer";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "]B";
-            options.silent = true;
             action = "<cmd>BufferMoveNext<cr>";
+            options = {
+              desc = "Move buffer forward in list";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "]d";
-            options.silent = true;
             action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
+            options = {
+              desc = "Jump to next diagnostic";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "[d";
-            options.silent = true;
             action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>bd";
-            options.silent = true;
-            action = "<cmd>BufferClose<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>bp";
-            options.silent = true;
-            action = "<cmd>BufferPick<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zI";
-            options.silent = true;
-            action = "<cmd>ZkIndex<cr>";
+            options = {
+              desc = "Jump to previous diagnostic";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "gd";
-            options.silent = true;
             action = "<cmd>Lspsaga goto_definition<cr>";
+            options = {
+              desc = "Goto definition of highlighted item";
+              silent = true;
+            };
           }
           {
             mode = "n";
             key = "gD";
-            options.silent = true;
             action = "<cmd>Lspsaga goto_type_definition<cr>";
+            options = {
+              desc = "Goto type definition of highlighted item";
+              silent = true;
+            };
           }
-          {
-            mode = "n";
-            key = "<leader>lc";
-            options.silent = true;
-            action = "<cmd>Lspsaga code_action<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lff";
-            options.silent = true;
-            action = "<cmd>Lspsaga finder<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lfi";
-            options.silent = true;
-            action = "<cmd>Lspsaga finder imp<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lhi";
-            options.silent = true;
-            action = "<cmd>Lspsaga incoming_calls<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lhi";
-            options.silent = true;
-            action = "<cmd>Lspsaga outgoing_calls<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>ln";
-            options.silent = true;
-            action = "<cmd>Navbuddy<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lr";
-            options.silent = true;
-            action = "<cmd>Lspsaga rename<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lpd";
-            options.silent = true;
-            action = "<cmd>Lspsaga peek_definition<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>lpd";
-            options.silent = true;
-            action = "<cmd>Lspsaga peek_type_definition<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zc";
-            options.silent = true;
-            action = "<cmd>ZkCd<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zn";
-            options.silent = true;
-            action = "<cmd>ZkNotes<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zN";
-            options.silent = true;
-            action = "<cmd>ZkNew<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zb";
-            options.silent = true;
-            action = "<cmd>ZkBacklinks<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zl";
-            options.silent = true;
-            action = "<cmd>ZkLinks<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zi";
-            options.silent = true;
-            action = "<cmd>ZkInsertLink<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zt";
-            options.silent = true;
-            action = "<cmd>ZkTags<cr>";
-          }
-          {
-            mode = "n";
-            key = "<leader>zo";
-            options.silent = true;
-            action =
-              "<cmd>ZkNotes { sort = { 'modified' }, match = { vim.fn.input('Search: ') } }<cr>";
-          }
-        ];
+        ]
+        ++ import ./keymaps/buffers
+        ++ import ./keymaps/git
+        ++ import ./keymaps/lsp
+        ++ import ./keymaps/search
+        ++ import ./keymaps/zk;
 
         plugins = {
 
