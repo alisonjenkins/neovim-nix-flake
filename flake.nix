@@ -2,18 +2,10 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   inputs.nixvim.url = "github:nix-community/nixvim";
 
-  outputs = { self, flake-utils, nixpkgs, nixvim }:
+  outputs = { self, flake-utils, nixvim }:
     flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-        };
-        lib = import pkgs.lib;
-      in
       rec {
         config =
           {
@@ -197,6 +189,7 @@
             ++ import ./keymaps/git
             ++ import ./keymaps/lsp
             ++ import ./keymaps/search
+            ++ (if config.plugins.obsidian.enable then import ./keymaps/obsidian else [ ])
             ++ (if config.plugins.zk.enable then import ./keymaps/zk else [ ]);
 
             plugins = {
@@ -364,16 +357,13 @@
               obsidian = {
                 enable = true;
                 dir = "~/git/obsidian-notes";
-                followUrlFunc =
-                  if lib.strings.hasInfix "-darwin" pkgs.system then ''
-                    function(url)
-                      vim.fn.jobstart({"open", url})
-                    end
-                  '' else ''
-                    function(url)
-                      vim.fn.jobstart({"xdg-open", url})
-                    end
-                  '';
+                finder = "telescope.nvim";
+                followUrlFunc = ''
+                  function(url)
+                    vim.fn.jobstart({"xdg-open", url})
+                  end
+                '';
+                useAdvancedUri = true;
               };
 
               oil = {
