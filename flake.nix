@@ -197,7 +197,7 @@
             ++ import ./keymaps/git
             ++ import ./keymaps/lsp
             ++ import ./keymaps/search
-            ++ import ./keymaps/zk;
+            ++ (if config.plugins.zk.enable then import ./keymaps/zk else [ ]);
 
             plugins = {
 
