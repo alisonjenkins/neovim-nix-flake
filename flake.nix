@@ -499,20 +499,23 @@
                 lsp.autoAttach = true;
               };
 
-              # obsidian = {
-              #   enable = true;
-              #   dir = "~/git/obsidian-notes";
-              #   followUrlFunc =
-              #     if lib.strings.hasInfix "-darwin" pkgs.system then ''
-              #       function(url)
-              #         vim.fn.jobstart({"open", url})
-              #       end
-              #     '' else ''
-              #       function(url)
-              #         vim.fn.jobstart({"xdg-open", url})
-              #       end
-              #     '';
-              # };
+              obsidian = {
+                enable = true;
+                dir = "~/git/obsidian-notes";
+                finder = "telescope.nvim";
+                followUrlFunc =
+                  if lib.strings.hasInfix "-darwin" system then
+                    ''
+                      function(url)
+                        vim.fn.jobstart({"open", url})
+                      end
+                    '' else ''
+                    function(url)
+                      vim.fn.jobstart({"xdg-open", url})
+                    end
+                  '';
+                useAdvancedUri = true;
+              };
 
               oil = {
                 enable = true;
