@@ -564,6 +564,7 @@
               lua-ls.enable = true;
               nil_ls.enable = true;
               nushell.enable = true;
+              pylyzer.enable = true;
               rnix-lsp.enable = true;
               ruff-lsp.enable = true;
               tailwindcss.enable = true;
