@@ -243,7 +243,7 @@
                   javascript = [ [ "prettierd" "prettier" ] ];
                   json = [ "jq" ];
                   lua = [ "stylua" ];
-                  nix = [ "nixfmt" ];
+                  nix = [ "alejandra" ];
                   python = [ "isort" "black" ];
                   rust = [ "rustfmt" ];
                   sh = [ "shfmt" ];
