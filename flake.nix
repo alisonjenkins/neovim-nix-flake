@@ -2,7 +2,8 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixvim.url = "github:nix-community/nixvim";
+  inputs.nixvim.url = "github:alisonjenkins/nixvim/future";
+  # inputs.nixvim.url = "github:nix-community/nixvim";
 
   outputs = { self, flake-utils, nixvim }:
     flake-utils.lib.eachDefaultSystem (system:
@@ -194,6 +195,8 @@
 
             plugins = {
 
+              bacon.enable = true;
+              baleia.enable = true;
               comment-nvim.enable = true;
               committia.enable = true;
               fidget.enable = true;
@@ -201,6 +204,7 @@
               gitlinker.enable = true;
               gitsigns.enable = true;
               helm.enable = true;
+              indent-o-matic.enable = true;
               lastplace.enable = true;
               leap.enable = true;
               lspkind.enable = true;
