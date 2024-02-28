@@ -166,6 +166,24 @@
           }
           {
             mode = "n";
+            key = "[r";
+            action = "<cmd>BaconPrevious<cr>";
+            options = {
+              desc = "Bacon Previous Issue";
+              silent = true;
+            };
+          }
+          {
+            mode = "n";
+            key = "]r";
+            action = "<cmd>BaconNext<cr>";
+            options = {
+              desc = "Bacon Next Issue";
+              silent = true;
+            };
+          }
+          {
+            mode = "n";
             key = "gd";
             action = "<cmd>Lspsaga goto_definition<cr>";
             options = {
@@ -393,6 +411,7 @@
               "<leader>b" = "Buffers";
               "<leader>g" = "Git";
               "<leader>l" = "LSP";
+              "<leader>lb" = "Bacon";
               "<leader>lf" = "LSP Finder";
               "<leader>lp" = "LSP Peek";
               "<leader>s" = "Search using Telescope";

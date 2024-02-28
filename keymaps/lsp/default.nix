@@ -80,4 +80,22 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>lbl";
+    action = "<cmd>BaconList<cr>";
+    options = {
+      desc = "Bacon List";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>lbs";
+    action = "<cmd>BaconShow<cr>";
+    options = {
+      desc = "Bacon Show";
+      silent = true;
+    };
+  }
 ]
