@@ -410,6 +410,7 @@
             registrations = {
               "<leader>b" = "Buffers";
               "<leader>g" = "Git";
+              "<leader>gL" = "Git Linker";
               "<leader>l" = "LSP";
               "<leader>lb" = "Bacon";
               "<leader>lf" = "LSP Finder";

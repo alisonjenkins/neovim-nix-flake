@@ -4,7 +4,7 @@
     key = "<leader>sb";
     action = "<cmd>Telescope buffers<CR>";
     options = {
-      desc = "";
+      desc = "Buffers";
       silent = true;
     };
   }
@@ -13,7 +13,7 @@
     key = "<leader>sf";
     action = "<cmd>Telescope find_files<CR>";
     options = {
-      desc = "";
+      desc = "Files";
       silent = true;
     };
   }
@@ -22,7 +22,7 @@
     key = "<leader>st";
     action = "<cmd>Telescope live_grep<CR>";
     options = {
-      desc = "";
+      desc = "Live Grep";
       silent = true;
     };
   }
@@ -31,7 +31,7 @@
     key = "<leader>sp";
     action = "<cmd>Telescope projects<CR>";
     options = {
-      desc = "";
+      desc = "Projects";
       silent = true;
     };
   }

@@ -4,7 +4,7 @@
     key = "<leader>bd";
     action = "<cmd>BufferClose<cr>";
     options = {
-      desc = "";
+      desc = "Close Buffer";
       silent = true;
     };
   }
@@ -13,7 +13,7 @@
     key = "<leader>bp";
     action = "<cmd>BufferPick<cr>";
     options = {
-      desc = "";
+      desc = "Pick Buffer";
       silent = true;
     };
   }

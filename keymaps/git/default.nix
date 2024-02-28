@@ -4,16 +4,16 @@
     key = "<leader>ga";
     action = "<cmd>Gwrite<CR>";
     options = {
-      desc = "";
+      desc = "Git Add";
       silent = true;
     };
   }
   {
     mode = "n";
     key = "<leader>gb";
-    action = "<cmd>Telescope branches<CR>";
+    action = "<cmd>Telescope git_branches<CR>";
     options = {
-      desc = "";
+      desc = "Branches";
       silent = true;
     };
   }
@@ -22,7 +22,7 @@
     key = "<leader>gl";
     action = "<cmd>Git log<CR>";
     options = {
-      desc = "";
+      desc = "Git Log";
       silent = true;
     };
   }
@@ -31,7 +31,7 @@
     key = "<leader>gs";
     action = "<cmd>Git<CR>";
     options = {
-      desc = "";
+      desc = "Git Status";
       silent = true;
     };
   }
@@ -40,26 +40,26 @@
     key = "<leader>gp";
     action = "<cmd>Git push<CR>";
     options = {
-      desc = "";
+      desc = "Git Push";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>gll";
+    key = "<leader>gLL";
     action = ''lua require"gitlinker".get_repo_url()<cr>'';
     options = {
-      desc = "";
+      desc = "Git Linker Copy Repo URL";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>glb";
+    key = "<leader>gLb";
     action = ''
       lua require"gitlinker".get_repo_url({action_callback = require"gitlinker.actions".open_in_browser})<cr>'';
     options = {
-      desc = "";
+      desc = "Git Linker Open In Browser";
       silent = true;
     };
   }
