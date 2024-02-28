@@ -349,6 +349,7 @@
 
           comment-nvim.enable = true;
           committia.enable = true;
+          direnv.enable = true;
           fidget.enable = true;
           fugitive.enable = true;
           gitlinker.enable = true;
@@ -393,7 +394,7 @@
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
               go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-              javascript = [[ "prettierd" "prettier" ]];
+              javascript = [ [ "prettierd" "prettier" ] ];
               json = [ "jq" ];
               lua = [ "stylua" ];
               nix = [ "nixfmt" ];
@@ -589,11 +590,13 @@
 
         };
       };
-    in flake-utils.lib.eachDefaultSystem (system:
+    in
+    flake-utils.lib.eachDefaultSystem (system:
       let
         nixvim' = nixvim.legacyPackages."${system}";
         nvim = nixvim'.makeNixvim config;
-      in {
+      in
+      {
         packages = {
           inherit nvim;
           default = nvim;
