@@ -347,6 +347,7 @@
 
         plugins = {
 
+          bacon.enable = true;
           comment-nvim.enable = true;
           committia.enable = true;
           direnv.enable = true;
