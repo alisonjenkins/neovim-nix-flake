@@ -356,6 +356,7 @@
           gitlinker.enable = true;
           gitsigns.enable = true;
           helm.enable = true;
+          indent-o-matic.enable = true;
           lastplace.enable = true;
           leap.enable = true;
           lspkind.enable = true;
