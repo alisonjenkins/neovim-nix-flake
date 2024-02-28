@@ -4,7 +4,7 @@
     key = "<leader>lc";
     action = "<cmd>Lspsaga code_action<cr>";
     options = {
-      desc = "";
+      desc = "Code Action";
       silent = true;
     };
   }
@@ -13,7 +13,7 @@
     key = "<leader>lff";
     action = "<cmd>Lspsaga finder<cr>";
     options = {
-      desc = "";
+      desc = "Finder";
       silent = true;
     };
   }
@@ -22,25 +22,25 @@
     key = "<leader>lfi";
     action = "<cmd>Lspsaga finder imp<cr>";
     options = {
-      desc = "";
+      desc = "Find Implementation";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>lhi";
+    key = "<leader>lfI";
     action = "<cmd>Lspsaga incoming_calls<cr>";
     options = {
-      desc = "";
+      desc = "Find Incoming Calls";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>lhi";
+    key = "<leader>lfo";
     action = "<cmd>Lspsaga outgoing_calls<cr>";
     options = {
-      desc = "";
+      desc = "Find Outgoing Calls";
       silent = true;
     };
   }
@@ -49,7 +49,7 @@
     key = "<leader>ln";
     action = "<cmd>Navbuddy<cr>";
     options = {
-      desc = "";
+      desc = "Navbuddy";
       silent = true;
     };
   }
@@ -58,7 +58,7 @@
     key = "<leader>lr";
     action = "<cmd>Lspsaga rename<cr>";
     options = {
-      desc = "";
+      desc = "Rename";
       silent = true;
     };
   }
@@ -67,16 +67,16 @@
     key = "<leader>lpd";
     action = "<cmd>Lspsaga peek_definition<cr>";
     options = {
-      desc = "";
+      desc = "Peek Definition";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>lpd";
+    key = "<leader>lpt";
     action = "<cmd>Lspsaga peek_type_definition<cr>";
     options = {
-      desc = "";
+      desc = "Peek Type Definition";
       silent = true;
     };
   }

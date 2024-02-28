@@ -390,6 +390,11 @@
           which-key = {
             enable = true;
             registrations = {
+              "<leader>b" = "Buffers";
+              "<leader>g" = "Git";
+              "<leader>l" = "LSP";
+              "<leader>lf" = "LSP Finder";
+              "<leader>lp" = "LSP Peek";
               "<leader>s" = "Search using Telescope";
               "<leader>z" = "Zettelkasten";
             };
