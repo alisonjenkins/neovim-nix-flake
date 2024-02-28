@@ -378,6 +378,7 @@
           ts-context-commentstring.enable = true;
           typst-vim.enable = true;
           wilder.enable = true;
+          zig.enable = true;
 
           alpha = {
             enable = true;
