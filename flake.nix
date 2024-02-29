@@ -234,6 +234,7 @@
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
           rustaceanvim.enable = true;
+          specs.enable = true;
           tmux-navigator.enable = true;
           treesitter-context.enable = true;
           treesitter-refactor.enable = true;
