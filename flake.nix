@@ -214,6 +214,7 @@
           committia.enable = true;
           direnv.enable = true;
           fidget.enable = true;
+          friendly-snippets.enable = true;
           fugitive.enable = true;
           gitlinker.enable = true;
           gitsigns.enable = true;
