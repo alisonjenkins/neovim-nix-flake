@@ -395,6 +395,10 @@
             };
           };
 
+          project-nvim = {
+            enableTelescope = true;
+          };
+
           rustaceanvim = {
             enable = false;
 
@@ -410,7 +414,6 @@
             extensions = {
               frecency.enable = true;
               fzy-native.enable = true;
-              project-nvim.enable = true;
             };
           };
 
