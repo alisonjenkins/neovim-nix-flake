@@ -233,7 +233,6 @@
           nvim-osc52.enable = true;
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
-          rustaceanvim.enable = true;
           specs.enable = true;
           tmux-navigator.enable = true;
           treesitter-context.enable = true;
@@ -396,6 +395,16 @@
             };
           };
 
+          rustaceanvim = {
+            enable = false;
+
+            server.settings = {
+              files = {
+                excludeDirs = [ ".direnv" ];
+              };
+            };
+          };
+
           telescope = {
             enable = true;
             extensions = {
@@ -454,7 +463,14 @@
                 enable = true;
                 installRustc = true;
                 installCargo = true;
+
+                settings = {
+                  files = {
+                    excludeDirs = [ ".direnv" ];
+                  };
+                };
               };
+
             };
           };
 
