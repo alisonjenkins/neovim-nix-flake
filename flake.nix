@@ -456,6 +456,7 @@
               ruff-lsp.enable = true;
               tailwindcss.enable = true;
               terraformls.enable = true;
+              tsserver.enable = true;
               yamlls.enable = true;
               zls.enable = false;
 
