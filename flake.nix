@@ -434,6 +434,7 @@
               "<leader>b" = "Buffers";
               "<leader>g" = "Git";
               "<leader>gL" = "Git Linker";
+              "<leader>gp" = "Git Push";
               "<leader>h" = "Harpoon";
               "<leader>l" = "LSP";
               "<leader>lb" = "Bacon";
