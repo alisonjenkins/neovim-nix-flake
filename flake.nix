@@ -203,6 +203,7 @@
         ]
         ++ import ./keymaps/buffers
         ++ import ./keymaps/git
+        ++ import ./keymaps/harpoon
         ++ import ./keymaps/lsp
         ++ import ./keymaps/search
         ++ import ./keymaps/zk;
@@ -308,6 +309,11 @@
             enable = true;
             enableTelescope = true;
             changeDirectoryCommand = "tcd";
+          };
+
+          harpoon = {
+            enable = true;
+            enableTelescope = true;
           };
 
           luasnip = {
@@ -428,6 +434,7 @@
               "<leader>b" = "Buffers";
               "<leader>g" = "Git";
               "<leader>gL" = "Git Linker";
+              "<leader>h" = "Harpoon";
               "<leader>l" = "LSP";
               "<leader>lb" = "Bacon";
               "<leader>lf" = "LSP Finder";
