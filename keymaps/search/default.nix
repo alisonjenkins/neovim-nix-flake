@@ -10,6 +10,15 @@
   }
   {
     mode = "n";
+    key = "<leader>sB";
+    action = "<cmd>Telescope git_branches<CR>";
+    options = {
+      desc = "Git Branches";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>sf";
     action = "<cmd>Telescope find_files<CR>";
     options = {

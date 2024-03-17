@@ -37,10 +37,37 @@
   }
   {
     mode = "n";
-    key = "<leader>gp";
+    key = "<leader>gpp";
     action = "<cmd>Git push<CR>";
     options = {
       desc = "Git Push";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gpf";
+    action = "<cmd>Git pfl<CR>";
+    options = {
+      desc = "Git Push --force-with-lease";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gpF";
+    action = "<cmd>Git push --force<CR>";
+    options = {
+      desc = "Git Push --force";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gP";
+    action = "<cmd>!gh pr create --web -f<CR>";
+    options = {
+      desc = "Create Github PR";
       silent = true;
     };
   }
