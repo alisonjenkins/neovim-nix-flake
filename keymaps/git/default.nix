@@ -64,6 +64,15 @@
   }
   {
     mode = "n";
+    key = "<leader>gP";
+    action = "<cmd>!gh pr create --web -f<CR>";
+    options = {
+      desc = "Create Github PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gLL";
     action = ''lua require"gitlinker".get_repo_url()<cr>'';
     options = {
