@@ -469,7 +469,6 @@
               nushell.enable = true;
               pylsp.enable = true;
               pylyzer.enable = false;
-              rnix-lsp.enable = true;
               ruff-lsp.enable = true;
               tailwindcss.enable = true;
               terraformls.enable = true;
