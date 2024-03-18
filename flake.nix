@@ -236,7 +236,6 @@
           rainbow-delimiters.enable = true;
           specs.enable = true;
           tmux-navigator.enable = true;
-          treesitter-context.enable = true;
           treesitter-refactor.enable = true;
           treesitter-textobjects.enable = true;
           ts-autotag.enable = true;
@@ -426,6 +425,13 @@
           treesitter = {
             enable = true;
             incrementalSelection = { enable = true; };
+          };
+
+          treesitter-context = {
+            enable = true;
+            extraOptions = {
+              max_lines = 4;
+            };
           };
 
           which-key = {
