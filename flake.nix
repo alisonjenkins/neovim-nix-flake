@@ -221,6 +221,7 @@
           gitsigns.enable = true;
           helm.enable = true;
           hmts.enable = true;
+          indent-blankline.enable = true;
           indent-o-matic.enable = true;
           lastplace.enable = true;
           leap.enable = true;
