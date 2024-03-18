@@ -217,7 +217,7 @@
           fidget.enable = true;
           friendly-snippets.enable = true;
           fugitive.enable = true;
-          gitlinker.enable = true;
+          gitlinker.enable = false;
           gitsigns.enable = true;
           helm.enable = true;
           hmts.enable = true;
@@ -439,7 +439,6 @@
             registrations = {
               "<leader>b" = "Buffers";
               "<leader>g" = "Git";
-              "<leader>gL" = "Git Linker";
               "<leader>gp" = "Git Push";
               "<leader>h" = "Harpoon";
               "<leader>l" = "LSP";
