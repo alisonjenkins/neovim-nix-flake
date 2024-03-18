@@ -203,6 +203,7 @@
         ]
         ++ import ./keymaps/buffers
         ++ import ./keymaps/git
+        ++ import ./keymaps/gitlinker
         ++ import ./keymaps/harpoon
         ++ import ./keymaps/lsp
         ++ import ./keymaps/search
@@ -217,7 +218,6 @@
           fidget.enable = true;
           friendly-snippets.enable = true;
           fugitive.enable = true;
-          gitlinker.enable = true;
           gitsigns.enable = true;
           helm.enable = true;
           hmts.enable = true;
@@ -302,6 +302,13 @@
             enable = true;
             panel.enabled = false;
             suggestion.enabled = false;
+          };
+
+          gitlinker = {
+            enable = true;
+            addCurrentLineOnNormalMode = true;
+            mappings = null;
+            printUrl = true;
           };
 
           git-worktree = {
