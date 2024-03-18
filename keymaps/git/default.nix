@@ -71,23 +71,4 @@
       silent = true;
     };
   }
-  {
-    mode = "n";
-    key = "<leader>gLL";
-    action = ''lua require"gitlinker".get_repo_url()<cr>'';
-    options = {
-      desc = "Git Linker Copy Repo URL";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>gLb";
-    action = ''
-      lua require"gitlinker".get_repo_url({action_callback = require"gitlinker.actions".open_in_browser})<cr>'';
-    options = {
-      desc = "Git Linker Open In Browser";
-      silent = true;
-    };
-  }
 ]
