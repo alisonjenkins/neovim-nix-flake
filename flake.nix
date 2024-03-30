@@ -206,6 +206,7 @@
         ++ import ./keymaps/harpoon
         ++ import ./keymaps/lsp
         ++ import ./keymaps/search
+        ++ import ./keymaps/testing
         ++ import ./keymaps/zk;
 
         plugins = {
@@ -475,6 +476,7 @@
               "<leader>lf" = "LSP Finder";
               "<leader>lp" = "LSP Peek";
               "<leader>s" = "Search using Telescope";
+              "<leader>t" = "Testing";
               "<leader>z" = "Zettelkasten";
             };
           };
