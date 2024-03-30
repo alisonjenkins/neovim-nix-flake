@@ -31,7 +31,7 @@
           vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
         '';
 
-        options = {
+        opts = {
           autoindent = true;
           backspace = "indent,eol,start";
           backup = true;
@@ -211,7 +211,7 @@
         plugins = {
 
           bacon.enable = true;
-          comment-nvim.enable = true;
+          comment.enable = true;
           committia.enable = true;
           direnv.enable = true;
           fidget.enable = true;
@@ -387,20 +387,27 @@
 
           oil = {
             enable = true;
-            deleteToTrash = true;
-            viewOptions = { showHidden = true; };
-            skipConfirmForSimpleEdits = true;
-            useDefaultKeymaps = false;
 
-            keymaps = {
-              "g?" = "actions.show_help";
-              "<CR>" = "actions.select";
-              "-" = "actions.parent";
-              "_" = "actions.open_cwd";
-              "`" = "actions.cd";
-              "~" = "actions.tcd";
-              "g." = "actions.toggle_hidden";
+            settings = {
+              delete_to_trash = true;
+              skip_confirm_for_simple_edits = true;
+              use_default_keymaps = false;
+
+              keymaps = {
+                "g?" = "actions.show_help";
+                "<CR>" = "actions.select";
+                "-" = "actions.parent";
+                "_" = "actions.open_cwd";
+                "`" = "actions.cd";
+                "~" = "actions.tcd";
+                "g." = "actions.toggle_hidden";
+              };
+
+              view_options = {
+                show_hidden = true; 
+              };
             };
+
           };
 
           project-nvim = {
