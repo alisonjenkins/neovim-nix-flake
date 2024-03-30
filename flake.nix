@@ -219,6 +219,7 @@
           fugitive.enable = true;
           gitlinker.enable = false;
           gitsigns.enable = true;
+          headlines.enable = true;
           helm.enable = true;
           hmts.enable = true;
           indent-blankline.enable = true;
