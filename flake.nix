@@ -244,6 +244,7 @@
           ts-autotag.enable = true;
           ts-context-commentstring.enable = true;
           typst-vim.enable = true;
+          vim-css-color.enable = true;
           virt-column.enable = true;
           wilder.enable = true;
           zig.enable = true;
