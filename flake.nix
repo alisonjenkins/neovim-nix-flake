@@ -385,6 +385,25 @@
             lsp.autoAttach = true;
           };
 
+          neotest = {
+            enable = true;
+
+            adapters = {
+              bash.enable = true;
+              go.enable = true;
+              java.enable = true;
+              plenary.enable = true;
+              python.enable = true;
+              rust.enable = true;
+              zig.enable = true;
+            };
+
+            settings = {
+              default_strategy = "integrated";
+              log_level = "warn";
+            };
+          };
+
           oil = {
             enable = true;
 
