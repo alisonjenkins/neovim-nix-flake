@@ -1,10 +1,12 @@
 {
   description = "Alison Jenkins's Neovim Flake";
 
-  inputs.nixvim.url = "github:nix-community/nixvim";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs = {
+    nixvim.url = "github:nix-community/nixvim";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
 
-  outputs = { self, nixvim, flake-utils, }:
+  outputs = { nixvim, flake-utils, ... }:
     let
       config = {
         colorscheme = "kanagawa";
@@ -224,7 +226,6 @@
           helm.enable = true;
           hmts.enable = true;
           indent-blankline.enable = true;
-          indent-o-matic.enable = true;
           lastplace.enable = true;
           leap.enable = true;
           lspkind.enable = true;
@@ -237,6 +238,7 @@
           nvim-osc52.enable = true;
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
+          sleuth.enable = true;
           specs.enable = true;
           tmux-navigator.enable = true;
           treesitter-refactor.enable = true;
