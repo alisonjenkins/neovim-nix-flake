@@ -388,7 +388,6 @@
             enable = true;
 
             modules = {
-              ai = {};
               bufremove = {};
 
               hipatterns = {
