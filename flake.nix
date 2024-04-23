@@ -2,24 +2,19 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs = {
-    flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
   outputs = {
-    flake-utils,
-    nixpkgs,
+    flake-parts,
     nixvim,
+    treefmt-nix,
     ... 
-  }:
+  }@inputs:
     let
-      pkgs = import nixpkgs {
-        config = {
-          allowUnfree = true;
-        };
-      };
-
       config = {
         colorscheme = "kanagawa";
         colorschemes.kanagawa.enable = true;
@@ -338,7 +333,6 @@
 
           luasnip = {
             enable = true;
-            extraPlugins = with pkgs.vimPlugins; [ friendly-snippets ];
             fromVscode = [{}];
           };
 
@@ -512,7 +506,7 @@
 
           treesitter-context = {
             enable = true;
-            extraOptions = {
+            settings = {
               max_lines = 4;
             };
           };
@@ -585,15 +579,47 @@
         };
       };
     in
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+
+      imports = [ inputs.treefmt-nix.flakeModule ];
+
+      perSystem = { pkgs, system, ... }:
       let
-        nixvim' = nixvim.legacyPackages."${system}";
-        nvim = nixvim'.makeNixvim config;
+        nixvimLib = nixvim.lib.${system};
+        nixvim' = nixvim.legacyPackages.${system};
+        nvim = nixvim'.makeNixvimWithModule {
+          inherit pkgs;
+          module = config;
+          # You can use `extraSpecialArgs` to pass additional arguments to your module files
+          extraSpecialArgs = {
+            # inherit (inputs) foo;
+          };
+        };
       in
       {
+        checks = {
+          # Run `nix flake check .` to verify that your config is not broken
+          default = nixvimLib.check.mkTestDerivationFromNvim {
+            inherit nvim;
+            name = "A nixvim configuration";
+          };
+        };
+
         packages = {
-          inherit nvim;
+          # Lets you run `nix run .` to start nixvim
           default = nvim;
         };
-      });
+
+        treefmt = {
+          projectRootFile = "flake.nix";
+          programs.nixpkgs-fmt.enable = true;
+        };
+      };
+    };
 }
