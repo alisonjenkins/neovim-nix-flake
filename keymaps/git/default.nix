@@ -19,6 +19,15 @@
   }
   {
     mode = "n";
+    key = "<leader>gi";
+    action = "<cmd>Gitignore<CR>";
+    options = {
+      desc = "Gitignore";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gl";
     action = "<cmd>Git log<CR>";
     options = {
