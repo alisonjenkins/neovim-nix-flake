@@ -277,6 +277,7 @@
 
           conform-nvim = {
             enable = true;
+
             formattersByFt = {
               "*" = [ "codespell" ];
               "_" = [ "trim_whitespace" ];
