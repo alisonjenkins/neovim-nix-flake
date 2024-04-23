@@ -8,12 +8,12 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = {
-    flake-parts,
-    nixvim,
-    treefmt-nix,
-    ... 
-  }@inputs:
+  outputs =
+    { flake-parts
+    , nixvim
+    , treefmt-nix
+    , ...
+    }@inputs:
     let
       config = {
         colorscheme = "kanagawa";
@@ -333,7 +333,7 @@
 
           luasnip = {
             enable = true;
-            fromVscode = [{}];
+            fromVscode = [{ }];
           };
 
           cmp = {
@@ -396,27 +396,27 @@
             enable = true;
 
             modules = {
-              bufremove = {};
+              bufremove = { };
 
               hipatterns = {
                 highlighters = {
                   # *FIXME*
-                  fixme = { 
-                    pattern = "%f[%w]()FIXME()%f[%W]"; 
+                  fixme = {
+                    pattern = "%f[%w]()FIXME()%f[%W]";
                     group = "MiniHipatternsFixme";
                   };
                   # *HACK*
-                  hack  = {
+                  hack = {
                     pattern = "%f[%w]()HACK()%f[%W]";
                     group = "MiniHipatternsHack";
                   };
                   # *TODO*
-                  todo  = {
+                  todo = {
                     pattern = "%f[%w]()TODO()%f[%W]";
                     group = "MiniHipatternsTodo";
                   };
                   # *NOTE*
-                  note  = { 
+                  note = {
                     pattern = "%f[%w]()NOTE()%f[%W]";
                     group = "MiniHipatternsNote";
                   };
@@ -471,7 +471,7 @@
               };
 
               view_options = {
-                show_hidden = true; 
+                show_hidden = true;
               };
             };
 
@@ -590,37 +590,37 @@
       imports = [ inputs.treefmt-nix.flakeModule ];
 
       perSystem = { pkgs, system, ... }:
-      let
-        nixvimLib = nixvim.lib.${system};
-        nixvim' = nixvim.legacyPackages.${system};
-        nvim = nixvim'.makeNixvimWithModule {
-          inherit pkgs;
-          module = config;
-          # You can use `extraSpecialArgs` to pass additional arguments to your module files
-          extraSpecialArgs = {
-            # inherit (inputs) foo;
+        let
+          nixvimLib = nixvim.lib.${system};
+          nixvim' = nixvim.legacyPackages.${system};
+          nvim = nixvim'.makeNixvimWithModule {
+            inherit pkgs;
+            module = config;
+            # You can use `extraSpecialArgs` to pass additional arguments to your module files
+            extraSpecialArgs = {
+              # inherit (inputs) foo;
+            };
+          };
+        in
+        {
+          checks = {
+            # Run `nix flake check .` to verify that your config is not broken
+            default = nixvimLib.check.mkTestDerivationFromNvim {
+              inherit nvim;
+              name = "A nixvim configuration";
+            };
+          };
+
+          packages = {
+            # Lets you run `nix run .` to start nixvim
+            default = nvim;
+            nvim = nvim;
+          };
+
+          treefmt = {
+            projectRootFile = "flake.nix";
+            programs.nixpkgs-fmt.enable = true;
           };
         };
-      in
-      {
-        checks = {
-          # Run `nix flake check .` to verify that your config is not broken
-          default = nixvimLib.check.mkTestDerivationFromNvim {
-            inherit nvim;
-            name = "A nixvim configuration";
-          };
-        };
-
-        packages = {
-          # Lets you run `nix run .` to start nixvim
-          default = nvim;
-          nvim = nvim;
-        };
-
-        treefmt = {
-          projectRootFile = "flake.nix";
-          programs.nixpkgs-fmt.enable = true;
-        };
-      };
     };
 }
