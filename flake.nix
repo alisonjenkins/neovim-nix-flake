@@ -2,12 +2,24 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs = {
-    nixvim.url = "github:nix-community/nixvim";
     flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixvim.url = "github:nix-community/nixvim";
   };
 
-  outputs = { nixvim, flake-utils, ... }:
+  outputs = {
+    flake-utils,
+    nixpkgs,
+    nixvim,
+    ... 
+  }:
     let
+      pkgs = import nixpkgs {
+        config = {
+          allowUnfree = true;
+        };
+      };
+
       config = {
         colorscheme = "kanagawa";
         colorschemes.kanagawa.enable = true;
@@ -220,6 +232,7 @@
           fidget.enable = true;
           friendly-snippets.enable = true;
           fugitive.enable = true;
+          gitignore.enable = true;
           gitlinker.enable = false;
           gitsigns.enable = true;
           headlines.enable = true;
@@ -324,8 +337,8 @@
 
           luasnip = {
             enable = true;
-            # paths = [];
-            # fromVscode = [];
+            extraPlugins = with pkgs.vimPlugins; [ friendly-snippets ];
+            fromVscode = [{}];
           };
 
           cmp = {
