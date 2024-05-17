@@ -1,6 +1,15 @@
 [
   {
     mode = "n";
+    key = "<leader>a";
+    action = "<cmd>Arrow open<cr>";
+    options = {
+      desc = "Open Arrow";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>bd";
     action = "<cmd>BufferClose<cr>";
     options = {
