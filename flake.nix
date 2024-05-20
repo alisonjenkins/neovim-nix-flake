@@ -51,9 +51,10 @@
           cursorline = true;
           expandtab = true;
           foldenable = true;
-          foldexpr = "nvim_treesitter#foldexpr()";
+          foldexpr = "v:lua.vim.treesitter.foldexpr()";
           foldlevel = 5;
           foldmethod = "expr";
+          foldtext = "v:lua.vim.treesitter.foldtext()";
           ignorecase = true;
           laststatus = 3;
           mouse = "a";
