@@ -247,7 +247,7 @@
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
           sleuth.enable = true;
-          specs.enable = true;
+          specs.enable = false;
           tmux-navigator.enable = true;
           treesitter-refactor.enable = true;
           treesitter-textobjects.enable = true;
