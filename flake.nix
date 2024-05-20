@@ -2,9 +2,9 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/master";
-    nixvim.url = "github:nix-community/nixvim";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixvim.url = "github:nix-community/nixvim";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
