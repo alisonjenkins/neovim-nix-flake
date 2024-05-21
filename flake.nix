@@ -266,7 +266,7 @@
           };
 
           arrow = {
-            enable = true;
+            enable = false;
 
             settings = {
               mappings = {
