@@ -510,9 +510,13 @@
           rustaceanvim = {
             enable = false;
 
-            server.settings = {
-              files = {
-                excludeDirs = [ ".direnv" ];
+            settings = {
+              server = {
+                settings = {
+                  files = {
+                    excludeDirs = [ ".direnv" ];
+                  };
+                };
               };
             };
           };
