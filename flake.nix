@@ -292,8 +292,11 @@
 
           barbar = {
             enable = true;
-            animation = true;
-            autoHide = true;
+
+            settings = {
+              animation = true;
+              autoHide = true;
+            };
           };
 
           conform-nvim = {
@@ -573,7 +576,7 @@
               java-language-server.enable = true;
               jsonls.enable = true;
               lua-ls.enable = true;
-              nil_ls.enable = true;
+              nil-ls.enable = true;
               nushell.enable = true;
               pylsp.enable = true;
               pylyzer.enable = false;
