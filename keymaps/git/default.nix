@@ -73,10 +73,154 @@
   }
   {
     mode = "n";
-    key = "<leader>gP";
-    action = "<cmd>!gh pr create --web -f<CR>";
+    key = "<leader>gPP";
+    action = "<cmd>Octo pr create<CR>";
     options = {
       desc = "Create Github PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPb";
+    action = "<cmd>Octo pr browser<CR>";
+    options = {
+      desc = "Open Github PR in your browser";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPm";
+    action = "<cmd>Octo pr merge<CR>";
+    options = {
+      desc = "Merge the PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPl";
+    action = "<cmd>Octo pr list<CR>";
+    options = {
+      desc = "List PRs";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPl";
+    action = "<cmd>Octo pr list<CR>";
+    options = {
+      desc = "List PRs";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPR";
+    action = "<cmd>Octo pr reload<CR>";
+    options = {
+      desc = "Reload PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPr";
+    action = "<cmd>Octo pr ready<CR>";
+    options = {
+      desc = "Mark PR as ready for review";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPs";
+    action = "<cmd>Octo pr search<CR>";
+    options = {
+      desc = "Search PRs";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPd";
+    action = "<cmd>Octo pr diff<CR>";
+    options = {
+      desc = "Diff PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPD";
+    action = "<cmd>Octo pr draft<CR>";
+    options = {
+      desc = "Convert PR to draft";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPe";
+    action = "<cmd>Octo pr edit<CR>";
+    options = {
+      desc = "Edit PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPc";
+    action = "<cmd>Octo pr checks<CR>";
+    options = {
+      desc = "PR checks status";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPo";
+    action = "<cmd>Octo pr checkout<CR>";
+    options = {
+      desc = "Checkout PR branch";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPO";
+    action = "<cmd>Octo pr commits<CR>";
+    options = {
+      desc = "List PR commits";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPC";
+    action = "<cmd>Octo pr close<CR>";
+    options = {
+      desc = "Close PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPC";
+    action = "<cmd>Octo pr reopen<CR>";
+    options = {
+      desc = "Reopen PR";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gPu";
+    action = "<cmd>Octo pr url<CR>";
+    options = {
+      desc = "Copy PR URL to clipboard";
       silent = true;
     };
   }

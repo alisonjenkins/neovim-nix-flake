@@ -551,6 +551,7 @@
               "<leader>b" = "Buffers";
               "<leader>g" = "Git";
               "<leader>gp" = "Git Push";
+              "<leader>gP" = "Github PR";
               "<leader>h" = "Harpoon";
               "<leader>l" = "LSP";
               "<leader>lb" = "Bacon";
