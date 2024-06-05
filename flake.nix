@@ -245,6 +245,7 @@
           noice.enable = true;
           notify.enable = false;
           nvim-osc52.enable = true;
+          octo.enable = true;
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
           sleuth.enable = true;
