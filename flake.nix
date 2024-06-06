@@ -238,6 +238,7 @@
           lastplace.enable = true;
           leap.enable = true;
           lspkind.enable = true;
+          lspsaga.enable = true;
           lualine.enable = true;
           molten.enable = true;
           navic.enable = true;
@@ -604,7 +605,6 @@
             };
           };
 
-          lspsaga = { enable = true; };
 
           zk = {
             enable = true;
