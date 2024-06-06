@@ -581,8 +581,8 @@
               lua-ls.enable = true;
               nil-ls.enable = true;
               nushell.enable = true;
-              pylsp.enable = true;
-              pylyzer.enable = false;
+              pylsp.enable = false;
+              pylyzer.enable = true;
               ruff-lsp.enable = true;
               tailwindcss.enable = true;
               terraformls.enable = true;
