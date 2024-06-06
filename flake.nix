@@ -573,6 +573,7 @@
               ccls.enable = true;
               cssls.enable = true;
               dockerls.enable = true;
+              emmet-ls.enable = true;
               gopls.enable = true;
               helm-ls.enable = true;
               html.enable = true;
