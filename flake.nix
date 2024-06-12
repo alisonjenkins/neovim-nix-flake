@@ -566,6 +566,8 @@
 
           lsp = {
             enable = true;
+            inlayHints = true;
+
             servers = {
 
               ansiblels.enable = true;
