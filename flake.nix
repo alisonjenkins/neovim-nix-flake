@@ -41,6 +41,11 @@
         '';
 
         opts = {
+
+          # foldexpr = "v:lua.vim.treesitter.foldexpr()";
+          # foldmethod = "expr";
+          # foldmethod = "manual";
+          # foldtext = "v:lua.vim.treesitter.foldtext()";
           autoindent = true;
           backspace = "indent,eol,start";
           backup = true;
@@ -50,11 +55,10 @@
           conceallevel = 0;
           cursorline = true;
           expandtab = true;
+          foldcolumn = "1";
           foldenable = true;
-          foldexpr = "v:lua.vim.treesitter.foldexpr()";
           foldlevel = 5;
-          foldmethod = "expr";
-          foldtext = "v:lua.vim.treesitter.foldtext()";
+          foldlevelstart = 99;
           ignorecase = true;
           laststatus = 3;
           mouse = "a";
@@ -72,6 +76,7 @@
           updatetime = 300;
           wrap = false;
           writebackup = true;
+
         };
 
         keymaps = [
@@ -210,6 +215,24 @@
               silent = true;
             };
           }
+          {
+            mode = "n";
+            key = "zR";
+            action = "<cmd>lua require('ufo').openAllFolds()<cr>";
+            options = {
+              desc = "Open all folds";
+              silent = true;
+            };
+          }
+          {
+            mode = "n";
+            key = "zM";
+            action = "<cmd>lua require('ufo').closeAllFolds()<cr>";
+            options = {
+              desc = "Close all folds";
+              silent = true;
+            };
+          }
         ]
         ++ import ./keymaps/buffers
         ++ import ./keymaps/git
@@ -246,6 +269,7 @@
           noice.enable = true;
           notify.enable = false;
           nvim-osc52.enable = true;
+          nvim-ufo.enable = true;
           octo.enable = true;
           project-nvim.enable = true;
           rainbow-delimiters.enable = true;
