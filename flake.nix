@@ -268,7 +268,6 @@
           nix.enable = true;
           noice.enable = true;
           notify.enable = false;
-          nvim-osc52.enable = true;
           nvim-ufo.enable = true;
           octo.enable = true;
           project-nvim.enable = true;
