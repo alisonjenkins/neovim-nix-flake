@@ -631,10 +631,11 @@
             };
           };
 
-
           zk = {
             enable = true;
-            picker = "telescope";
+            settings = {
+              picker = "telescope";
+            };
           };
 
         };
