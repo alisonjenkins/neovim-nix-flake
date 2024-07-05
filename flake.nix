@@ -266,7 +266,6 @@
         navic.enable = true;
         nix.enable = true;
         noice.enable = true;
-        notify.enable = false;
         nvim-ufo.enable = true;
         octo.enable = true;
         project-nvim.enable = true;
@@ -501,6 +500,12 @@
             default_strategy = "integrated";
             log_level = "warn";
           };
+        };
+
+        notify = {
+          enable = true;
+          timeout = 1000;
+          topDown = false;
         };
 
         oil = {
