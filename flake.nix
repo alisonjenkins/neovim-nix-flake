@@ -327,15 +327,15 @@
 
           formattersByFt = {
             "_" = ["trim_whitespace"];
-            go = ["goimports" "golines" "gofmt" "gofumpt"];
-            javascript = [["prettierd" "prettier"]];
-            json = ["jq"];
-            lua = ["stylua"];
-            nix = ["alejandra"];
-            python = ["isort" "black"];
+            go = ["goimports" "golines" "gofmt" "gofumpt" "codespell"];
+            javascript = [["prettierd" "prettier"] "codespell"];
+            json = ["jq" "codespell"];
+            lua = ["stylua" "codespell"];
+            nix = ["alejandra" "codespell"];
+            python = ["isort" "black" "codespell"];
             rust = ["rustfmt"];
-            sh = ["shfmt"];
-            terraform = ["terraform_fmt"];
+            sh = ["shfmt" "codespell"];
+            terraform = ["terraform_fmt" "codespell"];
           };
 
           formatOnSave = ''
