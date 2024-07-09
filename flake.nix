@@ -325,17 +325,24 @@
         conform-nvim = {
           enable = true;
 
+          formatters = {
+            codespell = ''
+              prepend_args = { "-L" "crate" }
+            '';
+          };
+
           formattersByFt = {
             "_" = ["trim_whitespace"];
-            go = ["goimports" "golines" "gofmt" "gofumpt" "codespell"];
-            javascript = [["prettierd" "prettier"] "codespell"];
-            json = ["jq" "codespell"];
-            lua = ["stylua" "codespell"];
-            nix = ["alejandra" "codespell"];
-            python = ["isort" "black" "codespell"];
+            "*" = ["codespell"];
+            go = ["goimports" "golines" "gofmt" "gofumpt"];
+            javascript = [["prettierd" "prettier"]];
+            json = ["jq"];
+            lua = ["stylua"];
+            nix = ["alejandra"];
+            python = ["isort" "black"];
             rust = ["rustfmt"];
-            sh = ["shfmt" "codespell"];
-            terraform = ["terraform_fmt" "codespell"];
+            sh = ["shfmt"];
+            terraform = ["terraform_fmt"];
           };
 
           formatOnSave = ''
