@@ -326,7 +326,6 @@
           enable = true;
 
           formattersByFt = {
-            "*" = ["codespell"];
             "_" = ["trim_whitespace"];
             go = ["goimports" "golines" "gofmt" "gofumpt"];
             javascript = [["prettierd" "prettier"]];
