@@ -559,7 +559,12 @@
 
         treesitter = {
           enable = true;
-          incrementalSelection = {enable = true;};
+
+          settings = {
+            incremental_selection = {
+              enable = true;
+            };
+          };
         };
 
         treesitter-context = {
