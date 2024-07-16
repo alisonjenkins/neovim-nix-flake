@@ -14,7 +14,7 @@
     treefmt-nix,
     ...
   } @ inputs: let
-    config = {
+    config = {pkgs, ...}: {
       colorscheme = "kanagawa";
       colorschemes.kanagawa.enable = true;
       editorconfig.enable = true;
