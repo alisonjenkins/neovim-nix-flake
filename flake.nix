@@ -45,6 +45,14 @@
         pkgs.alejandra
       ];
 
+      extraPython3Packages = p: [
+        # p.kaleido
+        p.numpy
+        p.plotly
+        p.pnglatex
+        p.pyperclip
+      ];
+
       opts = {
         # foldexpr = "v:lua.vim.treesitter.foldexpr()";
         # foldmethod = "expr";
