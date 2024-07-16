@@ -41,6 +41,10 @@
         vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
       '';
 
+      extraPackages = [
+        pkgs.alejandra
+      ];
+
       opts = {
         # foldexpr = "v:lua.vim.treesitter.foldexpr()";
         # foldmethod = "expr";
