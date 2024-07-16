@@ -41,8 +41,19 @@
         vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
       '';
 
-      extraPackages = [
-        pkgs.alejandra
+      extraPackages = with pkgs; [
+        alejandra
+        black
+        codespell
+        gofumpt
+        golines
+        isort
+        jq
+        nodePackages.prettier
+        prettierd
+        rustfmt
+        shfmt
+        stylua
       ];
 
       extraPython3Packages = p: [
