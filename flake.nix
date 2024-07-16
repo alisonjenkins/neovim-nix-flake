@@ -568,9 +568,9 @@
           enable = true;
 
           settings = {
-            incremental_selection = {
-              enable = true;
-            };
+            ensure_installed = "all";
+            highlight.enable = true;
+            incremental_selection.enable = true;
           };
         };
 
