@@ -338,9 +338,9 @@
           enable = true;
 
           formatters = {
-            codespell = ''
-              prepend_args = { "-L" "crate" }
-            '';
+            codespell = {
+              prepend_args = ["-L" "crate"];
+            };
           };
 
           formattersByFt = {
