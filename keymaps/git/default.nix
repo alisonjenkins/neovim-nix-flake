@@ -224,4 +224,22 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>gwc";
+    action = "<cmd>Telescope git_worktree create_git_worktree<CR>";
+    options = {
+      desc = "Create Git Worktree";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gws";
+    action = "<cmd>Telescope git_worktree git_worktrees<CR>";
+    options = {
+      desc = "Open Git Worktrees in Telescope";
+      silent = true;
+    };
+  }
 ]
