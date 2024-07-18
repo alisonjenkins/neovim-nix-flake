@@ -242,4 +242,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>gy";
+    action = "<cmd>lua require('gitlinker').get_buf_range_url('n')<CR>";
+    options = {
+      desc = "Copy link to current line";
+      silent = true;
+    };
+  }
 ]

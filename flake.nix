@@ -274,7 +274,6 @@
         friendly-snippets.enable = true;
         fugitive.enable = true;
         gitignore.enable = true;
-        gitlinker.enable = false;
         gitsigns.enable = true;
         headlines.enable = true;
         helm.enable = true;
@@ -400,6 +399,11 @@
           enable = true;
           panel.enabled = false;
           suggestion.enabled = false;
+        };
+
+        gitlinker = {
+          enable = true;
+          mappings = null;
         };
 
         git-worktree = {
