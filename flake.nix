@@ -571,17 +571,7 @@
         };
 
         rustaceanvim = {
-          enable = false;
-
-          settings = {
-            server = {
-              settings = {
-                files = {
-                  excludeDirs = [".direnv"];
-                };
-              };
-            };
-          };
+          enable = true;
         };
 
         telescope = {
