@@ -293,6 +293,7 @@
         octo.enable = true;
         project-nvim.enable = true;
         rainbow-delimiters.enable = true;
+        schemastore.enable = true;
         sleuth.enable = true;
         specs.enable = false;
         tmux-navigator.enable = true;
