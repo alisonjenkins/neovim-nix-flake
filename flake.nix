@@ -592,8 +592,25 @@
 
           settings = {
             ensure_installed = "all";
-            highlight.enable = true;
-            incremental_selection.enable = true;
+            textobjects.enable = true;
+
+            highlight = {
+              enable = true;
+
+              disable = ''
+                function(lang, bufnr)
+                  return vim.fn.getfsize(vim.api.nvim_buf_get_name(bufnr)) > 1048576
+                end
+              '';
+            };
+
+            incremental_selection = {
+              enable = false;
+            };
+
+            indent = {
+              enable = false;
+            };
           };
         };
 
