@@ -39,7 +39,22 @@
         vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
         vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
         vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
+
+        require('java').setup()
+        require('lspconfig').jdtls.setup({})
       '';
+
+      extraPlugins = [
+        (pkgs.vimUtils.buildVimPlugin {
+          name = "nvim-java";
+          src = pkgs.fetchFromGitHub {
+            owner = "nvim-java";
+            repo = "nvim-java";
+            rev = "5498e76364def449533199ea5bdbdde9a7eeb83c";
+            hash = "";
+          };
+        })
+      ];
 
       extraPackages = with pkgs; [
         alejandra
@@ -636,7 +651,7 @@
             gopls.enable = true;
             helm-ls.enable = true;
             html.enable = true;
-            java-language-server.enable = true;
+            java-language-server.enable = false;
             jsonls.enable = true;
             lua-ls.enable = true;
             nil-ls.enable = true;
