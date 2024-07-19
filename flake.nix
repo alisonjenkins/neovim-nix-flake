@@ -572,6 +572,18 @@
 
         rustaceanvim = {
           enable = true;
+
+          settings = {
+            server = {
+              default_settings = {
+                rust-analyzer = {
+                  files = {
+                    excludeDirs = [".direnv"];
+                  };
+                };
+              };
+            };
+          };
         };
 
         telescope = {
@@ -661,18 +673,6 @@
             tsserver.enable = true;
             yamlls.enable = true;
             zls.enable = false;
-
-            rust-analyzer = {
-              enable = true;
-              installRustc = true;
-              installCargo = true;
-
-              settings = {
-                files = {
-                  excludeDirs = [".direnv"];
-                };
-              };
-            };
           };
         };
 
