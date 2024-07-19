@@ -269,6 +269,7 @@
         bacon.enable = true;
         comment.enable = true;
         committia.enable = true;
+        crates-nvim.enable = true;
         direnv.enable = true;
         fidget.enable = true;
         friendly-snippets.enable = true;
