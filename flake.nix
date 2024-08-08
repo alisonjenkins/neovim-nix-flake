@@ -613,8 +613,15 @@
         telescope = {
           enable = true;
           extensions = {
-            frecency.enable = true;
             fzy-native.enable = true;
+
+            frecency = {
+              enable = true;
+
+              settings = {
+                db_safe_mode = false;
+              };
+            };
           };
         };
 
