@@ -284,6 +284,7 @@
         headlines.enable = false;
         helm.enable = true;
         hmts.enable = false;
+        image.enable = true;
         indent-blankline.enable = true;
         lastplace.enable = true;
         leap.enable = true;
