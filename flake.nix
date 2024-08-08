@@ -265,6 +265,11 @@
         ++ import ./keymaps/testing
         ++ import ./keymaps/zk;
 
+      performance = {
+        byteCompileLua.enable = true;
+        combinePlugins.enable = false;
+      };
+
       plugins = {
         bacon.enable = true;
         comment.enable = true;
