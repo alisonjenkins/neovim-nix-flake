@@ -631,19 +631,57 @@
 
         which-key = {
           enable = true;
-          registrations = {
-            "<leader>b" = "Buffers";
-            "<leader>g" = "Git";
-            "<leader>gp" = "Git Push";
-            "<leader>gP" = "Github PR";
-            "<leader>h" = "Harpoon";
-            "<leader>l" = "LSP";
-            "<leader>lb" = "Bacon";
-            "<leader>lf" = "LSP Finder";
-            "<leader>lp" = "LSP Peek";
-            "<leader>s" = "Search using Telescope";
-            "<leader>t" = "Testing";
-            "<leader>z" = "Zettelkasten";
+          settings = {
+            spec = [
+              {
+                __unkeyed-1 = "<leader>b";
+                desc = "Buffers";
+              }
+              {
+                __unkeyed-1 = "<leader>g";
+                desc = "Git";
+              }
+              {
+                __unkeyed-1 = "<leader>gp";
+                desc = "Git Push";
+              }
+              {
+                __unkeyed-1 = "<leader>gP";
+                desc = "Github PR";
+              }
+              {
+                __unkeyed-1 = "<leader>h";
+                desc = "Harpoon";
+              }
+              {
+                __unkeyed-1 = "<leader>l";
+                desc = "LSP";
+              }
+              {
+                __unkeyed-1 = "<leader>lb";
+                desc = "Bacon";
+              }
+              {
+                __unkeyed-1 = "<leader>lf";
+                desc = "LSP Finder";
+              }
+              {
+                __unkeyed-1 = "<leader>lp";
+                desc = "LSP Peek";
+              }
+              {
+                __unkeyed-1 = "<leader>s";
+                desc = "Search using Telescope";
+              }
+              {
+                __unkeyed-1 = "<leader>t";
+                desc = "Testing";
+              }
+              {
+                __unkeyed-1 = "<leader>z";
+                desc = "Zettelkasten";
+              }
+            ];
           };
         };
 
