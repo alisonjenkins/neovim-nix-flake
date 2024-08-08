@@ -726,7 +726,8 @@
             gopls.enable = true;
             helm-ls.enable = true;
             html.enable = true;
-            java-language-server.enable = true;
+            java-language-server.enable = false;
+            jdt-language-server.enable = false;
             jsonls.enable = true;
             lua-ls.enable = true;
             nil-ls.enable = true;
