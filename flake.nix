@@ -741,9 +741,9 @@
             lua-ls.enable = true;
             nil-ls.enable = true;
             nushell.enable = true;
-            pylsp.enable = false;
-            pylyzer.enable = true;
-            ruff-lsp.enable = true;
+            pylsp.enable = true;
+            pylyzer.enable = false;
+            ruff-lsp.enable = false;
             tailwindcss.enable = true;
             terraformls.enable = true;
             tsserver.enable = true;
