@@ -282,9 +282,9 @@
         fugitive.enable = true;
         gitignore.enable = true;
         gitsigns.enable = true;
-        headlines.enable = true;
+        headlines.enable = false;
         helm.enable = true;
-        hmts.enable = true;
+        hmts.enable = false;
         image.enable = true;
         indent-blankline.enable = true;
         lastplace.enable = true;
@@ -301,15 +301,15 @@
         nvim-ufo.enable = true;
         octo.enable = true;
         project-nvim.enable = true;
-        rainbow-delimiters.enable = true;
+        rainbow-delimiters.enable = false;
         schemastore.enable = true;
         sleuth.enable = true;
         specs.enable = false;
         tmux-navigator.enable = true;
-        treesitter-refactor.enable = true;
-        treesitter-textobjects.enable = true;
-        ts-autotag.enable = true;
-        ts-context-commentstring.enable = true;
+        treesitter-refactor.enable = false;
+        treesitter-textobjects.enable = false;
+        ts-autotag.enable = false;
+        ts-context-commentstring.enable = false;
         typst-vim.enable = true;
         vim-css-color.enable = true;
         virt-column.enable = true;
@@ -550,17 +550,17 @@
         };
 
         neotest = {
-          enable = true;
+          enable = false;
 
-          adapters = {
-            bash.enable = true;
-            go.enable = true;
-            java.enable = true;
-            plenary.enable = true;
-            python.enable = true;
-            rust.enable = true;
-            zig.enable = true;
-          };
+          # adapters = {
+          #   bash.enable = true;
+          #   go.enable = true;
+          #   java.enable = true;
+          #   plenary.enable = true;
+          #   python.enable = true;
+          #   rust.enable = true;
+          #   zig.enable = true;
+          # };
 
           settings = {
             default_strategy = "integrated";
@@ -634,10 +634,14 @@
         };
 
         treesitter = {
-          enable = true;
+          enable = false;
 
           settings = {
-            ensure_installed = "all";
+            auto_install = true;
+            # ensure_installed = "all";
+            # ignore_install = [
+            #   "sql"
+            # ];
             textobjects.enable = true;
 
             highlight = {
@@ -661,7 +665,7 @@
         };
 
         treesitter-context = {
-          enable = true;
+          enable = false;
           settings = {
             max_lines = 4;
           };
@@ -738,7 +742,7 @@
             helm-ls.enable = true;
             html.enable = true;
             java-language-server.enable = false;
-            jdt-language-server.enable = true;
+            jdt-language-server.enable = false;
             jsonls.enable = true;
             lua-ls.enable = true;
             nil-ls.enable = true;
