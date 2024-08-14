@@ -41,6 +41,16 @@
         vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
       '';
 
+      extraFiles = {
+        "ftplugin/java.lua".text = ''
+          local config = {
+            cmd = {'${pkgs.jdt-language-server}/bin/jdtls', '--jvm-arg=-javaagent:${pkgs.lombok}/share/java/lombok.jar', '--jvm-arg=-Xbootclasspath/a:${pkgs.lombok}/share/java/lombok.jar'},
+            root_dir = vim.fs.dirname(vim.fs.find({'gradlew', '.git', 'mvnw'}, { upward = true })[1]),
+          }
+          require('jdtls').start_or_attach(config)
+        '';
+      };
+
       extraPackages = with pkgs; [
         alejandra
         black
@@ -55,6 +65,10 @@
         rustfmt
         shfmt
         stylua
+      ];
+
+      extraPlugins = with pkgs.vimPlugins; [
+        nvim-jdtls
       ];
 
       extraPython3Packages = p: [
