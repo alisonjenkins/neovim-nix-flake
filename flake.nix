@@ -49,6 +49,7 @@
         golines
         isort
         jq
+        lldb
         nodePackages.prettier
         prettierd
         rustfmt
