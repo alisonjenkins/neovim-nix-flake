@@ -410,6 +410,10 @@
           suggestion.enabled = false;
         };
 
+        dap = {
+          enable = true;
+        };
+
         firenvim = {
           enable = true;
 
