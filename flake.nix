@@ -28,6 +28,11 @@
           pattern = ["*"];
           command = "silent! lua vim.highlight.on_yank()";
         }
+        {
+          event = ["BufEnter"];
+          pattern = ["github.com_*.txt"];
+          command = "set filetype=markdown";
+        }
       ];
 
       extraConfigLua = ''
