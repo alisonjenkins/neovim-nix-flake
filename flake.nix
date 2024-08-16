@@ -442,7 +442,7 @@
 
             localSettings = {
               ".*" = {
-                cmdline = "neovim";
+                cmdline = "firenvim";
                 content = "text";
                 priority = 0;
                 selector = "textarea";
