@@ -431,49 +431,6 @@
           suggestion.enabled = false;
         };
 
-        dap = {
-          enable = true;
-        };
-
-        firenvim = {
-          enable = true;
-
-          settings = {
-            globalSettings.alt = "all";
-
-            localSettings = {
-              ".*" = {
-                cmdline = "firenvim";
-                content = "text";
-                priority = 0;
-                selector = "textarea";
-                takeover = "never";
-              };
-            };
-          };
-        };
-
-        gitlinker = {
-          enable = true;
-          mappings = null;
-        };
-
-        git-worktree = {
-          enable = true;
-          enableTelescope = true;
-          changeDirectoryCommand = "tcd";
-        };
-
-        harpoon = {
-          enable = true;
-          enableTelescope = true;
-        };
-
-        luasnip = {
-          enable = true;
-          fromVscode = [{}];
-        };
-
         cmp = {
           enable = true;
           autoEnableSources = true;
@@ -525,6 +482,80 @@
               {name = "path";}
               {name = "buffer";}
             ];
+          };
+        };
+
+        dap = {
+          enable = true;
+        };
+
+        firenvim = {
+          enable = true;
+
+          settings = {
+            globalSettings.alt = "all";
+
+            localSettings = {
+              ".*" = {
+                cmdline = "firenvim";
+                content = "text";
+                priority = 0;
+                selector = "textarea";
+                takeover = "never";
+              };
+            };
+          };
+        };
+
+        gitlinker = {
+          enable = true;
+          mappings = null;
+        };
+
+        git-worktree = {
+          enable = true;
+          enableTelescope = true;
+          changeDirectoryCommand = "tcd";
+        };
+
+        harpoon = {
+          enable = true;
+          enableTelescope = true;
+        };
+
+        luasnip = {
+          enable = true;
+          fromVscode = [{}];
+        };
+
+        lsp = {
+          enable = true;
+          inlayHints = true;
+
+          servers = {
+            ansiblels.enable = true;
+            # bashls.enable = true;
+            ccls.enable = true;
+            cssls.enable = true;
+            dockerls.enable = true;
+            emmet-ls.enable = true;
+            gopls.enable = true;
+            helm-ls.enable = true;
+            html.enable = true;
+            java-language-server.enable = false;
+            jdt-language-server.enable = false;
+            jsonls.enable = true;
+            lua-ls.enable = true;
+            nil-ls.enable = true;
+            nushell.enable = true;
+            pylsp.enable = true;
+            pylyzer.enable = false;
+            ruff-lsp.enable = false;
+            tailwindcss.enable = true;
+            terraformls.enable = true;
+            tsserver.enable = true;
+            yamlls.enable = true;
+            zls.enable = false;
           };
         };
 
@@ -759,37 +790,6 @@
                 desc = "Zettelkasten";
               }
             ];
-          };
-        };
-
-        lsp = {
-          enable = true;
-          inlayHints = true;
-
-          servers = {
-            ansiblels.enable = true;
-            # bashls.enable = true;
-            ccls.enable = true;
-            cssls.enable = true;
-            dockerls.enable = true;
-            emmet-ls.enable = true;
-            gopls.enable = true;
-            helm-ls.enable = true;
-            html.enable = true;
-            java-language-server.enable = false;
-            jdt-language-server.enable = false;
-            jsonls.enable = true;
-            lua-ls.enable = true;
-            nil-ls.enable = true;
-            nushell.enable = true;
-            pylsp.enable = true;
-            pylyzer.enable = false;
-            ruff-lsp.enable = false;
-            tailwindcss.enable = true;
-            terraformls.enable = true;
-            tsserver.enable = true;
-            yamlls.enable = true;
-            zls.enable = false;
           };
         };
 
