@@ -534,7 +534,7 @@
 
           servers = {
             ansiblels.enable = true;
-            # bashls.enable = true;
+            bashls.enable = true;
             ccls.enable = true;
             cssls.enable = true;
             dockerls.enable = true;
