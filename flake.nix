@@ -319,7 +319,6 @@
         noice.enable = true;
         nvim-ufo.enable = true;
         octo.enable = true;
-        project-nvim.enable = true;
         rainbow-delimiters.enable = false;
         schemastore.enable = true;
         sleuth.enable = true;
@@ -620,7 +619,22 @@
         };
 
         project-nvim = {
+          enable = true;
           enableTelescope = true;
+
+          patterns = [
+            ".bzr"
+            ".git"
+            ".hg"
+            ".svn"
+            "Cargo.toml"
+            "Makefile"
+            "_darcs"
+            "flake.nix"
+            "go.mod"
+            "package.json"
+            "pom.xml"
+          ];
         };
 
         rustaceanvim = {
