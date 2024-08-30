@@ -98,4 +98,14 @@
       silent = true;
     };
   }
+
+  {
+    mode = "n";
+    key = "<leader>lrd";
+    action = "<cmd>RustLsp debug<cr>";
+    options = {
+      desc = "RustLsp Debug";
+      silent = true;
+    };
+  }
 ]

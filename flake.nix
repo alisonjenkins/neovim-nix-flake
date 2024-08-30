@@ -282,6 +282,7 @@
         ++ import ./keymaps/git
         ++ import ./keymaps/harpoon
         ++ import ./keymaps/lsp
+        ++ import ./keymaps/rust-lsp
         ++ import ./keymaps/search
         ++ import ./keymaps/testing
         ++ import ./keymaps/zk;
@@ -789,6 +790,14 @@
               {
                 __unkeyed-1 = "<leader>lp";
                 desc = "LSP Peek";
+              }
+              {
+                __unkeyed-1 = "<leader>lr";
+                desc = "Rust LSP";
+              }
+              {
+                __unkeyed-1 = "<leader>lrm";
+                desc = "Rust LSP Move Item";
               }
               {
                 __unkeyed-1 = "<leader>s";
