@@ -739,6 +739,7 @@
         project-nvim = {
           enable = true;
           enableTelescope = true;
+          manualMode = true;
 
           patterns = [
             ".bzr"
