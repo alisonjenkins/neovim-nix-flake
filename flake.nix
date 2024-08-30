@@ -278,6 +278,7 @@
           }
         ]
         ++ import ./keymaps/buffers
+        ++ import ./keymaps/debugging
         ++ import ./keymaps/git
         ++ import ./keymaps/harpoon
         ++ import ./keymaps/lsp
@@ -292,6 +293,8 @@
 
       plugins = {
         bacon.enable = true;
+        cmp-dap.enable = true;
+        cmp-nvim-lsp.enable = true;
         comment.enable = true;
         committia.enable = true;
         crates-nvim.enable = true;
@@ -487,6 +490,13 @@
 
         dap = {
           enable = true;
+
+          extensions = {
+            dap-go.enable = true;
+            dap-python.enable = true;
+            dap-ui.enable = true;
+            dap-virtual-text.enable = true;
+          };
         };
 
         firenvim = {
@@ -609,7 +619,6 @@
             java.enable = true;
             plenary.enable = true;
             python.enable = true;
-            rust.enable = true;
             zig.enable = true;
           };
 
@@ -672,6 +681,14 @@
           enable = true;
 
           settings = {
+            # dap = {
+            #   adapter = {
+            #     type =
+            #     executable = {
+            #       command = "${pkgs.vscode-extensions.vadimcn.vscode-lldb.adapter}/bin/codelldb";
+            #     };
+            #   };
+            # };
             server = {
               default_settings = {
                 rust-analyzer = {
@@ -740,6 +757,10 @@
               {
                 __unkeyed-1 = "<leader>b";
                 desc = "Buffers";
+              }
+              {
+                __unkeyed-1 = "<leader>d";
+                desc = "Debugging";
               }
               {
                 __unkeyed-1 = "<leader>g";
