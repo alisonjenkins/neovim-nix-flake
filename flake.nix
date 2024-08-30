@@ -755,6 +755,10 @@
                 desc = "Debugging";
               }
               {
+                __unkeyed-1 = "<leader>ds";
+                desc = "Step";
+              }
+              {
                 __unkeyed-1 = "<leader>g";
                 desc = "Git";
               }
