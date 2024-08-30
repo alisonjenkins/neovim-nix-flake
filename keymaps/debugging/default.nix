@@ -82,7 +82,7 @@
   }
   {
     mode = "n";
-    key = "<leader>dl";
+    key = "<leader>du";
     action = "<cmd>lua require'dapui'.toggle()<cr>";
     options = {
       desc = "Run Last";
