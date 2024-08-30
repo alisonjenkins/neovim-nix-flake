@@ -3,3 +3,5 @@
 * Build a Lambda function as a container.
 * Ensure that Nvim DAP works.
 * Ensure that Neotest works.
+* Create test that tests the lambda using SAM local
+* Create justfile demonstrating the commands for running, checking and building.
