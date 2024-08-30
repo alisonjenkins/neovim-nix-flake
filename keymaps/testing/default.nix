@@ -65,9 +65,18 @@
   {
     mode = "n";
     key = "<leader>tj";
-    action = "<cmd>Neotest jump<CR>";
+    action = "<cmd>Neotest jump next<CR>";
     options = {
-      desc = "Jump to tests";
+      desc = "Jump to next test";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>tJ";
+    action = "<cmd>Neotest jump prev<CR>";
+    options = {
+      desc = "Jump to previous test";
       silent = true;
     };
   }
