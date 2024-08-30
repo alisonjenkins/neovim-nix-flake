@@ -681,14 +681,6 @@
           enable = true;
 
           settings = {
-            # dap = {
-            #   adapter = {
-            #     type =
-            #     executable = {
-            #       command = "${pkgs.vscode-extensions.vadimcn.vscode-lldb.adapter}/bin/codelldb";
-            #     };
-            #   };
-            # };
             server = {
               default_settings = {
                 rust-analyzer = {
