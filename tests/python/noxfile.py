@@ -1,9 +1,12 @@
+import tempfile
+
 import nox
 
 
 @nox.session(python=False)
 def tests(session):
-    session.run("pytest")
+    with tempfile.TemporaryDirectory() as tempdir:
+        session.run("pytest", "-o", f"cache_dir={tempdir}")
 
 
 @nox.session(python=False)

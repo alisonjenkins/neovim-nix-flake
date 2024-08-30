@@ -5,6 +5,7 @@ description = "Example Python app"
 
 # define any Python dependencies
 dependencies = [
+    "requests>2"
 ]
 
 # define the CLI executable
