@@ -390,7 +390,6 @@
         nix.enable = true;
         noice.enable = true;
         nvim-ufo.enable = true;
-        octo.enable = true;
         rainbow-delimiters.enable = true;
         schemastore.enable = true;
         sleuth.enable = true;
@@ -701,6 +700,16 @@
           enable = true;
           timeout = 1000;
           topDown = false;
+        };
+
+        octo = {
+          enable = true;
+
+          settings = {
+            suppress_missing_scope = {
+              projects_v2 = true;
+            };
+          };
         };
 
         oil = {
