@@ -14,7 +14,44 @@
     treefmt-nix,
     ...
   } @ inputs: let
-    config = {pkgs, ...}: {
+    config = {pkgs, ...}:
+    # let
+    # treesitter-powershell-grammar = pkgs.tree-sitter.buildGrammar {
+    #   language = "powershell";
+    #   version = "2024-07-31";
+    #   src = pkgs.fetchFromGitHub {
+    #     owner = "airbus-cert";
+    #     repo = "tree-sitter-powershell";
+    #     rev = "fc15514b2f1dbba9c58528d15a3708f89eda6a01";
+    #     hash = "sha256-StVnRNM0HPevLSRDIDr+Sakjo+NqXYWPPUFjI29Cowo=";
+    #   };
+    #   meta.homepage = "https://github.com/airbus-cert/tree-sitter-powershell/";
+    # };
+    # treesitter-vhdl-grammar = pkgs.tree-sitter.buildGrammar {
+    #   language = "vhdl";
+    #   version = "2024-07-18";
+    #   src = pkgs.fetchFromGitHub {
+    #     owner = "jpt13653903";
+    #     repo = "tree-sitter-vhdl";
+    #     rev = "4ab3e251eae8890a020d083d00acd1b8c2653c07";
+    #     hash = "sha256-egNgZ1GgRNvIdH08cf6V83bMeOECs23yiV5RzcXZENg=";
+    #   };
+    #   meta.homepage = "https://github.com/jpt13653903/tree-sitter-vhdl";
+    # };
+    #
+    # treesitter-vrl-grammar = pkgs.tree-sitter.buildGrammar {
+    #   language = "vrl";
+    #   version = "2024-07-18";
+    #   src = pkgs.fetchFromGitHub {
+    #     owner = "belltoy";
+    #     repo = "tree-sitter-vrl";
+    #     rev = "274b3ce63f72aa8ffea18e7fc280d3062d28f0ba";
+    #     hash = "sha256-R+wuG8UkvGA11uTiiUAdzzgjRv1ik4W+qh3YwIREUd4=";
+    #   };
+    #   meta.homepage = "https://github.com/belltoy/tree-sitter-vrl";
+    # };
+    # in
+    {
       colorscheme = "kanagawa";
       colorschemes.kanagawa.enable = true;
       editorconfig.enable = true;
@@ -44,6 +81,34 @@
         vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
         vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
         vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
+
+        do
+          local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+
+          -- parser_config.powershell = {
+          --   install_info = {
+          --     url = "$${treesitter-powershell-grammar}",
+          --     files = {"src/parser.c"},
+          --     filetype = "powershell",
+          --   }
+          --}
+
+          -- parser_config.vhdl = {
+            -- install_info = {
+              -- url = "$${treesitter-vhdl-grammar}",
+              -- files = {"src/parser.c"},
+              -- filetype = "vhdl",
+            -- }
+          -- }
+
+          -- parser_config.vrl = {
+            -- install_info = {
+              -- url = "$${treesitter-vrl-grammar}",
+              -- files = {"src/parser.c"},
+              -- filetype = "vrl",
+            -- }
+          -- }
+        end
       '';
 
       extraFiles = {
@@ -74,6 +139,9 @@
 
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
+        # treesitter-powershell-grammar
+        # treesitter-vhdl-grammar
+        # treesitter-vrl-grammar
       ];
 
       extraPython3Packages = p: [
@@ -712,8 +780,15 @@
         treesitter = {
           enable = true;
 
+          grammarPackages =
+            pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars
+            ++ [
+              # treesitter-powershell-grammar
+              # treesitter-vhdl-grammar
+              # treesitter-vrl-grammar
+            ];
+
           settings = {
-            ensure_installed = "all";
             textobjects.enable = true;
 
             highlight = {
