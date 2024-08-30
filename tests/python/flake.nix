@@ -13,7 +13,8 @@
 
   outputs = {flake-parts, ...} @ inputs:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = [
+      systems = let
+      in [
         "aarch64-darwin"
         "aarch64-linux"
         "x86_64-darwin"
@@ -25,12 +26,21 @@
         system,
         ...
       }: let
+        pythonTestLintPkgs = python-pkgs: [
+          python-pkgs.black # Linter
+          python-pkgs.nox # Test + Linter runner
+          python-pkgs.pytest # Testing
+        ];
+
         devShell = pkgs.mkShell {
-          packages = [
+          packages = with pkgs; [
+            alejandra
             (
-              pkgs.python3.withPackages (python-pkgs: [
-                python-pkgs.pytest
-              ])
+              python3.withPackages (python-pkgs:
+                [
+                  python-pkgs.requests
+                ]
+                ++ pythonTestLintPkgs python-pkgs)
             )
           ];
         };
@@ -42,7 +52,37 @@
         };
 
         python = pkgs.python3;
+
+        alejandra-check =
+          pkgs.runCommandLocal "alejandra-check" {
+            src = ./.;
+
+            nativeBuildInputs = [
+              pkgs.alejandra
+            ];
+          } ''
+            cd "$src" && alejandra --check .
+            mkdir "$out"
+          '';
+
+        nox-check =
+          pkgs.runCommandLocal "nox-check" {
+            src = ./.;
+
+            nativeBuildInputs = [
+              (
+                pkgs.python3.withPackages (python-pkgs: pythonTestLintPkgs python-pkgs)
+              )
+            ];
+          } ''
+            cd "$src" && nox
+            mkdir "$out"
+          '';
       in {
+        checks = {
+          inherit alejandra-check;
+          inherit nox-check;
+        };
         devShells.default = devShell;
         packages.default = let
           attrs = example-python-project.renderers.buildPythonPackage {inherit python;};
