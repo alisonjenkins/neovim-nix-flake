@@ -749,6 +749,7 @@
             "Makefile"
             "_darcs"
             "flake.nix"
+            "flake.nix"
             "go.mod"
             "package.json"
             "pom.xml"
