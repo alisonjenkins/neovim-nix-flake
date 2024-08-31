@@ -59,41 +59,36 @@
         pythonTestEnv = python.withPackages testing-arg;
         python = pkgs.python3;
 
-        alejandra-check =
-          pkgs.runCommandLocal "alejandra-check" {
-            src = ./.;
-
-            nativeBuildInputs = [
-              pkgs.alejandra
-            ];
-          } ''
-            cd "$src" && alejandra --check .
-            mkdir "$out"
-          '';
-
-        nox-check =
-          pkgs.runCommandLocal "nox-check" {
-            src = ./.;
-
-            nativeBuildInputs = [
-              # (
-              #   pkgs.python3.withPackages (python-pkgs: pythonTestLintPkgs python-pkgs)
-              # )
-              # (
-              #   pythonEnv.withPackages (python-pkgs: pythonTestLintPkgs python-pkgs)
-              # )
-              pythonTestEnv
-            ];
-          } ''
-            cd "$src" && nox
-            mkdir "$out"
-          '';
-      in {
         checks = {
-          inherit alejandra-check;
-          inherit nox-check;
+          alejandra-check =
+            pkgs.runCommandLocal "alejandra-check" {
+              src = ./.;
+
+              nativeBuildInputs = [
+                pkgs.alejandra
+              ];
+            } ''
+              cd "$src" && alejandra --check .
+              mkdir "$out"
+            '';
+
+          nox-check =
+            pkgs.runCommandLocal "nox-check" {
+              src = ./.;
+
+              nativeBuildInputs = [
+                pythonTestEnv
+              ];
+            } ''
+              cd "$src" && nox
+              mkdir "$out"
+            '';
         };
+      in {
+        checks = checks;
+
         devShells.default = devShell;
+
         packages.default = let
           attrs = example-python-project.renderers.buildPythonPackage {inherit python;};
         in
