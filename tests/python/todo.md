@@ -1,6 +1,9 @@
 # Python Example Todo
-* Fix the test so that it loads the dependencies from the pyproject.toml.
 * Build a Lambda function as a container.
+* Add justfile targets to:
+    * Build container
+    * Load container into docker daemon
+    * Run dive against the container.
 * Ensure that Nvim DAP works.
 * Ensure that Neotest works.
 * Create test that tests the lambda using SAM local
