@@ -35,13 +35,9 @@
         devShell = pkgs.mkShell {
           packages = with pkgs; [
             alejandra
-            (
-              python3.withPackages (python-pkgs:
-                [
-                  python-pkgs.requests
-                ]
-                ++ pythonTestLintPkgs python-pkgs)
-            )
+            pythonTestEnv
+            watchexec
+            just
           ];
         };
 
@@ -51,6 +47,16 @@
           projectRoot = ./.;
         };
 
+        arg = example-python-project.renderers.withPackages {
+          inherit python;
+        };
+        testing-arg = example-python-project.renderers.withPackages {
+          inherit python;
+          extraPackages = pythonTestLintPkgs;
+        };
+
+        pythonEnv = python.withPackages arg;
+        pythonTestEnv = python.withPackages testing-arg;
         python = pkgs.python3;
 
         alejandra-check =
@@ -70,9 +76,13 @@
             src = ./.;
 
             nativeBuildInputs = [
-              (
-                pkgs.python3.withPackages (python-pkgs: pythonTestLintPkgs python-pkgs)
-              )
+              # (
+              #   pkgs.python3.withPackages (python-pkgs: pythonTestLintPkgs python-pkgs)
+              # )
+              # (
+              #   pythonEnv.withPackages (python-pkgs: pythonTestLintPkgs python-pkgs)
+              # )
+              pythonTestEnv
             ];
           } ''
             cd "$src" && nox

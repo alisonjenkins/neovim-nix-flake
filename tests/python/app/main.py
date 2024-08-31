@@ -7,7 +7,12 @@ def add(a, b):
 
 
 def get_my_ip_info():
-    return "== My IP Info ==\n{}".format(get("https://api.my-ip.io/v2/ip.txt").text)
+    headers = {
+        "Accept": "*/*",
+        "Content-Type": "text/plain",
+        "User-Agent": "curl/8.9.0",
+    }
+    return "== My IP Info ==\n{}".format(get("https://myip.dk", headers=headers).text)
 
 
 def main():

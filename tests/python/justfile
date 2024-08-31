@@ -1,0 +1,12 @@
+list-commands:
+    @just --list
+
+test-watch:
+    #!/usr/bin/env bash
+    watchexec \
+        --watch app \
+        --watch pyproject.toml \
+        --watch test_*.py \
+        nox
+
+alias w := test-watch

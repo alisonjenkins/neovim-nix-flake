@@ -11,6 +11,7 @@ def test_add():
 def test_get_ip_info():
     output = get_my_ip_info()
     match = re.match(
-        r"== My IP info ==\n(?P<ip_address>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*"
+        r"== My IP Info ==\n(?P<ip_address>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*",
+        output,
     )
     assert match != None
