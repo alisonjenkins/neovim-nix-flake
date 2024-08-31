@@ -1,12 +1,39 @@
 list-commands:
     @just --list
 
+build-app:
+    #!/usr/bin/env bash
+    nix build .
+
+run-app:
+    #!/usr/bin/env bash
+    nix run .
+
+nix-flake-check:
+    #/usr/bin/env bash
+    nix flake check
+
+nix-flake-check-watch:
+    #!/usr/bin/env bash
+    watchexec \
+        --watch app \
+        --watch flake.lock \
+        --watch flake.nix \
+        --watch pyproject.toml \
+        --watch noxfile.py \
+        --watch test_*.py \
+        nix flake check --option sandbox false # remove me if you want to have no networking
+
 test-watch:
     #!/usr/bin/env bash
     watchexec \
         --watch app \
+        --watch noxfile.py \
         --watch pyproject.toml \
         --watch test_*.py \
         nox
 
+alias b := build-app
+alias r := run-app
 alias w := test-watch
+alias W := nix-flake-check-watch
