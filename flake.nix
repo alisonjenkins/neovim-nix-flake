@@ -842,6 +842,10 @@
                 desc = "Debugging";
               }
               {
+                __unkeyed-1 = "<leader>dB";
+                desc = "Breakpoint";
+              }
+              {
                 __unkeyed-1 = "<leader>ds";
                 desc = "Step";
               }

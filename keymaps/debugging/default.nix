@@ -94,7 +94,7 @@
     key = "<leader>du";
     action = "<cmd>lua require'dapui'.toggle()<cr>";
     options = {
-      desc = "Run Last";
+      desc = "Dap UI Toggle";
       silent = true;
     };
   }
