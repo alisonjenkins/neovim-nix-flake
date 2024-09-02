@@ -64,6 +64,15 @@
   }
   {
     mode = "n";
+    key = "<leader>dt";
+    action = "<cmd>lua require'dap'.terminate()<cr>";
+    options = {
+      desc = "DAP Terminate";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>dr";
     action = "<cmd>lua require'dap'.repl.open()<cr>";
     options = {
