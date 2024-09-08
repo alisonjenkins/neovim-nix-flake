@@ -70,6 +70,11 @@
           pattern = ["github.com_*.txt"];
           command = "set filetype=markdown";
         }
+        {
+          event = "FileType";
+          pattern = "helm";
+          command = "LspRestart";
+        }
       ];
 
       extraConfigLua = ''
