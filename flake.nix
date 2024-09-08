@@ -389,6 +389,7 @@
         navic.enable = true;
         nix.enable = true;
         noice.enable = true;
+        numbertoggle.enable = true;
         nvim-ufo.enable = true;
         rainbow-delimiters.enable = true;
         schemastore.enable = true;
