@@ -624,7 +624,6 @@
             dockerls.enable = true;
             emmet-ls.enable = true;
             gopls.enable = true;
-            helm-ls.enable = true;
             html.enable = true;
             java-language-server.enable = false;
             jdt-language-server.enable = false;
@@ -638,8 +637,17 @@
             tailwindcss.enable = true;
             terraformls.enable = true;
             tsserver.enable = true;
-            yamlls.enable = true;
             zls.enable = false;
+
+            helm-ls = {
+              enable = true;
+              filetypes = ["helm"];
+            };
+
+            yamlls = {
+              enable = true;
+              filetypes = ["yaml"];
+            };
           };
         };
 
