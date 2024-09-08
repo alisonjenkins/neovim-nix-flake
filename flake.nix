@@ -687,12 +687,20 @@
             java.enable = true;
             plenary.enable = true;
             python.enable = true;
+            rust.enable = true;
             zig.enable = true;
           };
 
           settings = {
-            default_strategy = "integrated";
             log_level = "warn";
+
+            discovery = {
+              enabled = true;
+            };
+
+            output_panel = {
+              enabled = true;
+            };
           };
         };
 
