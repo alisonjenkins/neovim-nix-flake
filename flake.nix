@@ -635,7 +635,7 @@
             ruff-lsp.enable = false;
             tailwindcss.enable = true;
             terraformls.enable = true;
-            tsserver.enable = true;
+            ts-ls.enable = true;
             zls.enable = false;
 
             helm-ls = {
