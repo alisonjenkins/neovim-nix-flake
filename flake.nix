@@ -757,18 +757,6 @@
           };
         };
 
-        precognition = {
-          enable = true;
-
-          settings = {
-            showBlankVirtLine = false;
-
-            disabled_filetypes = [
-              "alpha"
-            ];
-          };
-        };
-
         project-nvim = {
           enable = true;
           enableTelescope = true;
