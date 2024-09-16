@@ -380,6 +380,7 @@
         gitsigns.enable = true;
         headlines.enable = true;
         helm.enable = true;
+        helpview.enable = true;
         hmts.enable = true;
         image.enable = true;
         indent-blankline.enable = true;
