@@ -28,6 +28,15 @@
   }
   {
     mode = "n";
+    key = "<leader>sh";
+    action = "<cmd>Telescope help_tags<CR>";
+    options = {
+      desc = "Help tags";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>st";
     action = "<cmd>Telescope live_grep<CR>";
     options = {
