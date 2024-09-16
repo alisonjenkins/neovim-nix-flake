@@ -850,7 +850,7 @@
 
               disable = ''
                 function(lang, bufnr)
-                  return vim.fn.getfsize(vim.api.nvim_buf_get_name(bufnr)) > 1048576
+                  return vim.api.nvim_buf_line_count(bufnr) > 10000
                 end
               '';
             };
