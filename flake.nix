@@ -166,7 +166,6 @@
         backspace = "indent,eol,start";
         backup = true;
         cmdheight = 2;
-        colorcolumn = "80";
         completeopt = "menu,menuone,noselect";
         conceallevel = 0;
         cursorline = true;
@@ -399,7 +398,6 @@
         rainbow-delimiters.enable = true;
         schemastore.enable = true;
         sleuth.enable = true;
-        smartcolumn.enable = true;
         specs.enable = false;
         tmux-navigator.enable = true;
         treesitter-refactor.enable = true;
@@ -795,6 +793,25 @@
                 };
               };
             };
+          };
+        };
+
+        smartcolumn = {
+          enable = true;
+
+          settings = {
+            colorcolumn = "80";
+            scope = "file";
+
+            disable_filetypes = [
+              "NvimTree"
+              "Trouble"
+              "checkhealth"
+              "help"
+              "lazy"
+              "lspinfo"
+              "noice"
+            ];
           };
         };
 
