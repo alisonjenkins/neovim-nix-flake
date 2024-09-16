@@ -399,6 +399,7 @@
         rainbow-delimiters.enable = true;
         schemastore.enable = true;
         sleuth.enable = true;
+        smartcolumn.enable = true;
         specs.enable = false;
         tmux-navigator.enable = true;
         treesitter-refactor.enable = true;
@@ -407,7 +408,6 @@
         ts-context-commentstring.enable = true;
         typst-vim.enable = true;
         vim-css-color.enable = true;
-        virt-column.enable = true;
         wilder.enable = true;
         zig.enable = true;
 
