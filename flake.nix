@@ -390,7 +390,6 @@
         lspsaga.enable = true;
         lualine.enable = true;
         markdown-preview.enable = true;
-        markview.enable = true;
         molten.enable = true;
         navic.enable = true;
         nix.enable = true;
