@@ -366,6 +366,7 @@
 
       plugins = {
         bacon.enable = true;
+        ccc.enable = true;
         cmp-dap.enable = true;
         cmp-nvim-lsp.enable = true;
         comment.enable = true;
