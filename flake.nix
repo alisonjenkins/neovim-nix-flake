@@ -650,6 +650,16 @@
                 hex_color = "hipatterns.gen_highlighter.hex_color()";
               };
             };
+
+            surround = {
+              add = "gsa";
+              delete = "gsd";
+              find = "gsf";
+              find_left = "gsF";
+              highlight = "gsh";
+              replace = "gsr";
+              update_n_lines = "gsn";
+            };
           };
         };
 
