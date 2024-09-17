@@ -144,6 +144,7 @@
 
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
+        vim-table-mode
         # treesitter-powershell-grammar
         # treesitter-vhdl-grammar
         # treesitter-vrl-grammar
