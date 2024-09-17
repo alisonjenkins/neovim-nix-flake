@@ -115,6 +115,7 @@
           -- }
         end
 
+        require('outline').setup({})
         require('render-markdown').setup({})
       '';
 
@@ -146,6 +147,7 @@
 
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
+        outline-nvim
         render-markdown
         vim-table-mode
         # treesitter-powershell-grammar
