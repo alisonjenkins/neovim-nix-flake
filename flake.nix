@@ -318,6 +318,7 @@
         ++ import ./keymaps/debugging
         ++ import ./keymaps/git
         ++ import ./keymaps/harpoon
+        ++ import ./keymaps/leap
         ++ import ./keymaps/lsp
         ++ import ./keymaps/rust-lsp
         ++ import ./keymaps/search
@@ -351,7 +352,6 @@
         image.enable = true;
         indent-blankline.enable = true;
         lastplace.enable = true;
-        leap.enable = true;
         lspkind.enable = true;
         lspsaga.enable = true;
         lualine.enable = true;
@@ -561,6 +561,11 @@
         harpoon = {
           enable = true;
           enableTelescope = true;
+        };
+
+        leap = {
+          enable = true;
+          addDefaultMappings = false;
         };
 
         luasnip = {
