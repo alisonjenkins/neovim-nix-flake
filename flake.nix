@@ -114,6 +114,8 @@
             -- }
           -- }
         end
+
+        require('render-markdown').setup({})
       '';
 
       extraFiles = {
@@ -144,6 +146,7 @@
 
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
+        render-markdown
         vim-table-mode
         # treesitter-powershell-grammar
         # treesitter-vhdl-grammar
