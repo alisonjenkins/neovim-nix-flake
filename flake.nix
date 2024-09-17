@@ -440,15 +440,6 @@
           };
         };
 
-        barbar = {
-          enable = true;
-
-          settings = {
-            animation = true;
-            autoHide = true;
-          };
-        };
-
         conform-nvim = {
           enable = true;
 
