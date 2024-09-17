@@ -409,6 +409,20 @@
           };
         };
 
+        clipboard-image = {
+          enable = true;
+          clipboardPackage = (
+            if pkgs.stdenv.isLinux
+            then pkgs.xclip
+            else
+              (
+                if pkgs.stdenv.isDarwin
+                then pkgs.pngpaste
+                else []
+              )
+          );
+        };
+
         conform-nvim = {
           enable = true;
 
