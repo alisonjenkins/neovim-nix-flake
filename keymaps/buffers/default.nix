@@ -1,17 +1,8 @@
 [
   {
     mode = "n";
-    key = "<leader>a";
-    action = "<cmd>Arrow open<cr>";
-    options = {
-      desc = "Open Arrow";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
     key = "<leader>bd";
-    action = "<cmd>BufferClose<cr>";
+    action = "<cmd>lua require('bufdelete').bufdelete(0, true)<cr>";
     options = {
       desc = "Close Buffer";
       silent = true;
@@ -19,19 +10,28 @@
   }
   {
     mode = "n";
-    key = "<leader>bd";
-    action = "<cmd>BufferDelete<cr>";
+    key = "<leader>bs";
+    action = "<cmd>Telescope buffers<cr>";
     options = {
-      desc = "Buffer Delete";
+      desc = "Switch Buffer";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>bp";
-    action = "<cmd>BufferPick<cr>";
+    key = "[b";
+    action = "<cmd>bprevious<cr>";
     options = {
-      desc = "Pick Buffer";
+      desc = "Open previous buffer";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "]b";
+    action = "<cmd>bnext<cr>";
+    options = {
+      desc = "Move to next buffer";
       silent = true;
     };
   }

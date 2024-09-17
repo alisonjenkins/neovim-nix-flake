@@ -242,42 +242,6 @@
           }
           {
             mode = "n";
-            key = "[b";
-            action = "<cmd>BufferPrevious<cr>";
-            options = {
-              desc = "Open previous buffer";
-              silent = true;
-            };
-          }
-          {
-            mode = "n";
-            key = "[B";
-            action = "<cmd>BufferMovePrevious<cr>";
-            options = {
-              desc = "Move buffer back in list";
-              silent = true;
-            };
-          }
-          {
-            mode = "n";
-            key = "]b";
-            action = "<cmd>BufferNext<cr>";
-            options = {
-              desc = "Move to next buffer";
-              silent = true;
-            };
-          }
-          {
-            mode = "n";
-            key = "]B";
-            action = "<cmd>BufferMoveNext<cr>";
-            options = {
-              desc = "Move buffer forward in list";
-              silent = true;
-            };
-          }
-          {
-            mode = "n";
             key = "]d";
             action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
             options = {
@@ -366,6 +330,7 @@
 
       plugins = {
         bacon.enable = true;
+        bufdelete.enable = true;
         ccc.enable = true;
         cmp-dap.enable = true;
         cmp-nvim-lsp.enable = true;
