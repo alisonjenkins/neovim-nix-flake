@@ -472,17 +472,6 @@
           };
         };
 
-        copilot-cmp = {
-          event = ["InsertEnter" "LspAttach"];
-          fixPairs = true;
-        };
-
-        copilot-lua = {
-          enable = true;
-          panel.enabled = false;
-          suggestion.enabled = false;
-        };
-
         cmp = {
           enable = true;
           autoEnableSources = true;
