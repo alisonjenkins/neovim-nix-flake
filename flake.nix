@@ -3,6 +3,8 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
+    nixpkgs-master.url = "github:nixos/nixpkgs";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.05";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
     treefmt-nix.url = "github:numtide/treefmt-nix";
@@ -969,6 +971,28 @@
           };
         };
       in {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [
+            (
+              final: _prev: {
+                master = import inputs.nixpkgs-master {
+                  system = final.system;
+                  config.allowUnfree = true;
+                };
+              }
+            )
+            (
+              final: _prev: {
+                stable = import inputs.nixpkgs-stable {
+                  system = final.system;
+                  config.allowUnfree = true;
+                };
+              }
+            )
+          ];
+          config = {};
+        };
         checks = {
           # Run `nix flake check .` to verify that your config is not broken
           default = nixvimLib.check.mkTestDerivationFromNvim {
