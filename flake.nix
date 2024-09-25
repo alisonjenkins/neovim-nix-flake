@@ -345,7 +345,6 @@
         cmp-nvim-lsp.enable = true;
         comment.enable = true;
         committia.enable = true;
-        crates-nvim.enable = true;
         direnv.enable = true;
         fidget.enable = true;
         friendly-snippets.enable = true;
@@ -525,6 +524,19 @@
               {name = "path";}
               {name = "buffer";}
             ];
+          };
+        };
+
+        crates-nvim = {
+          enable = true;
+
+          extraOptions = {
+            lsp = {
+              actions = true;
+              completion = true;
+              enabled = true;
+              hover = true;
+            };
           };
         };
 
