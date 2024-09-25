@@ -150,7 +150,7 @@
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
         outline-nvim
-        render-markdown
+        pkgs.master.vimPlugins.render-markdown-nvim
         vim-table-mode
         # treesitter-powershell-grammar
         # treesitter-vhdl-grammar
