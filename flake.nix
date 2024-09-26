@@ -134,7 +134,6 @@
       extraPackages = with pkgs; [
         alejandra
         black
-        codespell
         gofumpt
         golines
         isort
@@ -431,15 +430,8 @@
           enable = true;
 
           settings = {
-            formatters = {
-              codespell = {
-                prepend_args = ["-L" "crate"];
-              };
-            };
-
             formatters_by_ft = {
               "_" = ["trim_whitespace"];
-              "*" = ["codespell"];
               go = ["goimports" "golines" "gofmt" "gofumpt"];
               javascript = [["prettierd" "prettier"]];
               json = ["jq"];
