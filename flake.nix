@@ -380,6 +380,7 @@
         vim-css-color.enable = true;
         web-devicons.enable = true;
         wilder.enable = true;
+        wrapping.enable = true;
         zig.enable = true;
 
         alpha = {
