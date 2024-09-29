@@ -118,7 +118,6 @@
         end
 
         require('outline').setup({})
-        require('render-markdown').setup({})
       '';
 
       extraFiles = {
@@ -149,7 +148,6 @@
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
         outline-nvim
-        pkgs.master.vimPlugins.render-markdown-nvim
         vim-table-mode
         # treesitter-powershell-grammar
         # treesitter-vhdl-grammar
@@ -368,6 +366,7 @@
         numbertoggle.enable = true;
         nvim-ufo.enable = true;
         rainbow-delimiters.enable = true;
+        render-markdown.enable = true;
         schemastore.enable = true;
         sleuth.enable = true;
         specs.enable = false;
