@@ -118,6 +118,29 @@
         end
 
         require('outline').setup({})
+
+        require("tailwind-tools").setup({
+          server = {
+            override = true, -- setup the server from the plugin if true
+          },
+          document_color = {
+            enabled = true, -- can be toggled by commands
+            kind = "inline", -- "inline" | "foreground" | "background"
+            inline_symbol = "󰝤 ", -- only used in inline mode
+            debounce = 200, -- in milliseconds, only applied in insert mode
+          },
+          conceal = {
+            enabled = true, -- can be toggled by commands
+            min_length = nil, -- only conceal classes exceeding the provided length
+            symbol = "󱏿", -- only a single character is allowed
+            highlight = { -- extmark highlight options, see :h 'highlight'
+              fg = "#38BDF8",
+            },
+          },
+          cmp = {
+            highlight = "foreground", -- color preview style, "foreground" | "background"
+          },
+        })
       '';
 
       extraFiles = {
@@ -143,15 +166,17 @@
         rustfmt
         shfmt
         stylua
+        tailwindcss-language-server
       ];
 
       extraPlugins = with pkgs.vimPlugins; [
-        nvim-jdtls
-        outline-nvim
-        vim-table-mode
         # treesitter-powershell-grammar
         # treesitter-vhdl-grammar
         # treesitter-vrl-grammar
+        nvim-jdtls
+        outline-nvim
+        tailwind-tools-nvim
+        vim-table-mode
       ];
 
       extraPython3Packages = p: [
@@ -357,7 +382,6 @@
         image.enable = true;
         indent-blankline.enable = true;
         lastplace.enable = true;
-        lspkind.enable = true;
         lspsaga.enable = true;
         lualine.enable = true;
         markdown-preview.enable = true;
@@ -589,6 +613,20 @@
           fromVscode = [{}];
         };
 
+        lspkind = {
+          enable = true;
+
+          extraOptions = {
+            formatting = {
+              format = ''
+                require("lspkind").cmp_format({
+                  before = require("tailwind-tools.cmp").lspkind_format
+                })
+              '';
+            };
+          };
+        };
+
         lsp = {
           enable = true;
           inlayHints = true;
@@ -611,7 +649,7 @@
             pylsp.enable = true;
             pylyzer.enable = false;
             ruff-lsp.enable = false;
-            tailwindcss.enable = true;
+            tailwindcss.enable = false;
             terraformls.enable = true;
             ts-ls.enable = true;
             zls.enable = false;
