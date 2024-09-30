@@ -344,6 +344,7 @@
         comment.enable = true;
         committia.enable = true;
         direnv.enable = true;
+        earthly.enable = true;
         fidget.enable = true;
         friendly-snippets.enable = true;
         fugitive.enable = true;
