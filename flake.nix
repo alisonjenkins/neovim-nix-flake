@@ -338,6 +338,7 @@
         bacon.enable = true;
         bufdelete.enable = true;
         ccc.enable = true;
+        cmp-cmdline.enable = true;
         cmp-dap.enable = true;
         cmp-nvim-lsp.enable = true;
         comment.enable = true;
