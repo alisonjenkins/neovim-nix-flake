@@ -599,24 +599,24 @@
             ccls.enable = true;
             cssls.enable = true;
             dockerls.enable = true;
-            emmet-ls.enable = true;
+            emmet_ls.enable = true;
             gopls.enable = true;
             html.enable = true;
-            java-language-server.enable = false;
-            jdt-language-server.enable = false;
+            java_language_server.enable = false;
+            jdtls.enable = false;
             jsonls.enable = true;
-            lua-ls.enable = true;
-            nil-ls.enable = true;
+            lua_ls.enable = true;
+            nil_ls.enable = true;
             nushell.enable = true;
             pylsp.enable = true;
             pylyzer.enable = false;
-            ruff-lsp.enable = false;
+            ruff_lsp.enable = false;
             tailwindcss.enable = true;
             terraformls.enable = true;
-            ts-ls.enable = true;
+            ts_ls.enable = true;
             zls.enable = false;
 
-            helm-ls = {
+            helm_ls = {
               enable = true;
               filetypes = ["helm"];
             };
