@@ -608,7 +608,6 @@
             jdtls.enable = false;
             jsonls.enable = true;
             lua_ls.enable = true;
-            nil_ls.enable = true;
             nushell.enable = true;
             pylsp.enable = true;
             pylyzer.enable = false;
@@ -621,6 +620,15 @@
             helm_ls = {
               enable = true;
               filetypes = ["helm"];
+            };
+
+            nixd = {
+              enable = true;
+
+              settings = {
+                formatting.command = ["alejandra"];
+                nixpkgs.expr = "import <nixpkgs> {}";
+              };
             };
 
             yamlls = {
