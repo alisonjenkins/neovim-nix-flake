@@ -147,10 +147,10 @@
       extraPlugins = with pkgs.vimPlugins; [
         nvim-jdtls
         outline-nvim
-        vim-table-mode
         treesitter-powershell-grammar
         treesitter-vhdl-grammar
         treesitter-vrl-grammar
+        vim-table-mode
       ];
 
       extraPython3Packages = p: [
