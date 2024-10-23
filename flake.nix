@@ -52,8 +52,12 @@
         meta.homepage = "https://github.com/belltoy/tree-sitter-vrl";
       };
     in {
-      colorscheme = "kanagawa";
-      colorschemes.kanagawa.enable = true;
+      colorscheme = "melange";
+      colorschemes = {
+        melange = {
+          enable = true;
+        };
+      };
       editorconfig.enable = true;
       globals.localleader = ",";
       globals.mapleader = " ";
