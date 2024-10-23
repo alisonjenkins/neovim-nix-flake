@@ -3,6 +3,7 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
+    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.05";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -13,7 +14,6 @@
   outputs = {
     flake-parts,
     nixvim,
-    treefmt-nix,
     ...
   } @ inputs: let
     config = {pkgs, ...}:
@@ -60,6 +60,7 @@
       globals.localleader = ",";
       globals.mapleader = " ";
       luaLoader.enable = true;
+      package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
 
       autoCmd = [
         {
@@ -438,7 +439,6 @@
               javascript = [["prettierd" "prettier"]];
               json = ["jq"];
               lua = ["stylua"];
-              nix = ["alejandra"];
               python = ["isort" "black"];
               rust = ["rustfmt"];
               sh = ["shfmt"];
@@ -606,7 +606,6 @@
             jdtls.enable = false;
             jsonls.enable = true;
             lua_ls.enable = true;
-            nil_ls.enable = true;
             nushell.enable = true;
             pylsp.enable = true;
             pylyzer.enable = false;
@@ -619,6 +618,15 @@
             helm_ls = {
               enable = true;
               filetypes = ["helm"];
+            };
+
+            nixd = {
+              enable = true;
+
+              settings = {
+                formatting.command = ["alejandra"];
+                nixpkgs.expr = "import <nixpkgs> {}";
+              };
             };
 
             yamlls = {
