@@ -14,7 +14,6 @@
   outputs = {
     flake-parts,
     nixvim,
-    treefmt-nix,
     ...
   } @ inputs: let
     config = {pkgs, ...}:
