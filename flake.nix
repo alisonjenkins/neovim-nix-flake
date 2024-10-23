@@ -39,18 +39,18 @@
         };
         meta.homepage = "https://github.com/jpt13653903/tree-sitter-vhdl";
       };
-      #
-      # treesitter-vrl-grammar = pkgs.tree-sitter.buildGrammar {
-      #   language = "vrl";
-      #   version = "2024-07-18";
-      #   src = pkgs.fetchFromGitHub {
-      #     owner = "belltoy";
-      #     repo = "tree-sitter-vrl";
-      #     rev = "274b3ce63f72aa8ffea18e7fc280d3062d28f0ba";
-      #     hash = "sha256-R+wuG8UkvGA11uTiiUAdzzgjRv1ik4W+qh3YwIREUd4=";
-      #   };
-      #   meta.homepage = "https://github.com/belltoy/tree-sitter-vrl";
-      # };
+
+      treesitter-vrl-grammar = pkgs.tree-sitter.buildGrammar {
+        language = "vrl";
+        version = "2024-07-18";
+        src = pkgs.fetchFromGitHub {
+          owner = "belltoy";
+          repo = "tree-sitter-vrl";
+          rev = "274b3ce63f72aa8ffea18e7fc280d3062d28f0ba";
+          hash = "sha256-R+wuG8UkvGA11uTiiUAdzzgjRv1ik4W+qh3YwIREUd4=";
+        };
+        meta.homepage = "https://github.com/belltoy/tree-sitter-vrl";
+      };
     in {
       colorscheme = "kanagawa";
       colorschemes.kanagawa.enable = true;
@@ -107,13 +107,13 @@
             }
           }
 
-          -- parser_config.vrl = {
-            -- install_info = {
-              -- url = "$${treesitter-vrl-grammar}",
-              -- files = {"src/parser.c"},
-              -- filetype = "vrl",
-            -- }
-          -- }
+          parser_config.vrl = {
+            install_info = {
+              url = "$${treesitter-vrl-grammar}",
+              files = {"src/parser.c"},
+              filetype = "vrl",
+            }
+          }
         end
 
         require('outline').setup({})
@@ -150,7 +150,7 @@
         vim-table-mode
         treesitter-powershell-grammar
         treesitter-vhdl-grammar
-        # treesitter-vrl-grammar
+        treesitter-vrl-grammar
       ];
 
       extraPython3Packages = p: [
@@ -840,7 +840,7 @@
             ++ [
               treesitter-powershell-grammar
               treesitter-vhdl-grammar
-              # treesitter-vrl-grammar
+              treesitter-vrl-grammar
             ];
 
           settings = {
