@@ -136,6 +136,12 @@
         golines
         isort
         jq
+        (
+          python3.withPackages
+          (python-pkgs: [
+            python-pkgs.pylatexenc
+          ])
+        )
         lldb
         nodePackages.prettier
         prettierd
