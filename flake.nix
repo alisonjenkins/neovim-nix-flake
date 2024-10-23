@@ -28,17 +28,17 @@
         };
         meta.homepage = "https://github.com/airbus-cert/tree-sitter-powershell/";
       };
-      # treesitter-vhdl-grammar = pkgs.tree-sitter.buildGrammar {
-      #   language = "vhdl";
-      #   version = "2024-07-18";
-      #   src = pkgs.fetchFromGitHub {
-      #     owner = "jpt13653903";
-      #     repo = "tree-sitter-vhdl";
-      #     rev = "4ab3e251eae8890a020d083d00acd1b8c2653c07";
-      #     hash = "sha256-egNgZ1GgRNvIdH08cf6V83bMeOECs23yiV5RzcXZENg=";
-      #   };
-      #   meta.homepage = "https://github.com/jpt13653903/tree-sitter-vhdl";
-      # };
+      treesitter-vhdl-grammar = pkgs.tree-sitter.buildGrammar {
+        language = "vhdl";
+        version = "2024-07-18";
+        src = pkgs.fetchFromGitHub {
+          owner = "jpt13653903";
+          repo = "tree-sitter-vhdl";
+          rev = "4ab3e251eae8890a020d083d00acd1b8c2653c07";
+          hash = "sha256-egNgZ1GgRNvIdH08cf6V83bMeOECs23yiV5RzcXZENg=";
+        };
+        meta.homepage = "https://github.com/jpt13653903/tree-sitter-vhdl";
+      };
       #
       # treesitter-vrl-grammar = pkgs.tree-sitter.buildGrammar {
       #   language = "vrl";
@@ -99,13 +99,13 @@
             }
           }
 
-          -- parser_config.vhdl = {
-            -- install_info = {
-              -- url = "$${treesitter-vhdl-grammar}",
-              -- files = {"src/parser.c"},
-              -- filetype = "vhdl",
-            -- }
-          -- }
+          parser_config.vhdl = {
+            install_info = {
+              url = "$${treesitter-vhdl-grammar}",
+              files = {"src/parser.c"},
+              filetype = "vhdl",
+            }
+          }
 
           -- parser_config.vrl = {
             -- install_info = {
@@ -149,7 +149,7 @@
         outline-nvim
         vim-table-mode
         treesitter-powershell-grammar
-        # treesitter-vhdl-grammar
+        treesitter-vhdl-grammar
         # treesitter-vrl-grammar
       ];
 
@@ -839,7 +839,7 @@
             pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars
             ++ [
               treesitter-powershell-grammar
-              # treesitter-vhdl-grammar
+              treesitter-vhdl-grammar
               # treesitter-vrl-grammar
             ];
 
