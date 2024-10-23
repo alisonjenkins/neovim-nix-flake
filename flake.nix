@@ -349,7 +349,6 @@
         fugitive.enable = true;
         gitignore.enable = true;
         gitsigns.enable = true;
-        headlines.enable = true;
         helm.enable = true;
         helpview.enable = true;
         hmts.enable = true;
