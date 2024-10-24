@@ -1018,9 +1018,9 @@
                 vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
                   neotest-zig = vprev.neotest-zig.overrideAttrs (oldAttrs: {
                     src = prev.fetchFromGitHub {
-                      owner = "alisonjenkins";
+                      owner = "lawrence-laz";
                       repo = "neotest-zig";
-                      rev = "d6f74064f99c3814e8a907eb1b013423df57db59";
+                      rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
                       hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
                     };
                   });
