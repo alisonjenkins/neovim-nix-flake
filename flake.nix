@@ -960,6 +960,7 @@
 
         zk = {
           enable = true;
+
           settings = {
             picker = "telescope";
           };
@@ -1010,6 +1011,20 @@
                   system = final.system;
                   config.allowUnfree = true;
                 };
+              }
+            )
+            (
+              final: prev: {
+                vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
+                  zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
+                    src = prev.fetchFromGitHub {
+                      owner = "alisonjenkins";
+                      repo = "zk-nvim";
+                      rev = "dd7285eeb4cb4cf634e6431f72d9ce1482dcdbda";
+                      hash = "sha256-+vDJD9NY/FAKLoZVlZa3QT8u0YZKpFnMOG0YBgRihLI=";
+                    };
+                  });
+                });
               }
             )
           ];
