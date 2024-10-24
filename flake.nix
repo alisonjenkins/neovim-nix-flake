@@ -1028,8 +1028,8 @@
                     src = prev.fetchFromGitHub {
                       owner = "alisonjenkins";
                       repo = "zk-nvim";
-                      rev = "dd7285eeb4cb4cf634e6431f72d9ce1482dcdbda";
-                      hash = "sha256-+vDJD9NY/FAKLoZVlZa3QT8u0YZKpFnMOG0YBgRihLI=";
+                      rev = "c9a073cb16b3514cdce5e1a84c6996989e79630f";
+                      hash = "sha256-WhiwPsABFISzOlZuZYR7W2D2q4pD6VGqjIyqcrO05rc=";
                     };
                   });
                 });
