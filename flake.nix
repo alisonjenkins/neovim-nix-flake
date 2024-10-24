@@ -1016,6 +1016,14 @@
             (
               final: prev: {
                 vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
+                  neotest-zig = vprev.neotest-zig.overrideAttrs (oldAttrs: {
+                    src = prev.fetchFromGitHub {
+                      owner = "alisonjenkins";
+                      repo = "neotest-zig";
+                      rev = "5d32043cd59b47f93551040b43127a35b39bfe60";
+                      hash = "sha256-5d2g1AszbFFMxk38u03JcZg1d9WU9rfLrDVpafHM7PQ=";
+                    };
+                  });
                   zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
                     src = prev.fetchFromGitHub {
                       owner = "alisonjenkins";
