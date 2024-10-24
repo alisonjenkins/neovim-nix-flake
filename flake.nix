@@ -1020,8 +1020,8 @@
                     src = prev.fetchFromGitHub {
                       owner = "alisonjenkins";
                       repo = "neotest-zig";
-                      rev = "5d32043cd59b47f93551040b43127a35b39bfe60";
-                      hash = "sha256-5d2g1AszbFFMxk38u03JcZg1d9WU9rfLrDVpafHM7PQ=";
+                      rev = "d6f74064f99c3814e8a907eb1b013423df57db59";
+                      hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
                     };
                   });
                   zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
