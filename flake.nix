@@ -59,8 +59,6 @@
         };
       };
       editorconfig.enable = true;
-      globals.localleader = ",";
-      globals.mapleader = " ";
       luaLoader.enable = true;
       package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
 
@@ -170,6 +168,11 @@
         p.pnglatex
         p.pyperclip
       ];
+
+      globals = {
+        localleader = ",";
+        mapleader = " ";
+      };
 
       opts = {
         # foldexpr = "v:lua.vim.treesitter.foldexpr()";
