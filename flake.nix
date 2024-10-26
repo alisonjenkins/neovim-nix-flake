@@ -11,15 +11,9 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs =
-    {
-      flake-parts,
-      nixvim,
-      ...
-    }@inputs:
+  outputs = { flake-parts, nixvim, ... }@inputs:
     let
-      config =
-        { pkgs, ... }:
+      config = { pkgs, ... }:
         let
           treesitter-powershell-grammar = pkgs.tree-sitter.buildGrammar {
             language = "powershell";
@@ -30,7 +24,8 @@
               rev = "fc15514b2f1dbba9c58528d15a3708f89eda6a01";
               hash = "sha256-StVnRNM0HPevLSRDIDr+Sakjo+NqXYWPPUFjI29Cowo=";
             };
-            meta.homepage = "https://github.com/airbus-cert/tree-sitter-powershell/";
+            meta.homepage =
+              "https://github.com/airbus-cert/tree-sitter-powershell/";
           };
           treesitter-vhdl-grammar = pkgs.tree-sitter.buildGrammar {
             language = "vhdl";
@@ -58,14 +53,11 @@
         in
         {
           colorscheme = "melange";
-          colorschemes = {
-            melange = {
-              enable = true;
-            };
-          };
+          colorschemes = { melange = { enable = true; }; };
           editorconfig.enable = true;
           luaLoader.enable = true;
-          package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
+          package =
+            inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
 
           autoCmd = [
             {
@@ -100,7 +92,7 @@
 
               parser_config.powershell = {
                 install_info = {
-                  url = "$${treesitter-powershell-grammar}",
+                  url = "$''${treesitter-powershell-grammar}",
                   files = {"src/parser.c"},
                   filetype = "powershell",
                 }
@@ -108,7 +100,7 @@
 
               parser_config.vhdl = {
                 install_info = {
-                  url = "$${treesitter-vhdl-grammar}",
+                  url = "$''${treesitter-vhdl-grammar}",
                   files = {"src/parser.c"},
                   filetype = "vhdl",
                 }
@@ -116,7 +108,7 @@
 
               parser_config.vrl = {
                 install_info = {
-                  url = "$${treesitter-vrl-grammar}",
+                  url = "$''${treesitter-vrl-grammar}",
                   files = {"src/parser.c"},
                   filetype = "vrl",
                 }
@@ -143,9 +135,7 @@
             golines
             isort
             jq
-            (python3.withPackages (python-pkgs: [
-              python-pkgs.pylatexenc
-            ]))
+            (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             lldb
             nixpkgs-fmt
             nodePackages.prettier
@@ -164,12 +154,7 @@
             vim-table-mode
           ];
 
-          extraPython3Packages = p: [
-            p.numpy
-            p.plotly
-            p.pnglatex
-            p.pyperclip
-          ];
+          extraPython3Packages = p: [ p.numpy p.plotly p.pnglatex p.pyperclip ];
 
           globals = {
             localleader = ",";
@@ -209,136 +194,129 @@
             writebackup = true;
           };
 
-          keymaps =
-            [
-              {
-                mode = "n";
-                key = "K";
-                action = "<cmd>Lspsaga hover_doc<CR>";
-                options = {
-                  desc = "Show docs for hovered item.";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "<leader>;";
-                action = "<cmd>Alpha<CR>";
-                options = {
-                  desc = "Open Alpha (Splash Screen)";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "<leader>f";
-                action = "<cmd>Telescope find_files<CR>";
-                options = {
-                  desc = "Find files using Telescope";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "<leader>r";
-                action = "<cmd>Telescope frecency<CR>";
-                options = {
-                  desc = "Find frecently used files";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "-";
-                action = "<cmd>Oil<cr>";
-                options = {
-                  desc = "Open File Browser in current directory";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "]d";
-                action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
-                options = {
-                  desc = "Jump to next diagnostic";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "[d";
-                action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
-                options = {
-                  desc = "Jump to previous diagnostic";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "[r";
-                action = "<cmd>BaconPrevious<cr>";
-                options = {
-                  desc = "Bacon Previous Issue";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "]r";
-                action = "<cmd>BaconNext<cr>";
-                options = {
-                  desc = "Bacon Next Issue";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "gd";
-                action = "<cmd>Lspsaga goto_definition<cr>";
-                options = {
-                  desc = "Goto definition of highlighted item";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "gD";
-                action = "<cmd>Lspsaga goto_type_definition<cr>";
-                options = {
-                  desc = "Goto type definition of highlighted item";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "zR";
-                action = "<cmd>lua require('ufo').openAllFolds()<cr>";
-                options = {
-                  desc = "Open all folds";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "zM";
-                action = "<cmd>lua require('ufo').closeAllFolds()<cr>";
-                options = {
-                  desc = "Close all folds";
-                  silent = true;
-                };
-              }
-            ]
-            ++ import ./keymaps/buffers
-            ++ import ./keymaps/debugging
-            ++ import ./keymaps/git
-            ++ import ./keymaps/harpoon
-            ++ import ./keymaps/leap
-            ++ import ./keymaps/lsp
-            ++ import ./keymaps/rust-lsp
-            ++ import ./keymaps/search
-            ++ import ./keymaps/testing
-            ++ import ./keymaps/zk;
+          keymaps = [
+            {
+              mode = "n";
+              key = "K";
+              action = "<cmd>Lspsaga hover_doc<CR>";
+              options = {
+                desc = "Show docs for hovered item.";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "<leader>;";
+              action = "<cmd>Alpha<CR>";
+              options = {
+                desc = "Open Alpha (Splash Screen)";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "<leader>f";
+              action = "<cmd>Telescope find_files<CR>";
+              options = {
+                desc = "Find files using Telescope";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "<leader>r";
+              action = "<cmd>Telescope frecency<CR>";
+              options = {
+                desc = "Find frecently used files";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "-";
+              action = "<cmd>Oil<cr>";
+              options = {
+                desc = "Open File Browser in current directory";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "]d";
+              action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
+              options = {
+                desc = "Jump to next diagnostic";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "[d";
+              action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
+              options = {
+                desc = "Jump to previous diagnostic";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "[r";
+              action = "<cmd>BaconPrevious<cr>";
+              options = {
+                desc = "Bacon Previous Issue";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "]r";
+              action = "<cmd>BaconNext<cr>";
+              options = {
+                desc = "Bacon Next Issue";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "gd";
+              action = "<cmd>Lspsaga goto_definition<cr>";
+              options = {
+                desc = "Goto definition of highlighted item";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "gD";
+              action = "<cmd>Lspsaga goto_type_definition<cr>";
+              options = {
+                desc = "Goto type definition of highlighted item";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "zR";
+              action = "<cmd>lua require('ufo').openAllFolds()<cr>";
+              options = {
+                desc = "Open all folds";
+                silent = true;
+              };
+            }
+            {
+              mode = "n";
+              key = "zM";
+              action = "<cmd>lua require('ufo').closeAllFolds()<cr>";
+              options = {
+                desc = "Close all folds";
+                silent = true;
+              };
+            }
+          ] ++ import ./keymaps/buffers ++ import ./keymaps/debugging
+          ++ import ./keymaps/git ++ import ./keymaps/harpoon
+          ++ import ./keymaps/leap ++ import ./keymaps/lsp
+          ++ import ./keymaps/rust-lsp ++ import ./keymaps/search
+          ++ import ./keymaps/testing ++ import ./keymaps/zk;
 
           performance = {
             byteCompileLua.enable = true;
@@ -364,7 +342,7 @@
             helm.enable = true;
             helpview.enable = true;
             hmts.enable = true;
-            image.enable = true;
+            # image.enable = true;
             indent-blankline.enable = true;
             lastplace.enable = true;
             lspkind.enable = true;
@@ -419,17 +397,20 @@
                 leader_key = null;
                 save_key = "cwd";
                 global_bookmarks = false;
-                index_keys = "123456789zxcbnmZXVBNM,afghjklAFGHJKLwrtyuiopWRTYUIOP";
+                index_keys =
+                  "123456789zxcbnmZXVBNM,afghjklAFGHJKLwrtyuiopWRTYUIOP";
                 full_path_list = [ "update_stuff" ];
               };
             };
 
-            clipboard-image = {
-              enable = true;
-              clipboardPackage = (
-                if pkgs.stdenv.isLinux then pkgs.xclip else (if pkgs.stdenv.isDarwin then pkgs.pngpaste else [ ])
-              );
-            };
+            # clipboard-image = {
+            #   enable = true;
+            #   clipboardPackage =
+            #     if pkgs.stdenv.isLinux then
+            #       pkgs.xclip
+            #     else
+            #       (if pkgs.stdenv.isDarwin then pkgs.pngpaste else [ ]);
+            # };
 
             conform-nvim = {
               enable = true;
@@ -437,24 +418,11 @@
               settings = {
                 formatters_by_ft = {
                   "_" = [ "trim_whitespace" ];
-                  go = [
-                    "goimports"
-                    "golines"
-                    "gofmt"
-                    "gofumpt"
-                  ];
-                  javascript = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
+                  go = [ "goimports" "golines" "gofmt" "gofumpt" ];
+                  javascript = [ [ "prettierd" "prettier" ] ];
                   json = [ "jq" ];
                   lua = [ "stylua" ];
-                  python = [
-                    "isort"
-                    "black"
-                  ];
+                  python = [ "isort" "black" ];
                   rust = [ "rustfmt" ];
                   sh = [ "shfmt" ];
                   terraform = [ "terraform_fmt" ];
@@ -492,10 +460,13 @@
                   "<C-d>" = "cmp.mapping.scroll_docs(-4)";
                   "<C-e>" = "cmp.mapping.abort()";
                   "<C-f>" = "cmp.mapping.scroll_docs(4)";
-                  "<C-n>" = "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
+                  "<C-n>" =
+                    "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
                   "<C-u>" = "cmp.mapping.complete({})";
-                  "<C-p>" = "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
-                  "<C-y>" = ''cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c"})'';
+                  "<C-p>" =
+                    "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
+                  "<C-y>" = ''
+                    cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c"})'';
                   "<C-space>" = ''
                     cmp.mapping {
                       i = cmp.mapping.complete(),
@@ -527,9 +498,7 @@
                   { name = "nvim_lsp"; }
                   {
                     name = "luasnip";
-                    option = {
-                      show_autosnippets = true;
-                    };
+                    option = { show_autosnippets = true; };
                   }
                   { name = "path"; }
                   { name = "buffer"; }
@@ -602,7 +571,7 @@
 
             luasnip = {
               enable = true;
-              fromVscode = [ { } ];
+              fromVscode = [{ }];
             };
 
             lsp = {
@@ -726,13 +695,9 @@
               settings = {
                 log_level = "warn";
 
-                discovery = {
-                  enabled = true;
-                };
+                discovery = { enabled = true; };
 
-                output_panel = {
-                  enabled = true;
-                };
+                output_panel = { enabled = true; };
               };
             };
 
@@ -745,11 +710,7 @@
             octo = {
               enable = true;
 
-              settings = {
-                suppress_missing_scope = {
-                  projects_v2 = true;
-                };
-              };
+              settings = { suppress_missing_scope = { projects_v2 = true; }; };
             };
 
             oil = {
@@ -770,9 +731,7 @@
                   "g." = "actions.toggle_hidden";
                 };
 
-                view_options = {
-                  show_hidden = true;
-                };
+                view_options = { show_hidden = true; };
               };
             };
 
@@ -807,9 +766,7 @@
                 server = {
                   default_settings = {
                     rust-analyzer = {
-                      files = {
-                        excludeDirs = [ ".direnv" ];
-                      };
+                      files = { excludeDirs = [ ".direnv" ]; };
                     };
                   };
                 };
@@ -843,9 +800,7 @@
                 frecency = {
                   enable = true;
 
-                  settings = {
-                    db_safe_mode = false;
-                  };
+                  settings = { db_safe_mode = false; };
                 };
               };
             };
@@ -853,11 +808,12 @@
             treesitter = {
               enable = true;
 
-              grammarPackages = pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars ++ [
-                treesitter-powershell-grammar
-                treesitter-vhdl-grammar
-                treesitter-vrl-grammar
-              ];
+              grammarPackages =
+                pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars ++ [
+                  treesitter-powershell-grammar
+                  treesitter-vhdl-grammar
+                  treesitter-vrl-grammar
+                ];
 
               settings = {
                 textobjects.enable = true;
@@ -872,21 +828,15 @@
                   '';
                 };
 
-                incremental_selection = {
-                  enable = false;
-                };
+                incremental_selection = { enable = false; };
 
-                indent = {
-                  enable = false;
-                };
+                indent = { enable = false; };
               };
             };
 
             treesitter-context = {
               enable = true;
-              settings = {
-                max_lines = 4;
-              };
+              settings = { max_lines = 4; };
             };
 
             trouble = {
@@ -977,38 +927,25 @@
             zk = {
               enable = true;
 
-              settings = {
-                picker = "telescope";
-              };
+              settings = { picker = "telescope"; };
             };
           };
         };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "aarch64-darwin"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "x86_64-linux"
-      ];
+      systems =
+        [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
 
       imports = [ inputs.treefmt-nix.flakeModule ];
 
-      perSystem =
-        {
-          pkgs,
-          system,
-          ...
-        }:
+      perSystem = { pkgs, system, ... }:
         let
           nixvimLib = nixvim.lib.${system};
           nixvim' = nixvim.legacyPackages.${system};
           nvim = nixvim'.makeNixvimWithModule {
             inherit pkgs;
             module = config;
-            extraSpecialArgs =
-              {
-              };
+            extraSpecialArgs = { };
           };
         in
         {
@@ -1028,26 +965,26 @@
                 };
               })
               (final: prev: {
-                vimPlugins = prev.vimPlugins.extend (
-                  vfinal: vprev: {
-                    neotest-zig = vprev.neotest-zig.overrideAttrs (oldAttrs: {
-                      src = prev.fetchFromGitHub {
-                        owner = "lawrence-laz";
-                        repo = "neotest-zig";
-                        rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
-                        hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
-                      };
-                    });
-                    zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
-                      src = prev.fetchFromGitHub {
-                        owner = "alisonjenkins";
-                        repo = "zk-nvim";
-                        rev = "c9a073cb16b3514cdce5e1a84c6996989e79630f";
-                        hash = "sha256-WhiwPsABFISzOlZuZYR7W2D2q4pD6VGqjIyqcrO05rc=";
-                      };
-                    });
-                  }
-                );
+                vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
+                  neotest-zig = vprev.neotest-zig.overrideAttrs (oldAttrs: {
+                    src = prev.fetchFromGitHub {
+                      owner = "lawrence-laz";
+                      repo = "neotest-zig";
+                      rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
+                      hash =
+                        "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
+                    };
+                  });
+                  zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
+                    src = prev.fetchFromGitHub {
+                      owner = "alisonjenkins";
+                      repo = "zk-nvim";
+                      rev = "c9a073cb16b3514cdce5e1a84c6996989e79630f";
+                      hash =
+                        "sha256-WhiwPsABFISzOlZuZYR7W2D2q4pD6VGqjIyqcrO05rc=";
+                    };
+                  });
+                });
               })
             ];
             config = { };
