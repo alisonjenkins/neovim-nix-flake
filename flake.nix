@@ -89,6 +89,7 @@
 
             do
               local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+        # image.enable = true;
 
               parser_config.powershell = {
                 install_info = {
