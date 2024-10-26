@@ -162,7 +162,6 @@
       ];
 
       extraPython3Packages = p: [
-        # p.kaleido
         p.numpy
         p.plotly
         p.pnglatex
@@ -176,10 +175,6 @@
       };
 
       opts = {
-        # foldexpr = "v:lua.vim.treesitter.foldexpr()";
-        # foldmethod = "expr";
-        # foldmethod = "manual";
-        # foldtext = "v:lua.vim.treesitter.foldtext()";
         autoindent = true;
         backspace = "indent,eol,start";
         backup = true;
@@ -1001,9 +996,7 @@
         nvim = nixvim'.makeNixvimWithModule {
           inherit pkgs;
           module = config;
-          # You can use `extraSpecialArgs` to pass additional arguments to your module files
           extraSpecialArgs = {
-            # inherit (inputs) foo;
           };
         };
       in {
@@ -1052,7 +1045,6 @@
           config = {};
         };
         checks = {
-          # Run `nix flake check .` to verify that your config is not broken
           default = nixvimLib.check.mkTestDerivationFromNvim {
             inherit nvim;
             name = "A nixvim configuration";
@@ -1060,7 +1052,6 @@
         };
 
         packages = {
-          # Lets you run `nix run .` to start nixvim
           default = nvim;
           nvim = nvim;
         };
