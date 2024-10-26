@@ -172,6 +172,7 @@
       globals = {
         localleader = ",";
         mapleader = " ";
+        markdown_folding = true;
       };
 
       opts = {
