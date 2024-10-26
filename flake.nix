@@ -11,7 +11,11 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = { flake-parts, nixvim, ... }@inputs:
+  outputs =
+    { flake-parts
+    , nixvim
+    , ...
+    } @ inputs:
     let
       config = { pkgs, ... }:
         let
@@ -24,8 +28,7 @@
               rev = "fc15514b2f1dbba9c58528d15a3708f89eda6a01";
               hash = "sha256-StVnRNM0HPevLSRDIDr+Sakjo+NqXYWPPUFjI29Cowo=";
             };
-            meta.homepage =
-              "https://github.com/airbus-cert/tree-sitter-powershell/";
+            meta.homepage = "https://github.com/airbus-cert/tree-sitter-powershell/";
           };
           treesitter-vhdl-grammar = pkgs.tree-sitter.buildGrammar {
             language = "vhdl";
@@ -89,7 +92,6 @@
 
             do
               local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-        # image.enable = true;
 
               parser_config.powershell = {
                 install_info = {
@@ -195,129 +197,136 @@
             writebackup = true;
           };
 
-          keymaps = [
-            {
-              mode = "n";
-              key = "K";
-              action = "<cmd>Lspsaga hover_doc<CR>";
-              options = {
-                desc = "Show docs for hovered item.";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "<leader>;";
-              action = "<cmd>Alpha<CR>";
-              options = {
-                desc = "Open Alpha (Splash Screen)";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "<leader>f";
-              action = "<cmd>Telescope find_files<CR>";
-              options = {
-                desc = "Find files using Telescope";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "<leader>r";
-              action = "<cmd>Telescope frecency<CR>";
-              options = {
-                desc = "Find frecently used files";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "-";
-              action = "<cmd>Oil<cr>";
-              options = {
-                desc = "Open File Browser in current directory";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "]d";
-              action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
-              options = {
-                desc = "Jump to next diagnostic";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "[d";
-              action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
-              options = {
-                desc = "Jump to previous diagnostic";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "[r";
-              action = "<cmd>BaconPrevious<cr>";
-              options = {
-                desc = "Bacon Previous Issue";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "]r";
-              action = "<cmd>BaconNext<cr>";
-              options = {
-                desc = "Bacon Next Issue";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "gd";
-              action = "<cmd>Lspsaga goto_definition<cr>";
-              options = {
-                desc = "Goto definition of highlighted item";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "gD";
-              action = "<cmd>Lspsaga goto_type_definition<cr>";
-              options = {
-                desc = "Goto type definition of highlighted item";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "zR";
-              action = "<cmd>lua require('ufo').openAllFolds()<cr>";
-              options = {
-                desc = "Open all folds";
-                silent = true;
-              };
-            }
-            {
-              mode = "n";
-              key = "zM";
-              action = "<cmd>lua require('ufo').closeAllFolds()<cr>";
-              options = {
-                desc = "Close all folds";
-                silent = true;
-              };
-            }
-          ] ++ import ./keymaps/buffers ++ import ./keymaps/debugging
-          ++ import ./keymaps/git ++ import ./keymaps/harpoon
-          ++ import ./keymaps/leap ++ import ./keymaps/lsp
-          ++ import ./keymaps/rust-lsp ++ import ./keymaps/search
-          ++ import ./keymaps/testing ++ import ./keymaps/zk;
+          keymaps =
+            [
+              {
+                mode = "n";
+                key = "K";
+                action = "<cmd>Lspsaga hover_doc<CR>";
+                options = {
+                  desc = "Show docs for hovered item.";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "<leader>;";
+                action = "<cmd>Alpha<CR>";
+                options = {
+                  desc = "Open Alpha (Splash Screen)";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "<leader>f";
+                action = "<cmd>Telescope find_files<CR>";
+                options = {
+                  desc = "Find files using Telescope";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "<leader>r";
+                action = "<cmd>Telescope frecency<CR>";
+                options = {
+                  desc = "Find frecently used files";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "-";
+                action = "<cmd>Oil<cr>";
+                options = {
+                  desc = "Open File Browser in current directory";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "]d";
+                action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
+                options = {
+                  desc = "Jump to next diagnostic";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "[d";
+                action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
+                options = {
+                  desc = "Jump to previous diagnostic";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "[r";
+                action = "<cmd>BaconPrevious<cr>";
+                options = {
+                  desc = "Bacon Previous Issue";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "]r";
+                action = "<cmd>BaconNext<cr>";
+                options = {
+                  desc = "Bacon Next Issue";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "gd";
+                action = "<cmd>Lspsaga goto_definition<cr>";
+                options = {
+                  desc = "Goto definition of highlighted item";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "gD";
+                action = "<cmd>Lspsaga goto_type_definition<cr>";
+                options = {
+                  desc = "Goto type definition of highlighted item";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "zR";
+                action = "<cmd>lua require('ufo').openAllFolds()<cr>";
+                options = {
+                  desc = "Open all folds";
+                  silent = true;
+                };
+              }
+              {
+                mode = "n";
+                key = "zM";
+                action = "<cmd>lua require('ufo').closeAllFolds()<cr>";
+                options = {
+                  desc = "Close all folds";
+                  silent = true;
+                };
+              }
+            ]
+            ++ import ./keymaps/buffers
+            ++ import ./keymaps/debugging
+            ++ import ./keymaps/git
+            ++ import ./keymaps/harpoon
+            ++ import ./keymaps/leap
+            ++ import ./keymaps/lsp
+            ++ import ./keymaps/rust-lsp
+            ++ import ./keymaps/search
+            ++ import ./keymaps/testing
+            ++ import ./keymaps/zk;
 
           performance = {
             byteCompileLua.enable = true;
@@ -398,8 +407,7 @@
                 leader_key = null;
                 save_key = "cwd";
                 global_bookmarks = false;
-                index_keys =
-                  "123456789zxcbnmZXVBNM,afghjklAFGHJKLwrtyuiopWRTYUIOP";
+                index_keys = "123456789zxcbnmZXVBNM,afghjklAFGHJKLwrtyuiopWRTYUIOP";
                 full_path_list = [ "update_stuff" ];
               };
             };
@@ -461,11 +469,9 @@
                   "<C-d>" = "cmp.mapping.scroll_docs(-4)";
                   "<C-e>" = "cmp.mapping.abort()";
                   "<C-f>" = "cmp.mapping.scroll_docs(4)";
-                  "<C-n>" =
-                    "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
+                  "<C-n>" = "cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert }";
                   "<C-u>" = "cmp.mapping.complete({})";
-                  "<C-p>" =
-                    "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
+                  "<C-p>" = "cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert }";
                   "<C-y>" = ''
                     cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }, {"i", "c"})'';
                   "<C-space>" = ''
@@ -810,7 +816,8 @@
               enable = true;
 
               grammarPackages =
-                pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars ++ [
+                pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars
+                ++ [
                   treesitter-powershell-grammar
                   treesitter-vhdl-grammar
                   treesitter-vrl-grammar
@@ -934,12 +941,15 @@
         };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems =
-        [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
+      systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
 
       imports = [ inputs.treefmt-nix.flakeModule ];
 
-      perSystem = { pkgs, system, ... }:
+      perSystem =
+        { pkgs
+        , system
+        , ...
+        }:
         let
           nixvimLib = nixvim.lib.${system};
           nixvim' = nixvim.legacyPackages.${system};
@@ -972,8 +982,7 @@
                       owner = "lawrence-laz";
                       repo = "neotest-zig";
                       rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
-                      hash =
-                        "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
+                      hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
                     };
                   });
                   zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
@@ -981,8 +990,7 @@
                       owner = "alisonjenkins";
                       repo = "zk-nvim";
                       rev = "c9a073cb16b3514cdce5e1a84c6996989e79630f";
-                      hash =
-                        "sha256-WhiwPsABFISzOlZuZYR7W2D2q4pD6VGqjIyqcrO05rc=";
+                      hash = "sha256-WhiwPsABFISzOlZuZYR7W2D2q4pD6VGqjIyqcrO05rc=";
                     };
                   });
                 });
@@ -990,6 +998,7 @@
             ];
             config = { };
           };
+
           checks = {
             default = nixvimLib.check.mkTestDerivationFromNvim {
               inherit nvim;

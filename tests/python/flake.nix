@@ -11,91 +11,97 @@
     };
   };
 
-  outputs = {flake-parts, ...} @ inputs:
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = let
-      in [
-        "aarch64-darwin"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "x86_64-linux"
-      ];
-
-      perSystem = {
-        pkgs,
-        system,
-        ...
-      }: let
-        pythonTestLintPkgs = python-pkgs: [
-          python-pkgs.black # Linter
-          python-pkgs.nox # Test + Linter runner
-          python-pkgs.pytest # Testing
+  outputs = { flake-parts, ... } @ inputs:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems =
+        let
+        in [
+          "aarch64-darwin"
+          "aarch64-linux"
+          "x86_64-darwin"
+          "x86_64-linux"
         ];
 
-        devShell = pkgs.mkShell {
-          packages = with pkgs; [
-            alejandra
-            pythonTestEnv
-            watchexec
-            just
+      perSystem =
+        { pkgs
+        , system
+        , ...
+        }:
+        let
+          pythonTestLintPkgs = python-pkgs: [
+            python-pkgs.black # Linter
+            python-pkgs.nox # Test + Linter runner
+            python-pkgs.pytest # Testing
           ];
-        };
 
-        example-python-project = inputs.pyproject-nix.lib.project.loadPyproject {
-          # Read & unmarshal pyproject.toml relative to this project root.
-          # projectRoot is also used to set `src` for renderers such as buildPythonPackage.
-          projectRoot = ./.;
-        };
+          devShell = pkgs.mkShell {
+            packages = with pkgs; [
+              alejandra
+              pythonTestEnv
+              watchexec
+              just
+            ];
+          };
 
-        arg = example-python-project.renderers.withPackages {
-          inherit python;
-        };
-        testing-arg = example-python-project.renderers.withPackages {
-          inherit python;
-          extraPackages = pythonTestLintPkgs;
-        };
+          example-python-project = inputs.pyproject-nix.lib.project.loadPyproject {
+            # Read & unmarshal pyproject.toml relative to this project root.
+            # projectRoot is also used to set `src` for renderers such as buildPythonPackage.
+            projectRoot = ./.;
+          };
 
-        pythonEnv = python.withPackages arg;
-        pythonTestEnv = python.withPackages testing-arg;
-        python = pkgs.python3;
+          arg = example-python-project.renderers.withPackages {
+            inherit python;
+          };
+          testing-arg = example-python-project.renderers.withPackages {
+            inherit python;
+            extraPackages = pythonTestLintPkgs;
+          };
 
-        checks = {
-          alejandra-check =
-            pkgs.runCommandLocal "alejandra-check" {
-              src = ./.;
+          pythonEnv = python.withPackages arg;
+          pythonTestEnv = python.withPackages testing-arg;
+          python = pkgs.python3;
 
-              nativeBuildInputs = [
-                pkgs.alejandra
-              ];
-            } ''
-              cd "$src" && alejandra --check .
-              mkdir "$out"
-            '';
+          checks = {
+            alejandra-check =
+              pkgs.runCommandLocal "alejandra-check"
+                {
+                  src = ./.;
 
-          nox-check =
-            pkgs.runCommandLocal "nox-check" {
-              src = ./.;
+                  nativeBuildInputs = [
+                    pkgs.alejandra
+                  ];
+                } ''
+                cd "$src" && alejandra --check .
+                mkdir "$out"
+              '';
 
-              nativeBuildInputs = [
-                pythonTestEnv
-              ];
-            } ''
-              cd "$src" && nox
-              mkdir "$out"
-            '';
-        };
-      in {
-        checks = checks;
+            nox-check =
+              pkgs.runCommandLocal "nox-check"
+                {
+                  src = ./.;
 
-        devShells.default = devShell;
-
-        packages.default = let
-          attrs = example-python-project.renderers.buildPythonPackage {inherit python;};
+                  nativeBuildInputs = [
+                    pythonTestEnv
+                  ];
+                } ''
+                cd "$src" && nox
+                mkdir "$out"
+              '';
+          };
         in
-          python.pkgs.buildPythonPackage (attrs
-            // {
+        {
+          checks = checks;
+
+          devShells.default = devShell;
+
+          packages.default =
+            let
+              attrs = example-python-project.renderers.buildPythonPackage { inherit python; };
+            in
+            python.pkgs.buildPythonPackage (attrs
+              // {
               # env.CUSTOM_ENVVAR = "hello";
             });
-      };
+        };
     };
 }
