@@ -1,7 +1,7 @@
 [
   {
     mode = "n";
-    key = "<leader>lrd";
+    key = "<leader>lRd";
     action = "<cmd>RustLsp debug<cr>";
     options = {
       desc = "RustLsp Debug";
@@ -10,7 +10,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrD";
+    key = "<leader>lRD";
     action = "<cmd>RustLsp debuggables<cr>";
     options = {
       desc = "RustLsp Debuggables";
@@ -19,7 +19,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrr";
+    key = "<leader>lRr";
     action = "<cmd>RustLsp run<cr>";
     options = {
       desc = "RustLsp Run";
@@ -28,7 +28,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrR";
+    key = "<leader>lRR";
     action = "<cmd>RustLsp runnables<cr>";
     options = {
       desc = "RustLsp Runnables";
@@ -37,7 +37,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrt";
+    key = "<leader>lRt";
     action = "<cmd>RustLsp testables<cr>";
     options = {
       desc = "RustLsp testables";
@@ -46,7 +46,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrmu";
+    key = "<leader>lRmu";
     action = "<cmd>RustLsp moveItem up<cr>";
     options = {
       desc = "RustLsp move up";
@@ -55,7 +55,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrmd";
+    key = "<leader>lRmd";
     action = "<cmd>RustLsp moveItem down<cr>";
     options = {
       desc = "RustLsp move down";
@@ -64,7 +64,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lra";
+    key = "<leader>lRa";
     action = "<cmd>RustLsp codeAction<cr>";
     options = {
       desc = "RustLsp code action";
@@ -73,7 +73,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrh";
+    key = "<leader>lRh";
     action = "<cmd>RustLsp hover actions<cr>";
     options = {
       desc = "RustLsp hover actions";
@@ -82,7 +82,7 @@
   }
   {
     mode = "v";
-    key = "<leader>lrh";
+    key = "<leader>lRh";
     action = "<cmd>RustLsp hover range<cr>";
     options = {
       desc = "RustLsp hover range";
@@ -91,7 +91,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lre";
+    key = "<leader>lRe";
     action = "<cmd>RustLsp explainError cycle<cr>";
     options = {
       desc = "RustLsp explain error (cycle)";
@@ -100,7 +100,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrE";
+    key = "<leader>lRE";
     action = "<cmd>RustLsp explainError current<cr>";
     options = {
       desc = "RustLsp explain error (current)";
@@ -109,7 +109,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lri";
+    key = "<leader>lRi";
     action = "<cmd>RustLsp renderDiagnostic cycle<cr>";
     options = {
       desc = "RustLsp render diagnostic (cycle)";
@@ -118,7 +118,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrI";
+    key = "<leader>lRI";
     action = "<cmd>RustLsp renderDiagnostic current<cr>";
     options = {
       desc = "RustLsp render diagnostic (current)";
@@ -127,7 +127,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrc";
+    key = "<leader>lRc";
     action = "<cmd>RustLsp openCargo<cr>";
     options = {
       desc = "RustLsp open cargo";
@@ -136,7 +136,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lro";
+    key = "<leader>lRo";
     action = "<cmd>RustLsp openDocs<cr>";
     options = {
       desc = "RustLsp open documentation";
@@ -145,7 +145,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrp";
+    key = "<leader>lRp";
     action = "<cmd>RustLsp parentModule<cr>";
     options = {
       desc = "RustLsp open parent module";
@@ -154,7 +154,7 @@
   }
   {
     mode = "n";
-    key = "<leader>lrj";
+    key = "<leader>lRj";
     action = "<cmd>RustLsp joinLines<cr>";
     options = {
       desc = "RustLsp joinLines";
@@ -163,7 +163,7 @@
   }
   {
     mode = "v";
-    key = "<leader>lrj";
+    key = "<leader>lRj";
     action = "<cmd>RustLsp joinLines<cr>";
     options = {
       desc = "RustLsp joinLines";
@@ -172,7 +172,7 @@
   }
   {
     mode = "v";
-    key = "<leader>lrg";
+    key = "<leader>lRg";
     action = "<cmd>RustLsp crateGraph<cr>";
     options = {
       desc = "RustLsp crate graph";
@@ -181,7 +181,7 @@
   }
   {
     mode = "v";
-    key = "<leader>lrg";
+    key = "<leader>lRg";
     action = "<cmd>RustLsp crateGraph<cr>";
     options = {
       desc = "RustLsp crate graph";
