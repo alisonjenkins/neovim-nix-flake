@@ -910,7 +910,7 @@
                     desc = "LSP Peek";
                   }
                   {
-                    __unkeyed-1 = "<leader>lr";
+                    __unkeyed-1 = "<leader>lR";
                     desc = "Rust LSP";
                   }
                   {
