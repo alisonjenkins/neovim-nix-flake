@@ -592,6 +592,7 @@
                 cssls.enable = true;
                 dockerls.enable = true;
                 emmet_ls.enable = true;
+                golangci_lint_ls.enable = true;
                 gopls.enable = true;
                 html.enable = true;
                 java_language_server.enable = false;
