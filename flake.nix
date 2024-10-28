@@ -634,7 +634,7 @@
 
               modules = {
                 ai = {
-                  n_lines = 50;
+                  n_lines = 400;
                   search_method = "cover_or_next";
                 };
 
