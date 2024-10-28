@@ -334,6 +334,7 @@
           };
 
           plugins = {
+            # image.enable = true;
             bacon.enable = true;
             bufdelete.enable = true;
             ccc.enable = true;
@@ -352,7 +353,6 @@
             helm.enable = true;
             helpview.enable = true;
             hmts.enable = true;
-            # image.enable = true;
             indent-blankline.enable = true;
             lastplace.enable = true;
             lspkind.enable = true;
