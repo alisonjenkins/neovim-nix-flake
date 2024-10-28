@@ -133,12 +133,12 @@
 
           extraPackages = with pkgs; [
             # alejandra
+            (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             black
             gofumpt
             golines
             isort
             jq
-            (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             lldb
             nixpkgs-fmt
             nodePackages.prettier
