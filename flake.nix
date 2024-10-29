@@ -136,6 +136,7 @@
             (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             black
             gofumpt
+            golangci-lint
             golines
             isort
             jq
