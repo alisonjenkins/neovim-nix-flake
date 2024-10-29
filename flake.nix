@@ -413,8 +413,6 @@
               enable = true;
 
               settings = {
-                keymap = "default";
-
                 accept = {
                   auto_brackets = {
                     enabled = true;
