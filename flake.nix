@@ -54,7 +54,6 @@
           };
         in
         {
-          colorscheme = "melange";
           colorschemes = { melange = { enable = true; }; };
           editorconfig.enable = true;
           luaLoader.enable = true;
@@ -115,7 +114,10 @@
               }
             end
 
+            require('bamboo').setup({})
             require('outline').setup({})
+
+            vim.cmd [[colorscheme bamboo-multiplex]]
           '';
 
           extraFiles = {
@@ -155,6 +157,7 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
+            bamboo-nvim
             lazydev-nvim
             nvim-jdtls
             outline-nvim
