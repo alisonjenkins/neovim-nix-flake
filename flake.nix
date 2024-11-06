@@ -1012,6 +1012,14 @@
               })
               (final: prev: {
                 vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
+                  # fastaction-nvim = vprev.fastaction-nvim.overrideAttrs (oldAttrs: {
+                  #   src = prev.fetchFromGitHub {
+                  #     owner = "alisonjenkins";
+                  #     repo = "fastaction.nvim";
+                  #     rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
+                  #     hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
+                  #   };
+                  # });
                   neotest-zig = vprev.neotest-zig.overrideAttrs (oldAttrs: {
                     src = prev.fetchFromGitHub {
                       owner = "lawrence-laz";
