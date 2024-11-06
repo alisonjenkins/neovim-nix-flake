@@ -129,6 +129,14 @@
               }
               require('jdtls').start_or_attach(config)
             '';
+            "ftplugin/lua.lua".text = ''
+              local lazydev = require('lazydev')
+              lazydev.setup({
+                enabled = true
+              })
+
+              lazydev.find_workspace(buf)
+            '';
           };
 
           extraPackages = with pkgs; [
@@ -150,6 +158,7 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
+            lazydev-nvim
             nvim-jdtls
             outline-nvim
             treesitter-powershell-grammar
