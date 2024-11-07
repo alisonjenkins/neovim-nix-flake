@@ -367,7 +367,7 @@
               // (import ./plugin-config/cmp)
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/crates-nvim)
-              // (import ./plugin-config/dap {inherit pkgs;})
+              // (import ./plugin-config/dap { inherit pkgs; })
               // (import ./plugin-config/firenvim)
               // (import ./plugin-config/git-linker)
               // (import ./plugin-config/git-worktree)
