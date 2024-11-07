@@ -1,0 +1,6 @@
+{
+  luasnip = {
+    enable = true;
+    fromVscode = [{ }];
+  };
+}
