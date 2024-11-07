@@ -373,7 +373,6 @@
             lastplace.enable = true;
             lspkind.enable = true;
             lspsaga.enable = true;
-            lualine.enable = true;
             markdown-preview.enable = true;
             molten.enable = true;
             navic.enable = true;
@@ -858,7 +857,7 @@
 
               grammarPackages =
                 pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars
-                ++ [
+                  ++ [
                   treesitter-powershell-grammar
                   treesitter-vhdl-grammar
                   treesitter-vrl-grammar
@@ -978,7 +977,7 @@
 
               settings = { picker = "telescope"; };
             };
-          };
+          } // (import ./plugin-config/lualine/default.nix);
         };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
