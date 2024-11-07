@@ -3,6 +3,7 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
+    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.05";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -21,6 +22,8 @@
           colorschemes = { melange = { enable = true; }; };
           editorconfig.enable = true;
           luaLoader.enable = true;
+          package =
+            inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
 
           autoCmd = [
             {
