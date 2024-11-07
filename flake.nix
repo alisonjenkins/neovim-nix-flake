@@ -114,10 +114,16 @@
               }
             end
 
-            require('bamboo').setup({})
-            require('outline').setup({})
+            require('bamboo').setup({
+              style = "multiplex",
+              transparent = true,
 
-            vim.cmd [[colorscheme bamboo-multiplex]]
+              lualine = {
+                transparent = true,
+              };
+            })
+            require('bamboo').load()
+            require('outline').setup({})
           '';
 
           extraFiles = {
