@@ -375,6 +375,7 @@
               // (import ./plugin-config/leap)
               // (import ./plugin-config/lsp)
               // (import ./plugin-config/lualine)
+              // (import ./plugin-config/luasnip)
               // (import ./plugin-config/mini)
               // (import ./plugin-config/navbuddy)
               // (import ./plugin-config/neotest)
