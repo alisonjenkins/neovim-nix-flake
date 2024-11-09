@@ -131,6 +131,7 @@
 
           extraPlugins = with pkgs.vimPlugins; [
             bamboo-nvim
+            git-worktree-nvim
             lazydev-nvim
             nvim-jdtls
             outline-nvim
@@ -363,36 +364,35 @@
           }
           // (
             (import ./plugin-config/alpha)
-              // (import ./plugin-config/arrow)
-              // (import ./plugin-config/cmp)
-              // (import ./plugin-config/conform-nvim)
-              // (import ./plugin-config/crates-nvim)
-              // (import ./plugin-config/dap { inherit pkgs; })
-              // (import ./plugin-config/firenvim)
-              // (import ./plugin-config/git-linker)
-              // (import ./plugin-config/git-worktree)
-              // (import ./plugin-config/harpoon)
-              // (import ./plugin-config/leap)
-              // (import ./plugin-config/lsp)
-              // (import ./plugin-config/lualine)
-              // (import ./plugin-config/luasnip)
-              // (import ./plugin-config/mini)
-              // (import ./plugin-config/navbuddy)
-              // (import ./plugin-config/neotest)
-              // (import ./plugin-config/notify)
-              // (import ./plugin-config/octo)
-              // (import ./plugin-config/oil)
-              // (import ./plugin-config/project-nvim)
-              // (import ./plugin-config/rustaceanvim { inherit pkgs; })
-              // (import ./plugin-config/smartcolumn)
-              // (import ./plugin-config/telescope)
-              // (import ./plugin-config/treesitter { inherit pkgs; })
-              // (import ./plugin-config/treesitter-context)
-              // (import ./plugin-config/trouble)
-              // (import ./plugin-config/which-key)
-              // (import ./plugin-config/zk)
+            // (import ./plugin-config/arrow)
+            // (import ./plugin-config/cmp)
+            // (import ./plugin-config/conform-nvim)
+            // (import ./plugin-config/crates-nvim)
+            // (import ./plugin-config/dap { inherit pkgs; })
+            // (import ./plugin-config/firenvim)
+            // (import ./plugin-config/git-linker)
+            // (import ./plugin-config/harpoon)
+            // (import ./plugin-config/leap)
+            // (import ./plugin-config/lsp)
+            // (import ./plugin-config/lualine)
+            // (import ./plugin-config/luasnip)
+            // (import ./plugin-config/mini)
+            // (import ./plugin-config/navbuddy)
+            // (import ./plugin-config/neotest)
+            // (import ./plugin-config/notify)
+            // (import ./plugin-config/octo)
+            // (import ./plugin-config/oil)
+            // (import ./plugin-config/project-nvim)
+            // (import ./plugin-config/rustaceanvim { inherit pkgs; })
+            // (import ./plugin-config/smartcolumn)
+            // (import ./plugin-config/telescope)
+            // (import ./plugin-config/treesitter { inherit pkgs; })
+            // (import ./plugin-config/treesitter-context)
+            // (import ./plugin-config/trouble)
+            // (import ./plugin-config/which-key)
+            // (import ./plugin-config/zk)
           );
-        };
+        } // (import ./plugin-config/git-worktree { inherit pkgs; });
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
@@ -431,6 +431,14 @@
               })
               (final: prev: {
                 vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
+                  git-worktree-nvim = vprev.git-worktree-nvim.overrideAttrs (oldAttrs: {
+                    src = prev.fetchFromGitHub {
+                      owner = "polarmutex";
+                      repo = "git-worktree.nvim";
+                      rev = "bac72c240b6bf1662296c31546c6dad89b4b7a3c";
+                      hash = "sha256-Uvcihnc/+v4svCrAO2ds0XvNmqO801ILWu8sbh/znf4=";
+                    };
+                  });
                   # fastaction-nvim = vprev.fastaction-nvim.overrideAttrs (oldAttrs: {
                   #   src = prev.fetchFromGitHub {
                   #     owner = "alisonjenkins";
