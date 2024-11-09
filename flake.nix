@@ -91,6 +91,20 @@
             })
             require('bamboo').load()
             require('outline').setup({})
+
+            local Hooks = require('git-worktree.hooks')
+            local config = require('git-worktree.config')
+            local update_on_switch = Hooks.builtins.update_current_buffer_on_switch
+
+            Hooks.register(Hooks.type.SWITCH, function (path, prev_path)
+            vim.notify('Moved from ' .. prev_path .. ' to ' .. path)
+            update_on_switch(path, prev_path)
+            end)
+
+            Hooks.register(Hooks.type.DELETE, function ()
+            vim.cmd(config.update_on_change_command)
+            end)
+            require('telescope').load_extension('git_worktree')
           '';
 
           extraFiles = {
@@ -364,35 +378,35 @@
           }
           // (
             (import ./plugin-config/alpha)
-            // (import ./plugin-config/arrow)
-            // (import ./plugin-config/cmp)
-            // (import ./plugin-config/conform-nvim)
-            // (import ./plugin-config/crates-nvim)
-            // (import ./plugin-config/dap { inherit pkgs; })
-            // (import ./plugin-config/firenvim)
-            // (import ./plugin-config/git-linker)
-            // (import ./plugin-config/harpoon)
-            // (import ./plugin-config/leap)
-            // (import ./plugin-config/lsp)
-            // (import ./plugin-config/lualine)
-            // (import ./plugin-config/luasnip)
-            // (import ./plugin-config/mini)
-            // (import ./plugin-config/navbuddy)
-            // (import ./plugin-config/neotest)
-            // (import ./plugin-config/notify)
-            // (import ./plugin-config/octo)
-            // (import ./plugin-config/oil)
-            // (import ./plugin-config/project-nvim)
-            // (import ./plugin-config/rustaceanvim { inherit pkgs; })
-            // (import ./plugin-config/smartcolumn)
-            // (import ./plugin-config/telescope)
-            // (import ./plugin-config/treesitter { inherit pkgs; })
-            // (import ./plugin-config/treesitter-context)
-            // (import ./plugin-config/trouble)
-            // (import ./plugin-config/which-key)
-            // (import ./plugin-config/zk)
+              // (import ./plugin-config/arrow)
+              // (import ./plugin-config/cmp)
+              // (import ./plugin-config/conform-nvim)
+              // (import ./plugin-config/crates-nvim)
+              // (import ./plugin-config/dap { inherit pkgs; })
+              // (import ./plugin-config/firenvim)
+              // (import ./plugin-config/git-linker)
+              // (import ./plugin-config/harpoon)
+              // (import ./plugin-config/leap)
+              // (import ./plugin-config/lsp)
+              // (import ./plugin-config/lualine)
+              // (import ./plugin-config/luasnip)
+              // (import ./plugin-config/mini)
+              // (import ./plugin-config/navbuddy)
+              // (import ./plugin-config/neotest)
+              // (import ./plugin-config/notify)
+              // (import ./plugin-config/octo)
+              // (import ./plugin-config/oil)
+              // (import ./plugin-config/project-nvim)
+              // (import ./plugin-config/rustaceanvim { inherit pkgs; })
+              // (import ./plugin-config/smartcolumn)
+              // (import ./plugin-config/telescope)
+              // (import ./plugin-config/treesitter { inherit pkgs; })
+              // (import ./plugin-config/treesitter-context)
+              // (import ./plugin-config/trouble)
+              // (import ./plugin-config/which-key)
+              // (import ./plugin-config/zk)
           );
-        } // (import ./plugin-config/git-worktree { inherit pkgs; });
+        };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
