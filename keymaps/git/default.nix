@@ -235,8 +235,8 @@
   }
   {
     mode = "n";
-    key = "<leader>gws";
-    action = "<cmd>Telescope git_worktree git_worktrees<CR>";
+    key = "<leader>gww";
+    action = "<cmd>Telescope git_worktree<CR>";
     options = {
       desc = "Open Git Worktrees in Telescope";
       silent = true;
