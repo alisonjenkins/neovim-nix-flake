@@ -1,6 +1,6 @@
 {
   leap = {
-    enable = true;
+    enable = false;
     addDefaultMappings = false;
   };
 }

@@ -316,7 +316,6 @@
             ++ import ./keymaps/debugging
             ++ import ./keymaps/git
             ++ import ./keymaps/harpoon
-            ++ import ./keymaps/leap
             ++ import ./keymaps/lsp
             ++ import ./keymaps/rust-lsp
             ++ import ./keymaps/search
