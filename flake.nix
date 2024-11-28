@@ -356,7 +356,6 @@
             molten.enable = true;
             navic.enable = true;
             nix.enable = true;
-            noice.enable = true;
             numbertoggle.enable = true;
             nvim-ufo.enable = true;
             rainbow-delimiters.enable = true;
@@ -394,6 +393,7 @@
               // (import ./plugin-config/mini)
               // (import ./plugin-config/navbuddy)
               // (import ./plugin-config/neotest)
+              // (import ./plugin-config/noice { inherit pkgs; })
               // (import ./plugin-config/notify)
               // (import ./plugin-config/octo)
               // (import ./plugin-config/oil)
