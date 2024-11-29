@@ -344,7 +344,7 @@
             fugitive.enable = true;
             gitignore.enable = true;
             gitsigns.enable = true;
-            hardtime.enable = true;
+            hardtime.enable = false;
             helm.enable = true;
             helpview.enable = true;
             hmts.enable = true;
