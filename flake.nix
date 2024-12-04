@@ -392,6 +392,7 @@
               // (import ./plugin-config/luasnip)
               // (import ./plugin-config/mini)
               // (import ./plugin-config/navbuddy)
+              // (import ./plugin-config/neorg { inherit pkgs; })
               // (import ./plugin-config/neotest)
               // (import ./plugin-config/noice { inherit pkgs; })
               // (import ./plugin-config/notify)
