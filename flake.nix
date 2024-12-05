@@ -58,7 +58,7 @@
 
               parser_config.powershell = {
                 install_info = {
-                  url = "$''${treesitter-powershell-grammar}",
+                  url = treesitter-powershell-grammar,
                   files = {"src/parser.c"},
                   filetype = "powershell",
                 }
@@ -66,7 +66,7 @@
 
               parser_config.vhdl = {
                 install_info = {
-                  url = "$''${treesitter-vhdl-grammar}",
+                  url = treesitter-vhdl-grammar,
                   files = {"src/parser.c"},
                   filetype = "vhdl",
                 }
@@ -74,7 +74,7 @@
 
               parser_config.vrl = {
                 install_info = {
-                  url = "$''${treesitter-vrl-grammar}",
+                  url = treesitter-vrl-grammar,
                   files = {"src/parser.c"},
                   filetype = "vrl",
                 }
