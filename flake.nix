@@ -380,6 +380,7 @@
             (import ./plugin-config/alpha)
               // (import ./plugin-config/arrow)
               // (import ./plugin-config/cmp)
+              // (import ./plugin-config/codecompanion)
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/crates-nvim)
               // (import ./plugin-config/dap { inherit pkgs; })
