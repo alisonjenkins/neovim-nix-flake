@@ -53,33 +53,33 @@
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
             vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
 
-            do
-              local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-
-              parser_config.powershell = {
-                install_info = {
-                  url = "$''${treesitter-powershell-grammar}",
-                  files = {"src/parser.c"},
-                  filetype = "powershell",
-                }
-              }
-
-              parser_config.vhdl = {
-                install_info = {
-                  url = "$''${treesitter-vhdl-grammar}",
-                  files = {"src/parser.c"},
-                  filetype = "vhdl",
-                }
-              }
-
-              parser_config.vrl = {
-                install_info = {
-                  url = "$''${treesitter-vrl-grammar}",
-                  files = {"src/parser.c"},
-                  filetype = "vrl",
-                }
-              }
-            end
+            -- do
+            --   local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+            --
+            --   parser_config.powershell = {
+            --     install_info = {
+            --       url = treesitter-powershell-grammar,
+            --       files = {"src/parser.c"},
+            --       filetype = "powershell",
+            --     }
+            --   }
+            --
+            --   parser_config.vhdl = {
+            --     install_info = {
+            --       url = treesitter-vhdl-grammar,
+            --       files = {"src/parser.c"},
+            --       filetype = "vhdl",
+            --     }
+            --   }
+            --
+            --   parser_config.vrl = {
+            --     install_info = {
+            --       url = treesitter-vrl-grammar,
+            --       files = {"src/parser.c"},
+            --       filetype = "vrl",
+            --     }
+            --   }
+            -- end
 
             require('bamboo').setup({
               style = "multiplex",
@@ -380,6 +380,7 @@
             (import ./plugin-config/alpha)
               // (import ./plugin-config/arrow)
               // (import ./plugin-config/cmp)
+              // (import ./plugin-config/codecompanion)
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/crates-nvim)
               // (import ./plugin-config/dap { inherit pkgs; })
@@ -392,6 +393,7 @@
               // (import ./plugin-config/luasnip)
               // (import ./plugin-config/mini)
               // (import ./plugin-config/navbuddy)
+              // (import ./plugin-config/neorg { inherit pkgs; })
               // (import ./plugin-config/neotest)
               // (import ./plugin-config/noice { inherit pkgs; })
               // (import ./plugin-config/notify)
