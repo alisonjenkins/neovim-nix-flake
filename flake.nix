@@ -308,7 +308,6 @@
             # image.enable = true;
             bacon.enable = true;
             bufdelete.enable = true;
-            ccc.enable = true;
             cmp-cmdline.enable = true;
             cmp-dap.enable = true;
             cmp-nvim-lsp.enable = true;
@@ -355,6 +354,7 @@
           // (
             (import ./plugin-config/alpha)
               // (import ./plugin-config/arrow)
+              // (import ./plugin-config/ccc)
               // (import ./plugin-config/cmp)
               // (import ./plugin-config/codecompanion)
               // (import ./plugin-config/conform-nvim)
