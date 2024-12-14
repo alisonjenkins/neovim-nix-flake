@@ -19,5 +19,14 @@
 
       output_panel = { enabled = true; };
     };
+
+    # lazyLoad = {
+    #   settings = {
+    #     cmd = [
+    #       "Neotest"
+    #       "NeotestJava"
+    #     ];
+    #   };
+    # };
   };
 }
