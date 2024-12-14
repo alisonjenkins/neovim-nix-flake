@@ -41,6 +41,11 @@
               pattern = "helm";
               command = "LspRestart";
             }
+            {
+              event = [ "BufRead" "BufNewFile" ];
+              pattern = [ "*.tf" " *.tfvars" " *.hcl" ];
+              command = "set filetype=terraform";
+            }
           ];
 
           extraConfigLua = ''
