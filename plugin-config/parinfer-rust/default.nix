@@ -1,0 +1,3 @@
+{
+  parinfer-rust.enable = true;
+}
