@@ -43,5 +43,16 @@
         };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "CodeCompanion"
+          "CodeCompanionActions"
+          "CodeCompanionChat"
+          "CodeCompanionCmd"
+        ];
+      };
+    };
   };
 }
