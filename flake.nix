@@ -337,7 +337,6 @@
             nvim-ufo.enable = true;
             rainbow-delimiters.enable = true;
             render-markdown.enable = true;
-            schemastore.enable = true;
             sleuth.enable = true;
             specs.enable = false;
             tmux-navigator.enable = true;
@@ -378,6 +377,7 @@
               // (import ./plugin-config/oil)
               // (import ./plugin-config/project-nvim)
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
+              // (import ./plugin-config/schemastore)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/telescope)
               // (import ./plugin-config/treesitter { inherit pkgs; })
