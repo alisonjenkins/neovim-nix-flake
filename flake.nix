@@ -375,6 +375,7 @@
               // (import ./plugin-config/notify)
               // (import ./plugin-config/octo)
               // (import ./plugin-config/oil)
+              // (import ./plugin-config/otter)
               // (import ./plugin-config/project-nvim)
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)
