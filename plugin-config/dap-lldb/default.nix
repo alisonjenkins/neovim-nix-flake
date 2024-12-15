@@ -1,0 +1,3 @@
+{
+  dap-lldb.enable = true;
+}
