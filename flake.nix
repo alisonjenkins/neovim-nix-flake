@@ -380,6 +380,7 @@
               // (import ./plugin-config/otter)
               // (import ./plugin-config/parinfer-rust)
               // (import ./plugin-config/project-nvim)
+              // (import ./plugin-config/remote-nvim)
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)
               // (import ./plugin-config/smartcolumn)

@@ -1,0 +1,3 @@
+{
+  remote-nvim.enable = true;
+}
