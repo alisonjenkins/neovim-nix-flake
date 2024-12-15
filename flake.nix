@@ -385,6 +385,7 @@
               // (import ./plugin-config/schemastore)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/telescope)
+              // (import ./plugin-config/tiny-devicons-auto-colors)
               // (import ./plugin-config/treesitter { inherit pkgs; })
               // (import ./plugin-config/treesitter-context)
               // (import ./plugin-config/trouble)
