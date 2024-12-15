@@ -21,6 +21,7 @@
       pylsp.enable = true;
       pylyzer.enable = false;
       ruff_lsp.enable = false;
+      superhtml.enable = true;
       tailwindcss.enable = true;
       terraformls.enable = true;
       ts_ls.enable = true;
