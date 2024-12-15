@@ -9,6 +9,7 @@
       ccls.enable = true;
       cssls.enable = true;
       dockerls.enable = true;
+      earthlyls.enable = true;
       emmet_ls.enable = true;
       golangci_lint_ls.enable = true;
       gopls.enable = true;
