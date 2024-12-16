@@ -85,6 +85,7 @@
           '';
 
           extraFiles = {
+            "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
             "ftplugin/java.lua".text = ''
               local config = {
                 cmd = {'${pkgs.jdt-language-server}/bin/jdtls', '--jvm-arg=-javaagent:${pkgs.lombok}/share/java/lombok.jar', '--jvm-arg=-Xbootclasspath/a:${pkgs.lombok}/share/java/lombok.jar'},
@@ -364,6 +365,7 @@
               // (import ./plugin-config/firenvim)
               // (import ./plugin-config/git-linker)
               // (import ./plugin-config/harpoon)
+              // (import ./plugin-config/kulala)
               // (import ./plugin-config/leap)
               // (import ./plugin-config/lsp)
               // (import ./plugin-config/lualine)
