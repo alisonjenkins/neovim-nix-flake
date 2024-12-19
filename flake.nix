@@ -46,6 +46,19 @@
               pattern = [ "*.tf" " *.tfvars" " *.hcl" ];
               command = "set filetype=terraform";
             }
+            {
+              event = [ "BufRead" ];
+              pattern = [ "Cargo.toml" ];
+              command = ''
+                    vim.api.nvim_create_autocmd("BufRead", {
+                    group = vim.api.nvim_create_augroup("CmpSourceCargo", { clear = true }),
+                    pattern = "Cargo.toml",
+                    callback = function()
+                        cmp.setup.buffer({ sources = { { name = "crates" } } })
+                    end,
+                })
+              '';
+            }
           ];
 
           extraConfigLua = ''
@@ -359,7 +372,7 @@
               // (import ./plugin-config/cmp)
               // (import ./plugin-config/codecompanion)
               // (import ./plugin-config/conform-nvim)
-              // (import ./plugin-config/crates-nvim)
+              // (import ./plugin-config/crates)
               // (import ./plugin-config/dap { inherit pkgs; })
               // (import ./plugin-config/dap-lldb)
               // (import ./plugin-config/firenvim)
