@@ -20,4 +20,4 @@ jobs:
       - name: Build flake
         run: nix build
       - name: Push to cache
-        run: cachix push your-cache-name $(nix path-info --all)
+        run: cachix push ajenkins-public $(nix path-info --all)
