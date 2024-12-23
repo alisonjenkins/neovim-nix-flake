@@ -520,6 +520,7 @@
 
               shellHook = ''
                 if [ -z ''${var+x} ]; then 
+                  echo "CACHIX_AUTH_TOKEN is unset";
                   CACHIX_AUTH_TOKEN=''$(${pkgs._1password-cli}/bin/op item get "Cachix Token" --fields label=password --reveal)
                 fi
               '';
