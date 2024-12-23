@@ -30,7 +30,6 @@ jobs:
       - name: Run `nix build`
         run: |
           export CACHIX_AUTH_TOKEN="${{ secrets.CACHIX_AUTH_TOKEN }}"
-          export TESTVAR="testing"
           nix develop --command bash -c "nix-fast-build --command nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
       - name: Build flake
         run: nix build
