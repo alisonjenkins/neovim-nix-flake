@@ -29,6 +29,7 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - name: Run `nix build`
         run: |
+          CACHIX_AUTH_TOKEN="${{ screts.CACHIX_AUTH_TOKEN }}"
           nix develop --command bash -c "nix-fast-build --command nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
       - name: Build flake
         run: nix build
