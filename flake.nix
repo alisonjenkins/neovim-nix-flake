@@ -95,6 +95,9 @@
             vim.cmd(config.update_on_change_command)
             end)
             require('telescope').load_extension('git_worktree')
+
+            local blink_compat = require('blink.compat')
+            blink_compat.setup({})
           '';
 
           extraFiles = {
@@ -136,6 +139,7 @@
 
           extraPlugins = with pkgs.vimPlugins; [
             bamboo-nvim
+            blink-compat
             git-worktree-nvim
             lazydev-nvim
             nvim-jdtls
@@ -368,8 +372,9 @@
           // (
             (import ./plugin-config/alpha)
               // (import ./plugin-config/arrow)
+              // (import ./plugin-config/blink-cmp { inherit pkgs; })
               // (import ./plugin-config/ccc)
-              // (import ./plugin-config/cmp)
+              # // (import ./plugin-config/cmp)
               // (import ./plugin-config/codecompanion)
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/crates)
