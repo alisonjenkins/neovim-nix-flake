@@ -31,7 +31,5 @@ jobs:
         run: |
           export CACHIX_AUTH_TOKEN="${{ secrets.CACHIX_AUTH_TOKEN }}"
           nix develop --command bash -c "nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
-      - name: Build flake
-        run: nix build
       - name: Push to cache
         run: cachix push ajenkins-public $(nix path-info --all)
