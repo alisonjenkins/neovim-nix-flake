@@ -519,7 +519,9 @@
               ];
 
               shellHook = ''
-                CACHIX_AUTH_TOKEN=''$(${pkgs._1password-cli}/bin/op item get "Cachix Token" --fields label=password --reveal)
+                if [ -z ''${var+x} ]; then 
+                  CACHIX_AUTH_TOKEN=''$(${pkgs._1password-cli}/bin/op item get "Cachix Token" --fields label=password --reveal)
+                fi
               '';
             };
           };
