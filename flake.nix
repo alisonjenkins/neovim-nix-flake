@@ -422,6 +422,7 @@
       perSystem =
         { pkgs
         , system
+        , self
         , ...
         }:
         let
@@ -431,6 +432,10 @@
             inherit pkgs;
             module = config;
             extraSpecialArgs = { };
+          };
+          _module.args.pkgs = import self.inputs.nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
           };
         in
         {
@@ -486,7 +491,7 @@
                 });
               })
             ];
-            config = { };
+            config.allowUnfree = true;
           };
 
           checks = {
@@ -504,6 +509,19 @@
           treefmt = {
             projectRootFile = "flake.nix";
             programs.nixpkgs-fmt.enable = true;
+          };
+
+          devShells = {
+            default = pkgs.mkShell {
+              buildInputs = with pkgs; [
+                just
+                nix-fast-build
+              ];
+
+              shellHook = ''
+                CACHIX_AUTH_TOKEN=''$(${pkgs._1password-cli}/bin/op item get "Cachix Token" --fields label=password --reveal)
+              '';
+            };
           };
         };
     };
