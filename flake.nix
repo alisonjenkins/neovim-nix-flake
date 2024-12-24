@@ -132,6 +132,7 @@
             nixpkgs-fmt
             nodePackages.prettier
             prettierd
+            rust-analyzer
             rustfmt
             shfmt
             stylua
