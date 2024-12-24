@@ -2,6 +2,7 @@
   description = "Alison Jenkins's Neovim Flake";
 
   inputs = {
+    blink.url = "github:Saghen/blink.cmp/v0.8.2";
     flake-parts.url = "github:hercules-ci/flake-parts";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs";
@@ -17,7 +18,7 @@
     , ...
     } @ inputs:
     let
-      config = { pkgs, ... }:
+      config = { system, pkgs, ... }:
         {
           colorschemes = { melange = { enable = true; }; };
           editorconfig.enable = true;
@@ -372,7 +373,7 @@
           // (
             (import ./plugin-config/alpha)
               // (import ./plugin-config/arrow)
-              // (import ./plugin-config/blink-cmp { inherit pkgs; })
+              // (import ./plugin-config/blink-cmp { inherit pkgs; inherit system; inherit inputs; })
               // (import ./plugin-config/ccc)
               # // (import ./plugin-config/cmp)
               // (import ./plugin-config/codecompanion)
@@ -431,7 +432,7 @@
           nvim = nixvim'.makeNixvimWithModule {
             inherit pkgs;
             module = config;
-            extraSpecialArgs = { };
+            extraSpecialArgs = { inherit system; };
           };
           _module.args.pkgs = import self.inputs.nixpkgs {
             inherit system;
