@@ -32,63 +32,52 @@
           lsp = {
             name = "LSP";
             module = "blink.cmp.sources.lsp";
+            async = false;
+            enabled = true;
+            max_items = null;
+            min_keyword_length = 0;
+            override = null;
+            score_offset = 0;
+            should_show_items = true;
+            timeout_ms = 2000;
+
             fallbacks = [
               "buffer"
             ];
-            # transform_items = ''
-            #   function(_, items)
-            #     for _, item in ipairs(items) do
-            #       if item.kind == require('blink.cmp.types').CompletionItemKind.Snippet then
-            #         item.score_offset = item.score_offset - 3
-            #       end
-            #     end
-            #     return vim.tbl_filter(
-            #       function(item) return item.kind ~= require('blink.cmp.types').CompletionItemKind.Text end,
-            #       items
-            #     )
-            #   end
-            # '';
-
-            enabled = true;
-            async = false;
-            timeout_ms = 2000;
-            should_show_items = true;
-            max_items = null;
-            min_keyword_length = 0;
-            score_offset = 0;
-            override = null;
           };
           path = {
             name = "Path";
             module = "blink.cmp.sources.path";
             score_offset = 3;
+
             fallbacks = [
               "buffer"
             ];
+
             opts = {
-              trailing_slash = false;
               label_trailing_slash = true;
-              # get_cwd = ''
-              #   function(context) return vim.fn.expand(('#%d:p:h'):format(context.bufnr)) end
-              # '';
               show_hidden_files_by_default = false;
+              trailing_slash = false;
             };
           };
           snippets = {
             name = "Snippets";
             module = "blink.cmp.sources.snippets";
+
             opts = {
               friendly_snippets = true;
+              extended_filetypes = [ ];
+              ignored_filetypes = [ ];
+
               global_snippets = [
                 "all"
               ];
-              extended_filetypes = [ ];
-              ignored_filetypes = [ ];
             };
           };
           luasnip = {
             name = "Luasnip";
             module = "blink.cmp.sources.luasnip";
+
             opts = {
               use_show_condition = true;
               show_autosnippets = true;
@@ -97,6 +86,7 @@
           buffer = {
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
+
             opts = {
               get_bufnrs = ''
                 function()
