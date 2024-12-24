@@ -384,7 +384,7 @@
               // (import ./plugin-config/firenvim)
               // (import ./plugin-config/git-linker)
               // (import ./plugin-config/harpoon)
-              // (import ./plugin-config/kulala)
+              // (import ./plugin-config/kulala { inherit pkgs; })
               // (import ./plugin-config/leap)
               // (import ./plugin-config/lsp)
               // (import ./plugin-config/lualine)
