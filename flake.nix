@@ -132,6 +132,7 @@
             nixpkgs-fmt
             nodePackages.prettier
             prettierd
+            rust-analyzer
             rustfmt
             shfmt
             stylua
@@ -379,11 +380,11 @@
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/crates)
               // (import ./plugin-config/dap { inherit pkgs; })
-              // (import ./plugin-config/dap-lldb)
+              // (import ./plugin-config/dap-lldb { inherit pkgs; })
               // (import ./plugin-config/firenvim)
               // (import ./plugin-config/git-linker)
               // (import ./plugin-config/harpoon)
-              // (import ./plugin-config/kulala)
+              // (import ./plugin-config/kulala { inherit pkgs; })
               // (import ./plugin-config/leap)
               // (import ./plugin-config/lsp)
               // (import ./plugin-config/lualine)
@@ -400,7 +401,7 @@
               // (import ./plugin-config/otter)
               // (import ./plugin-config/parinfer-rust)
               // (import ./plugin-config/project-nvim)
-              // (import ./plugin-config/remote-nvim)
+              // (import ./plugin-config/remote-nvim { inherit pkgs; })
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)
               // (import ./plugin-config/smartcolumn)
