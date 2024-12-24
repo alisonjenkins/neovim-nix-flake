@@ -1,6 +1,7 @@
-{ ... }: {
+{ system, inputs, ... }: {
   blink-cmp = {
     enable = true;
+    package = inputs.blink.packages.${system}.default;
 
     settings = {
       completion = {
@@ -17,6 +18,16 @@
 
         ghost_text = {
           enabled = true;
+        };
+
+        menu = {
+          auto_show = true;
+        };
+      };
+
+      fuzzy = {
+        prebuilt_binaries = {
+          download = false;
         };
       };
 
