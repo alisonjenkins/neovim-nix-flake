@@ -19,6 +19,15 @@
   }
   {
     mode = "n";
+    key = "<leader>se";
+    action = "<cmd>Telescope file_browser<CR>";
+    options = {
+      desc = "Explore files (File Browser)";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>sf";
     action = "<cmd>Telescope find_files<CR>";
     options = {
