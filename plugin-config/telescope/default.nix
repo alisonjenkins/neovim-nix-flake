@@ -3,6 +3,7 @@
     enable = true;
 
     extensions = {
+      file-browser.enable = true;
       fzy-native.enable = true;
       ui-select.enable = true;
 
