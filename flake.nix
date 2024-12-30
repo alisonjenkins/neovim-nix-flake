@@ -98,6 +98,7 @@
 
             local blink_compat = require('blink.compat')
             blink_compat.setup({})
+            require'telescope'.load_extension('project')
           '';
 
           extraFiles = {
@@ -145,6 +146,7 @@
             lazydev-nvim
             nvim-jdtls
             outline-nvim
+            telescope-project-nvim
             vim-table-mode
           ];
 
@@ -400,7 +402,6 @@
               // (import ./plugin-config/oil)
               // (import ./plugin-config/otter)
               // (import ./plugin-config/parinfer-rust)
-              // (import ./plugin-config/project-nvim)
               // (import ./plugin-config/remote-nvim { inherit pkgs; })
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)

@@ -47,7 +47,7 @@
   {
     mode = "n";
     key = "<leader>sp";
-    action = "<cmd>Telescope projects<CR>";
+    action = "<cmd>Telescope project<CR>";
     options = {
       desc = "Projects";
       silent = true;
