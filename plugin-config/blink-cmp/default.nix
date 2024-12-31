@@ -2,7 +2,40 @@
   blink-cmp = {
     enable = true;
 
+
     settings = {
+      appearance = {
+        # Blink does not expose its default kind icons so you must copy them all (or set your custom ones) and add Copilot
+        kind_icons = {
+          Class = "󱡠";
+          Color = "󰏘";
+          Constant = "󰏿";
+          Constructor = "󰒓";
+          Copilot = "";
+          Enum = "󰦨";
+          EnumMember = "󰦨";
+          Event = "󱐋";
+          Field = "󰜢";
+          File = "󰈔";
+          Folder = "󰉋";
+          Function = "󰊕";
+          Interface = "󱡠";
+          Keyword = "󰻾";
+          Method = "󰊕";
+          Module = "󰅩";
+          Operator = "󰪚";
+          Property = "󰖷";
+          Reference = "󰬲";
+          Snippet = "󱄽";
+          Struct = "󱡠";
+          Text = "󰉿";
+          TypeParameter = "󰬛";
+          Unit = "󰪚";
+          Value = "󰦨";
+          Variable = "󰆦";
+        };
+      };
+
       completion = {
         accept = {
           auto_brackets = {
@@ -93,6 +126,18 @@
             module = "blink-cmp-copilot";
             score_offset = 100;
             async = true;
+
+            transform_items.__raw = ''
+              function(_, items)
+                local CompletionItemKind = require("blink.cmp.types").CompletionItemKind
+                local kind_idx = #CompletionItemKind + 1
+                CompletionItemKind[kind_idx] = "Copilot"
+                for _, item in ipairs(items) do
+                  item.kind = kind_idx
+                end
+                return items
+              end
+            '';
           };
         };
       };
