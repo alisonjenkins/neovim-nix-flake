@@ -26,6 +26,7 @@
           "path"
           "snippets"
           "buffer"
+          "copilot"
         ];
 
         providers = {
@@ -87,16 +88,22 @@
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
 
-            opts = {
-              get_bufnrs = ''
-                function()
-                  return vim
-                    .iter(vim.api.nvim_list_wins()): map (function (win) return vim.api.nvim_win_get_buf (win) end)
-                    :filter(function(buf) return vim.bo[buf].buftype ~= 'nofile' end)
-                    :totable()
-                end
-              '';
-            };
+            # opts = {
+            #   get_bufnrs = ''
+            #     function()
+            #       return vim
+            #         .iter(vim.api.nvim_list_wins()): map (function (win) return vim.api.nvim_win_get_buf (win) end)
+            #         :filter(function(buf) return vim.bo[buf].buftype ~= 'nofile' end)
+            #         :totable()
+            #     end
+            #   '';
+            # };
+          };
+          copilot = {
+            name = "copilot";
+            module = "blink-cmp-copilot";
+            score_offset = 100;
+            async = true;
           };
         };
       };
