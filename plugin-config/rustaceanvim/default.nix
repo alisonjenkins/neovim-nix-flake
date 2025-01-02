@@ -9,15 +9,15 @@
           port = ''''${port}'';
           type = "server";
 
-          executable = {
-            command = ''${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/adapter/codelldb'';
-            args = [
-              "--liblldb"
-              ''${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/lldb/lib/liblldb.so''
-              "--port"
-              ''''${port}''
-            ];
-          };
+          # executable = {
+          #   command = ''${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/adapter/codelldb'';
+          #   args = [
+          #     "--liblldb"
+          #     ''${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/lldb/lib/liblldb.so''
+          #     "--port"
+          #     ''''${port}''
+          #   ];
+          # };
         };
       };
 

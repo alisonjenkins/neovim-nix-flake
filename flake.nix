@@ -129,7 +129,7 @@
             golines
             isort
             jq
-            lldb
+            # lldb
             nixpkgs-fmt
             nodePackages.prettier
             prettierd
