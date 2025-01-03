@@ -46,6 +46,33 @@
   }
   {
     mode = "n";
+    key = "<leader>gSs";
+    action = "<cmd>Git stash<CR>";
+    options = {
+      desc = "Git stash";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gSS";
+    action = "<cmd>Git stash<CR>";
+    options = {
+      desc = "Git stash";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gSp";
+    action = "<cmd>Git stash pop<CR>";
+    options = {
+      desc = "Git stash pop";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gpp";
     action = "<cmd>Git push<CR>";
     options = {
