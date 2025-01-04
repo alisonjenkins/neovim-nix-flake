@@ -32,6 +32,10 @@
           desc = "Github PR";
         }
         {
+          __unkeyed-1 = "<leader>gr";
+          desc = "Git Rebase";
+        }
+        {
           __unkeyed-1 = "<leader>gS";
           desc = "Git Stash";
         }

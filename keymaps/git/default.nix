@@ -37,6 +37,24 @@
   }
   {
     mode = "n";
+    key = "<leader>grr";
+    action = "<cmd>Git rebase -i HEAD~";
+    options = {
+      desc = "Git Rebase";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>grc";
+    action = "<cmd>Git rebase --continue";
+    options = {
+      desc = "Git Rebase Continue";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gs";
     action = "<cmd>Git<CR>";
     options = {
