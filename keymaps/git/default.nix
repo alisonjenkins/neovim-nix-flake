@@ -82,6 +82,24 @@
   }
   {
     mode = "n";
+    key = "<leader>gSt";
+    action = "<cmd>Git stash --staged<CR>";
+    options = {
+      desc = "Git Stash staged";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gST";
+    action = "<cmd>Git stash --staged<CR>";
+    options = {
+      desc = "Git Stash staged";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gSP";
     action = "<cmd>Git stash pop<CR>";
     options = {
