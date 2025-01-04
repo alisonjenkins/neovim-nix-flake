@@ -32,6 +32,10 @@
           desc = "Github PR";
         }
         {
+          __unkeyed-1 = "<leader>gS";
+          desc = "Git Stash";
+        }
+        {
           __unkeyed-1 = "<leader>gw";
           desc = "Git Worktree";
         }
