@@ -83,7 +83,7 @@
   {
     mode = "n";
     key = "<leader>gSP";
-    action = "<cmd>Git pop<CR>";
+    action = "<cmd>Git stash pop<CR>";
     options = {
       desc = "Git Stash pop";
       silent = true;
@@ -92,7 +92,7 @@
   {
     mode = "n";
     key = "<leader>gSp";
-    action = "<cmd>Git pop<CR>";
+    action = "<cmd>Git stash pop<CR>";
     options = {
       desc = "Git Stash pop";
       silent = true;
