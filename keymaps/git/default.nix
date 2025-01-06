@@ -323,4 +323,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>gu";
+    action = "<cmd>Git pull<CR>";
+    options = {
+      desc = "Git pull";
+      silent = true;
+    };
+  }
 ]
