@@ -19,7 +19,7 @@
     let
       config = { pkgs, ... }:
         {
-          colorschemes = { melange = { enable = true; }; };
+          colorschemes.melange.enable = true;
           editorconfig.enable = true;
           luaLoader.enable = true;
           package =
