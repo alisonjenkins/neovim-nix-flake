@@ -194,15 +194,6 @@
             [
               {
                 mode = "n";
-                key = "<leader>;";
-                action = "<cmd>Alpha<CR>";
-                options = {
-                  desc = "Open Alpha (Splash Screen)";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
                 key = "-";
                 action = "<cmd>Oil<cr>";
                 options = {

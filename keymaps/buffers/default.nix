@@ -1,6 +1,15 @@
 [
   {
     mode = "n";
+    key = "<leader>;";
+    action = "<cmd>Alpha<CR>";
+    options = {
+      desc = "Open Alpha (Splash Screen)";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>bd";
     action = "<cmd>lua require('bufdelete').bufdelete(0, true)<cr>";
     options = {
