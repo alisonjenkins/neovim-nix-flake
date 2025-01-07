@@ -80,6 +80,10 @@
           desc = "Testing";
         }
         {
+          __unkeyed-1 = "<leader>T";
+          desc = "Tabs";
+        }
+        {
           __unkeyed-1 = "<leader>z";
           desc = "Zettelkasten";
         }

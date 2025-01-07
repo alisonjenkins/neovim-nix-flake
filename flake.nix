@@ -317,6 +317,7 @@
             ++ import ./keymaps/lsp
             ++ import ./keymaps/rust-lsp
             ++ import ./keymaps/search
+            ++ import ./keymaps/tabs
             ++ import ./keymaps/testing
             ++ import ./keymaps/zk;
 
