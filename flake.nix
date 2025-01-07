@@ -462,38 +462,14 @@
               })
               (final: prev: {
                 vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
-                  git-worktree-nvim = vprev.git-worktree-nvim.overrideAttrs (oldAttrs: {
-                    src = prev.fetchFromGitHub {
-                      owner = "polarmutex";
-                      repo = "git-worktree.nvim";
-                      rev = "bac72c240b6bf1662296c31546c6dad89b4b7a3c";
-                      hash = "sha256-Uvcihnc/+v4svCrAO2ds0XvNmqO801ILWu8sbh/znf4=";
-                    };
-                  });
-                  # fastaction-nvim = vprev.fastaction-nvim.overrideAttrs (oldAttrs: {
+                  # git-worktree-nvim = vprev.git-worktree-nvim.overrideAttrs (oldAttrs: {
                   #   src = prev.fetchFromGitHub {
-                  #     owner = "alisonjenkins";
-                  #     repo = "fastaction.nvim";
-                  #     rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
-                  #     hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
+                  #     owner = "polarmutex";
+                  #     repo = "git-worktree.nvim";
+                  #     rev = "bac72c240b6bf1662296c31546c6dad89b4b7a3c";
+                  #     hash = "sha256-Uvcihnc/+v4svCrAO2ds0XvNmqO801ILWu8sbh/znf4=";
                   #   };
                   # });
-                  neotest-zig = vprev.neotest-zig.overrideAttrs (oldAttrs: {
-                    src = prev.fetchFromGitHub {
-                      owner = "lawrence-laz";
-                      repo = "neotest-zig";
-                      rev = "b0e72626135b703fe186a062f38a47ac739f1cdd";
-                      hash = "sha256-1HXIssBemCB7asQE6L7XiqGQC0gzwqIXhSollk2DV2o=";
-                    };
-                  });
-                  zk-nvim = vprev.zk-nvim.overrideAttrs (oldAttrs: {
-                    src = prev.fetchFromGitHub {
-                      owner = "alisonjenkins";
-                      repo = "zk-nvim";
-                      rev = "c9a073cb16b3514cdce5e1a84c6996989e79630f";
-                      hash = "sha256-WhiwPsABFISzOlZuZYR7W2D2q4pD6VGqjIyqcrO05rc=";
-                    };
-                  });
                 });
               })
             ];
