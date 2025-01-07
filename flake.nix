@@ -194,15 +194,6 @@
             [
               {
                 mode = "n";
-                key = "K";
-                action = "<cmd>Lspsaga hover_doc<CR>";
-                options = {
-                  desc = "Show docs for hovered item.";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
                 key = "<leader>;";
                 action = "<cmd>Alpha<CR>";
                 options = {

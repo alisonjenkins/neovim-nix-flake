@@ -1,6 +1,15 @@
 [
   {
     mode = "n";
+    key = "K";
+    action = "<cmd>Lspsaga hover_doc<CR>";
+    options = {
+      desc = "Show docs for hovered item.";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>lc";
     action = "<cmd>Lspsaga code_action<cr>";
     options = {
