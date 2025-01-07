@@ -361,6 +361,7 @@
             smear-cursor.enable = true;
             specs.enable = false;
             tmux-navigator.enable = true;
+            neoscroll.enable = true;
             treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
             ts-autotag.enable = true;
