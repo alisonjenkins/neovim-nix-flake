@@ -38,7 +38,7 @@
   {
     mode = "n";
     key = "<leader>grr";
-    action = "<cmd>Git rebase -i HEAD~";
+    action = ":Git rebase -i HEAD~<c-l>";
     options = {
       desc = "Git Rebase";
       silent = true;
