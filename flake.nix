@@ -358,6 +358,7 @@
             rainbow-delimiters.enable = true;
             render-markdown.enable = true;
             sleuth.enable = true;
+            smear-cursor.enable = true;
             specs.enable = false;
             tmux-navigator.enable = true;
             treesitter-refactor.enable = true;
