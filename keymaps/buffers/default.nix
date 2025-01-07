@@ -10,6 +10,15 @@
   }
   {
     mode = "n";
+    key = "-";
+    action = "<cmd>Oil<cr>";
+    options = {
+      desc = "Open File Browser in current directory";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>bd";
     action = "<cmd>lua require('bufdelete').bufdelete(0, true)<cr>";
     options = {
