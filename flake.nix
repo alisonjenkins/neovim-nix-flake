@@ -190,29 +190,10 @@
             writebackup = true;
           };
 
-          keymaps =
-            [
-              {
-                mode = "n";
-                key = "zR";
-                action = "<cmd>lua require('ufo').openAllFolds()<cr>";
-                options = {
-                  desc = "Open all folds";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "zM";
-                action = "<cmd>lua require('ufo').closeAllFolds()<cr>";
-                options = {
-                  desc = "Close all folds";
-                  silent = true;
-                };
-              }
-            ]
+          keymaps = [ ]
             ++ import ./keymaps/buffers
             ++ import ./keymaps/debugging
+            ++ import ./keymaps/folding
             ++ import ./keymaps/git
             ++ import ./keymaps/harpoon
             ++ import ./keymaps/jumps
