@@ -1,7 +1,6 @@
-{ ... }: {
+{ pkgs, ... }: {
   blink-cmp = {
     enable = true;
-
 
     settings = {
       appearance = {
@@ -50,6 +49,13 @@
 
         ghost_text = {
           enabled = true;
+        };
+      };
+
+      fuzzy = {
+        prebuilt_binaries = {
+          download = false;
+          force_version = "v${pkgs.vimPlugins.blink-cmp.version}";
         };
       };
 
