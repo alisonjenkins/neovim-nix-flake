@@ -194,24 +194,6 @@
             [
               {
                 mode = "n";
-                key = "gd";
-                action = "<cmd>Lspsaga goto_definition<cr>";
-                options = {
-                  desc = "Goto definition of highlighted item";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "gD";
-                action = "<cmd>Lspsaga goto_type_definition<cr>";
-                options = {
-                  desc = "Goto type definition of highlighted item";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
                 key = "zR";
                 action = "<cmd>lua require('ufo').openAllFolds()<cr>";
                 options = {
