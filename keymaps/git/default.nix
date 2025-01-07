@@ -47,7 +47,7 @@
   {
     mode = "n";
     key = "<leader>grc";
-    action = "<cmd>Git rebase --continue";
+    action = "<cmd>Git rebase --continue<CR>";
     options = {
       desc = "Git Rebase Continue";
       silent = true;
