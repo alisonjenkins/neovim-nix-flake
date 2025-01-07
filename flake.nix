@@ -462,14 +462,14 @@
               })
               (final: prev: {
                 vimPlugins = prev.vimPlugins.extend (vfinal: vprev: {
-                  # git-worktree-nvim = vprev.git-worktree-nvim.overrideAttrs (oldAttrs: {
-                  #   src = prev.fetchFromGitHub {
-                  #     owner = "polarmutex";
-                  #     repo = "git-worktree.nvim";
-                  #     rev = "bac72c240b6bf1662296c31546c6dad89b4b7a3c";
-                  #     hash = "sha256-Uvcihnc/+v4svCrAO2ds0XvNmqO801ILWu8sbh/znf4=";
-                  #   };
-                  # });
+                  git-worktree-nvim = vprev.git-worktree-nvim.overrideAttrs (oldAttrs: {
+                    src = prev.fetchFromGitHub {
+                      owner = "polarmutex";
+                      repo = "git-worktree.nvim";
+                      rev = "bac72c240b6bf1662296c31546c6dad89b4b7a3c";
+                      hash = "sha256-Uvcihnc/+v4svCrAO2ds0XvNmqO801ILWu8sbh/znf4=";
+                    };
+                  });
                 });
               })
             ];
