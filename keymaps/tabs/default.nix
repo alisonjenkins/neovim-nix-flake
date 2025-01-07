@@ -11,7 +11,7 @@
   {
     mode = "n";
     key = "<leader>Te";
-    action = ":tabedit ";
+    action = ":tabedit <c-l>";
     options = {
       desc = "Edit in new tab";
       silent = true;
