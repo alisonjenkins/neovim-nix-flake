@@ -212,24 +212,6 @@
               }
               {
                 mode = "n";
-                key = "<leader>f";
-                action = "<cmd>Telescope find_files<CR>";
-                options = {
-                  desc = "Find files using Telescope";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
-                key = "<leader>r";
-                action = "<cmd>Telescope frecency<CR>";
-                options = {
-                  desc = "Find frecently used files";
-                  silent = true;
-                };
-              }
-              {
-                mode = "n";
                 key = "-";
                 action = "<cmd>Oil<cr>";
                 options = {
