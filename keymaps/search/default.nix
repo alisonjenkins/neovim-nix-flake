@@ -28,6 +28,15 @@
   }
   {
     mode = "n";
+    key = "<leader>f";
+    action = "<cmd>Telescope frecency<CR>";
+    options = {
+      desc = "Find Frecency Files";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>sf";
     action = "<cmd>Telescope find_files<CR>";
     options = {
