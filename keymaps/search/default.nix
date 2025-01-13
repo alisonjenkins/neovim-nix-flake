@@ -29,9 +29,9 @@
   {
     mode = "n";
     key = "<leader>f";
-    action = "<cmd>Telescope frecency<CR>";
+    action = "<cmd>Telescope find_files<CR>";
     options = {
-      desc = "Find Frecency Files";
+      desc = "Find Files";
       silent = true;
     };
   }
@@ -41,6 +41,15 @@
     action = "<cmd>Telescope find_files<CR>";
     options = {
       desc = "Files";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>sF";
+    action = "<cmd>Telescope frecency<CR>";
+    options = {
+      desc = "Find Frecency Files";
       silent = true;
     };
   }
