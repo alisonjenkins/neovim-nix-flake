@@ -59,6 +59,10 @@
         };
       };
 
+      snippets = {
+        preset = "luasnip";
+      };
+
       sources = {
         default = [
           "lsp"
@@ -99,29 +103,6 @@
               label_trailing_slash = true;
               show_hidden_files_by_default = false;
               trailing_slash = false;
-            };
-          };
-          snippets = {
-            name = "Snippets";
-            module = "blink.cmp.sources.snippets";
-
-            opts = {
-              friendly_snippets = true;
-              extended_filetypes = [ ];
-              ignored_filetypes = [ ];
-
-              global_snippets = [
-                "all"
-              ];
-            };
-          };
-          luasnip = {
-            name = "Luasnip";
-            module = "blink.cmp.sources.luasnip";
-
-            opts = {
-              use_show_condition = true;
-              show_autosnippets = true;
             };
           };
           buffer = {
