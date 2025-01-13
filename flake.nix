@@ -299,6 +299,7 @@
               // (import ./plugin-config/treesitter-context)
               // (import ./plugin-config/trouble)
               // (import ./plugin-config/which-key)
+              // (import ./plugin-config/tailwind-tools)
               // (import ./plugin-config/zk)
           );
         };
