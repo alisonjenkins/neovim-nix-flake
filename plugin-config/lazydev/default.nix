@@ -1,0 +1,5 @@
+{
+  lazydev = {
+    enable = true;
+  };
+}

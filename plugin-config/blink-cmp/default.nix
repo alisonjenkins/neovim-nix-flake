@@ -66,6 +66,7 @@
           "snippets"
           "buffer"
           "copilot"
+          "lazydev"
         ];
 
         providers = {
@@ -144,6 +145,11 @@
                 return items
               end
             '';
+          };
+          lazydev = {
+            name = "LazyDev";
+            module = "lazydev.integrations.blink";
+            score_offset = 100;
           };
         };
       };
