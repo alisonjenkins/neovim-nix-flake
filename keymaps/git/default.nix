@@ -55,6 +55,24 @@
   }
   {
     mode = "n";
+    key = "<leader>grm";
+    action = "<cmd>Git rebase master<CR>";
+    options = {
+      desc = "Git Rebase master";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>grM";
+    action = "<cmd>Git rebase main<CR>";
+    options = {
+      desc = "Git Rebase main";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gs";
     action = "<cmd>Git<CR>";
     options = {
