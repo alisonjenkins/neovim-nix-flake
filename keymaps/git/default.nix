@@ -136,6 +136,15 @@
   }
   {
     mode = "n";
+    key = "<leader>gt";
+    action = "<cmd>Git tag<c-l>";
+    options = {
+      desc = "Git tag";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gpp";
     action = "<cmd>Git push<CR>";
     options = {
@@ -149,6 +158,15 @@
     action = "<cmd>Git pfl<CR>";
     options = {
       desc = "Git Push --force-with-lease";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gpt";
+    action = "<cmd>Git push --tags<CR>";
+    options = {
+      desc = "Git Push --tags";
       silent = true;
     };
   }
