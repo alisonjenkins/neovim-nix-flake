@@ -1,0 +1,3 @@
+{
+  dap-python.enable = true;
+}

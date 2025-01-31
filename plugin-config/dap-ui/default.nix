@@ -1,0 +1,3 @@
+{
+  dap-ui.enable = true;
+}
