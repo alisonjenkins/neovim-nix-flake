@@ -13,8 +13,9 @@
                   },
                   schema = {
                       model = {
-                          default = 'qwen2.5-coder:latest',
+                          -- default = 'qwen2.5-coder:latest',
                           -- default = "llama3.1:8b-instruct-q8_0",
+                          default = "deepseek-r1:8b",
                       },
                       num_ctx = {
                           default = 32768,
