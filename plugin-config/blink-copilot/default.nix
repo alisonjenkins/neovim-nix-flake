@@ -1,5 +1,5 @@
 {
-  blink-cmp-copilot = {
+  blink-copilot = {
     enable = true;
     autoLoad = true;
   };

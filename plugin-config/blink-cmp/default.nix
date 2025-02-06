@@ -65,12 +65,15 @@
 
       sources = {
         default = [
-          "lsp"
-          "path"
-          "snippets"
           "buffer"
           "copilot"
+          "dictionary"
+          "git"
           "lazydev"
+          "lsp"
+          "path"
+          "ripgrep"
+          "snippets"
         ];
 
         providers = {
@@ -111,21 +114,55 @@
           };
           copilot = {
             name = "copilot";
-            module = "blink-cmp-copilot";
+            module = "blink-copilot";
             score_offset = 100;
             async = true;
 
-            transform_items.__raw = ''
-              function(_, items)
-                local CompletionItemKind = require("blink.cmp.types").CompletionItemKind
-                local kind_idx = #CompletionItemKind + 1
-                CompletionItemKind[kind_idx] = "Copilot"
-                for _, item in ipairs(items) do
-                  item.kind = kind_idx
-                end
-                return items
-              end
-            '';
+            opts = {
+              max_completions = 3;
+              max_attempts = 4;
+              kind = "Copilot";
+              debounce = 750;
+              auto_refresh = {
+                backward = true;
+                forward = true;
+              };
+            };
+          };
+          dictionary = {
+            module = "blink-cmp-dictionary";
+            name = "Dict";
+            score_offset = 100;
+            min_keyword_length = 3;
+            opts = { };
+          };
+          git = {
+            module = "blink-cmp-git";
+            name = "git";
+            score_offset = 100;
+            opts = {
+              commit = { };
+              git_centers = { git_hub = { }; };
+            };
+          };
+          ripgrep = {
+            async = true;
+            module = "blink-ripgrep";
+            name = "Ripgrep";
+            score_offset = 100;
+            opts = {
+              prefix_min_len = 3;
+              context_size = 5;
+              max_filesize = "1M";
+              project_root_marker = ".git";
+              project_root_fallback = true;
+              search_casing = "--ignore-case";
+              additional_rg_options = { };
+              fallback_to_regex_highlighting = true;
+              ignore_paths = { };
+              additional_paths = { };
+              debug = false;
+            };
           };
           lazydev = {
             name = "LazyDev";
