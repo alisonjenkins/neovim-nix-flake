@@ -24,6 +24,10 @@
           desc = "Git";
         }
         {
+          __unkeyed-1 = "<leader>gf";
+          desc = "Git Fetch";
+        }
+        {
           __unkeyed-1 = "<leader>gp";
           desc = "Git Push";
         }

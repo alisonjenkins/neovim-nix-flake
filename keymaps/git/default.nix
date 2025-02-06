@@ -19,6 +19,42 @@
   }
   {
     mode = "n";
+    key = "<leader>gff";
+    action = "<cmd>Git fetch origin --prune<CR>";
+    options = {
+      desc = "Git fetch prune";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gfF";
+    action = "<cmd>Git fetch origin<CR>";
+    options = {
+      desc = "Git fetch";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gfr";
+    action = "<cmd>Git fetch --refetch<CR>";
+    options = {
+      desc = "Git fetch refetch";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gft";
+    action = "<cmd>Git fetch --tags<CR>";
+    options = {
+      desc = "Git fetch tags";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gi";
     action = "<cmd>Gitignore<CR>";
     options = {
