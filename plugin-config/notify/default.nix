@@ -1,7 +1,10 @@
 {
   notify = {
     enable = true;
-    timeout = 1000;
-    topDown = false;
+
+    settings = {
+      timeout = 1500;
+      top_down = false;
+    };
   };
 }
