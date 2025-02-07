@@ -4,27 +4,37 @@
 
     settings = {
       adapters = {
-        ollama = {
+        gemini = {
           __raw = ''
             function()
-              return require('codecompanion.adapters').extend('ollama', {
+              return require('codecompanion.adapters').extend('gemini', {
                   env = {
-                      url = "http://127.0.0.1:11434",
-                  },
-                  schema = {
-                      model = {
-                          -- default = 'qwen2.5-coder:latest',
-                          -- default = "llama3.1:8b-instruct-q8_0",
-                          default = "deepseek-r1:8b",
-                      },
-                      num_ctx = {
-                          default = 32768,
-                      },
+                    api_key = "cmd:op read 'op://personal/Gemini API Key/password' --no-newline",
                   },
               })
             end
           '';
         };
+        # ollama = {
+        #   __raw = ''
+        #     function()
+        #       return require('codecompanion.adapters').extend('ollama', {
+        #           env = {
+        #               url = "http://127.0.0.1:11434",
+        #           },
+        #           schema = {
+        #               model = {
+        #                   default = 'qwen2.5-coder:latest',
+        #                   -- default = "llama3.1:8b-instruct-q8_0",
+        #               },
+        #               num_ctx = {
+        #                   default = 32768,
+        #               },
+        #           },
+        #       })
+        #     end
+        #   '';
+        # };
       };
       opts = {
         log_level = "TRACE";
@@ -34,13 +44,13 @@
       };
       strategies = {
         agent = {
-          adapter = "ollama";
+          adapter = "gemini";
         };
         chat = {
-          adapter = "ollama";
+          adapter = "gemini";
         };
         inline = {
-          adapter = "ollama";
+          adapter = "gemini";
         };
       };
     };
