@@ -12,6 +12,10 @@
           desc = "Buffers";
         }
         {
+          __unkeyed-1 = "<leader>a";
+          desc = "AI";
+        }
+        {
           __unkeyed-1 = "<leader>d";
           desc = "Debugging";
         }
