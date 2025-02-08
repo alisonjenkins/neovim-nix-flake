@@ -4,6 +4,10 @@
     settings = {
       spec = [
         {
+          __unkeyed-1 = "<leader>:";
+          desc = "Terminal";
+        }
+        {
           __unkeyed-1 = "<leader>b";
           desc = "Buffers";
         }
