@@ -202,6 +202,7 @@
             ++ import ./keymaps/rust-lsp
             ++ import ./keymaps/search
             ++ import ./keymaps/tabs
+            ++ import ./keymaps/terminal
             ++ import ./keymaps/testing
             ++ import ./keymaps/zk;
 
