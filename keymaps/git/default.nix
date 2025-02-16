@@ -370,24 +370,6 @@
   }
   {
     mode = "n";
-    key = "<leader>gwc";
-    action = "<cmd>Telescope git_worktree create_git_worktree<CR>";
-    options = {
-      desc = "Create Git Worktree";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>gww";
-    action = "<cmd>Telescope git_worktree<CR>";
-    options = {
-      desc = "Open Git Worktrees in Telescope";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
     key = "<leader>gy";
     action = "<cmd>lua require('gitlinker').get_buf_range_url('n')<CR>";
     options = {

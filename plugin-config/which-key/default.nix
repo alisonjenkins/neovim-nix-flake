@@ -52,10 +52,6 @@
           desc = "Git Stash";
         }
         {
-          __unkeyed-1 = "<leader>gw";
-          desc = "Git Worktree";
-        }
-        {
           __unkeyed-1 = "<leader>h";
           desc = "Harpoon";
         }
