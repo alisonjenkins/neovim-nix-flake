@@ -176,6 +176,7 @@
           };
 
           keymaps = [ ]
+            ++ import ./keymaps/ai
             ++ import ./keymaps/buffers
             ++ import ./keymaps/debugging
             ++ import ./keymaps/folding
