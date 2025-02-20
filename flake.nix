@@ -21,6 +21,7 @@
         {
           colorschemes.melange.enable = true;
           editorconfig.enable = true;
+          enableMan = false;
           luaLoader.enable = true;
           package =
             inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
