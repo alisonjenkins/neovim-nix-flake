@@ -135,7 +135,12 @@
             vim-table-mode
           ];
 
-          extraPython3Packages = p: [ p.numpy p.plotly p.pnglatex p.pyperclip ];
+          extraPython3Packages = p: [
+            p.numpy
+            p.plotly
+            p.pnglatex
+            p.pyperclip
+          ];
 
           globals = {
             localleader = ",";
