@@ -108,6 +108,7 @@
 
           extraPackages = with pkgs; [
             # alejandra
+            # lldb
             (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             black
             gofumpt
@@ -115,7 +116,6 @@
             golines
             isort
             jq
-            # lldb
             nixpkgs-fmt
             nodePackages.prettier
             prettierd
