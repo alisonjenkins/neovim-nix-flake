@@ -50,6 +50,7 @@
           strategy = "chat";
           description = "Sorts Terraform variable blocks alphabetically.";
 
+
           prompts.__raw = ''
             {
               {
@@ -58,7 +59,13 @@
               },
               {
                 role = "user",
-                content = "Can you please sort these Terraform variable blocks alphabetically by their name."
+                content = function(context)
+                  local text = require("codecompanion.helpers.actions").get_code(context.start_line, context.end_line)
+                  return "Can you please sort these Terraform variable blocks alphabetically by their name:\n\n```" .. context.filetype .. "\n" .. text .. "\n```\n\n"
+                end,
+                opts = {
+                  contains_code = true,
+                }
               }
             }
           '';
