@@ -37,6 +37,12 @@
           frecency = true;
           sort_empty = true;
         };
+
+        formatters = {
+          file = {
+            truncate = 200;
+          };
+        };
       };
     };
   };
