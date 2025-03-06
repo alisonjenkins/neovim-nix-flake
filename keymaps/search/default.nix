@@ -46,10 +46,10 @@
   }
   {
     mode = "n";
-    key = "<leader>sF";
-    action = "<cmd>Telescope frecency<CR>";
+    key = "<leader>sr";
+    action = "<cmd>lua require('snacks').picker.recent()<CR>";
     options = {
-      desc = "Find Frecency Files";
+      desc = "Find recently edited files";
       silent = true;
     };
   }
