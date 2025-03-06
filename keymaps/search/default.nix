@@ -38,7 +38,7 @@
   {
     mode = "n";
     key = "<leader>sf";
-    action = "<cmd>Telescope find_files<CR>";
+    action = "<cmd>lua require('snacks').picker.files()<CR>";
     options = {
       desc = "Files";
       silent = true;
