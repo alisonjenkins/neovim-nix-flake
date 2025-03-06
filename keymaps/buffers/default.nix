@@ -20,7 +20,7 @@
   {
     mode = "n";
     key = "<leader>bd";
-    action = "<cmd>lua require('bufdelete').bufdelete(0, true)<cr>";
+    action = "<cmd>lua require('snacks').bufdelete()<cr>";
     options = {
       desc = "Close Buffer";
       silent = true;

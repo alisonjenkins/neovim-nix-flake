@@ -204,7 +204,6 @@
           plugins = {
             # image.enable = true;
             bacon.enable = true;
-            bufdelete.enable = true;
             cmp-cmdline.enable = true;
             cmp-dap.enable = true;
             cmp-nvim-lsp.enable = true;
@@ -293,6 +292,7 @@
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)
               // (import ./plugin-config/smartcolumn)
+              // (import ./plugin-config/snacks)
               // (import ./plugin-config/tailwind-tools)
               // (import ./plugin-config/telescope)
               // (import ./plugin-config/tiny-devicons-auto-colors)
