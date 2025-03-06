@@ -3,6 +3,10 @@
     enable = true;
 
     settings = {
+      animate = {
+        enabled = true;
+      };
+
       bufdelete = {
         enabled = true;
       };
