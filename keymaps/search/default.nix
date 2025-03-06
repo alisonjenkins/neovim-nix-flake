@@ -89,4 +89,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>sz";
+    action = "<cmd>lua require('snacks').picker.zoxide()<CR>";
+    options = {
+      desc = "Search for projects via zoxide";
+      silent = true;
+    };
+  }
 ]
