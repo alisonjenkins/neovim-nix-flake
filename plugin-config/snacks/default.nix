@@ -7,15 +7,11 @@
         enabled = true;
       };
 
-      bufdelete = {
-        enabled = true;
-      };
-
       bigfile = {
         enabled = true;
       };
 
-      scroll = {
+      bufdelete = {
         enabled = true;
       };
 
@@ -23,13 +19,29 @@
         enabled = true;
       };
 
+      image = {
+        enabled = true;
+      };
+
       indent = {
+        enabled = true;
+      };
+
+      quickfile = {
+        enabled = true;
+      };
+
+      scroll = {
         enabled = true;
       };
 
       notifier = {
         enabled = true;
         timeout = 3000;
+      };
+
+      statuscolumn = {
+        enabled = true;
       };
 
       picker = {
