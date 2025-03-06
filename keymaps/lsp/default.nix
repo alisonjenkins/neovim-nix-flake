@@ -152,4 +152,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>lS";
+    action = "<cmd>lua require('snacks').picker.lsp_workspace_symbols()<cr>";
+    options = {
+      desc = "LSP Workspace Symbols";
+      silent = true;
+    };
+  }
 ]
