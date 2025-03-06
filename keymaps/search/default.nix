@@ -80,4 +80,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>sl";
+    action = "<cmd>lua require('snacks').picker.lines()<CR>";
+    options = {
+      desc = "Lines in current file";
+      silent = true;
+    };
+  }
 ]
