@@ -9,6 +9,15 @@
     };
   }
   {
+    mode = "v";
+    key = "<leader>aa";
+    action = "<cmd>CodeCompanionActions<CR>";
+    options = {
+      desc = "Open Code Companion Actions";
+      silent = true;
+    };
+  }
+  {
     mode = "n";
     key = "<leader>ac";
     action = "<cmd>CodeCompanionChat<CR>";
