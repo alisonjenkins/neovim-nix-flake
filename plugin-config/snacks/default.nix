@@ -31,6 +31,13 @@
         enabled = true;
         timeout = 3000;
       };
+
+      picker = {
+        matcher = {
+          frecency = true;
+          sort_empty = true;
+        };
+      };
     };
   };
 }

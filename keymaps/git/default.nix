@@ -11,7 +11,7 @@
   {
     mode = "n";
     key = "<leader>gb";
-    action = "<cmd>Telescope git_branches<CR>";
+    action = "<cmd>lua require('snacks').picker.git_branches()<CR>";
     options = {
       desc = "Branches";
       silent = true;

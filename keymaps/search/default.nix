@@ -2,7 +2,7 @@
   {
     mode = "n";
     key = "<leader>sb";
-    action = "<cmd>Telescope buffers<CR>";
+    action = "<cmd>lua require('snacks').picker.buffers()<CR>";
     options = {
       desc = "Buffers";
       silent = true;
@@ -11,7 +11,7 @@
   {
     mode = "n";
     key = "<leader>sB";
-    action = "<cmd>Telescope git_branches<CR>";
+    action = "<cmd>require('snacks').picker.git_branches()<CR>";
     options = {
       desc = "Git Branches";
       silent = true;
@@ -29,7 +29,7 @@
   {
     mode = "n";
     key = "<leader>f";
-    action = "<cmd>Telescope find_files<CR>";
+    action = "<cmd>lua require('snacks').picker.smart()<CR>";
     options = {
       desc = "Find Files";
       silent = true;
@@ -74,7 +74,7 @@
   {
     mode = "n";
     key = "<leader>sp";
-    action = "<cmd>Telescope project<CR>";
+    action = "<cmd>lua require('snacks').picker.projects()<CR>";
     options = {
       desc = "Projects";
       silent = true;
