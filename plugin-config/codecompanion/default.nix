@@ -15,6 +15,7 @@
             end
           '';
         };
+
         # ollama = {
         #   __raw = ''
         #     function()
@@ -36,12 +37,34 @@
         #   '';
         # };
       };
+
       opts = {
         log_level = "TRACE";
         send_code = true;
         use_default_actions = true;
         use_default_prompts = true;
       };
+
+      prompt_library = {
+        "Sort Terraform Variables" = {
+          strategy = "chat";
+          description = "Sorts Terraform variable blocks alphabetically.";
+
+          prompts.__raw = ''
+            {
+              {
+                role = "system",
+                content = "You are an experienced Terraform developer."
+              },
+              {
+                role = "user",
+                content = "Can you please sort these Terraform variable blocks alphabetically by their name."
+              }
+            }
+          '';
+        };
+      };
+
       strategies = {
         agent = {
           adapter = "gemini";
