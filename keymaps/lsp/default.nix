@@ -143,4 +143,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>ls";
+    action = "<cmd>lua require('snacks').picker.lsp_symbols()<cr>";
+    options = {
+      desc = "LSP Symbols";
+      silent = true;
+    };
+  }
 ]
