@@ -11,6 +11,10 @@
         enabled = true;
       };
 
+      scroll = {
+        enabled = true;
+      };
+
       gitbrowse = {
         enabled = true;
       };

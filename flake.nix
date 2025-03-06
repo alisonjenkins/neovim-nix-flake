@@ -226,7 +226,6 @@
             markdown-preview.enable = true;
             molten.enable = true;
             navic.enable = true;
-            neoscroll.enable = true;
             nix.enable = true;
             numbertoggle.enable = true;
             nvim-ufo.enable = true;
