@@ -220,7 +220,6 @@
             helm.enable = true;
             helpview.enable = true;
             hmts.enable = true;
-            indent-blankline.enable = true;
             lastplace.enable = true;
             lspkind.enable = true;
             lspsaga.enable = true;
