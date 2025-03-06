@@ -65,7 +65,7 @@
   {
     mode = "n";
     key = "<leader>st";
-    action = "<cmd>Telescope live_grep<CR>";
+    action = "<cmd>lua require('snacks').picker.grep()<CR>";
     options = {
       desc = "Live Grep";
       silent = true;
