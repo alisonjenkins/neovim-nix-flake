@@ -269,7 +269,6 @@
               // (import ./plugin-config/dap-ui)
               // (import ./plugin-config/dap-virtual-text)
               // (import ./plugin-config/firenvim)
-              // (import ./plugin-config/git-linker)
               // (import ./plugin-config/harpoon)
               // (import ./plugin-config/kulala { inherit pkgs; })
               // (import ./plugin-config/lazydev)

@@ -11,6 +11,10 @@
         enabled = true;
       };
 
+      gitbrowse = {
+        enabled = true;
+      };
+
       notifier = {
         enabled = true;
         timeout = 3000;

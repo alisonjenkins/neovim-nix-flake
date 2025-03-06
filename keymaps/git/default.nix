@@ -109,6 +109,15 @@
   }
   {
     mode = "n";
+    key = "<leader>gRo";
+    action = "<cmd>lua require('snacks').gitbrowse()<CR>";
+    options = {
+      desc = "Open Git repo";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gs";
     action = "<cmd>Git<CR>";
     options = {
@@ -371,7 +380,7 @@
   {
     mode = "n";
     key = "<leader>gy";
-    action = "<cmd>lua require('gitlinker').get_buf_range_url('n')<CR>";
+    action = "<cmd>lua require('snacks').get_url()<CR>";
     options = {
       desc = "Copy link to current line";
       silent = true;
