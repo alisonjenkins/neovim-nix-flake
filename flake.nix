@@ -84,7 +84,6 @@
 
             local blink_compat = require('blink.compat')
             blink_compat.setup({})
-            require'telescope'.load_extension('project')
           '';
 
           extraFiles = {
@@ -131,7 +130,6 @@
             lazydev-nvim
             nvim-jdtls
             outline-nvim
-            telescope-project-nvim
             vim-table-mode
           ];
 
