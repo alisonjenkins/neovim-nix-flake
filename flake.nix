@@ -110,6 +110,7 @@
             # lldb
             (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             black
+            cowsay
             dwt1-shell-color-scripts
             fortune
             gofumpt
