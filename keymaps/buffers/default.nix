@@ -2,9 +2,9 @@
   {
     mode = "n";
     key = "<leader>;";
-    action = "<cmd>Alpha<CR>";
+    action = "<cmd>lua require('snacks').dashboard()<CR>";
     options = {
-      desc = "Open Alpha (Splash Screen)";
+      desc = "Open Dashboard";
       silent = true;
     };
   }

@@ -11,8 +11,40 @@
         enabled = true;
       };
 
-      bufdelete = {
+      bufdelete = { };
+
+      dashboard = {
         enabled = true;
+
+        formats.__raw = ''
+          {
+            key = function(item)
+              return { { "[", hl = "special" }, { item.key, hl = "key" }, { "]", hl = "special" } }
+            end,
+          }
+        '';
+
+        sections.__raw = ''
+          {
+            { section = "header" },
+            {
+              pane = 1,
+              section = "terminal",
+              cmd = "colorscript -e square",
+              padding = 1,
+            },
+            { section = "keys", gap = 1, padding = 1 },
+            { pane = 2, icon = " ", title = "Recent Files", section = "recent_files", indent = 2, padding = 1 },
+            { pane = 2, icon = " ", title = "Projects", section = "projects", indent = 2, padding = 1 },
+            {
+              pane = 2,
+              height = 16,
+              section = "terminal",
+              cmd = "fortune -s | cowsay",
+              padding = 1,
+            },
+          },
+        '';
       };
 
       gitbrowse = {

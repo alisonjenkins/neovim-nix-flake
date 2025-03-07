@@ -110,6 +110,8 @@
             # lldb
             (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             black
+            dwt1-shell-color-scripts
+            fortune
             gofumpt
             golangci-lint
             golines
@@ -246,8 +248,8 @@
             zig.enable = true;
           }
           // (
-            (import ./plugin-config/alpha)
-              // (import ./plugin-config/arrow)
+            # (import ./plugin-config/alpha)
+            (import ./plugin-config/arrow)
               // (import ./plugin-config/blink-cmp { inherit pkgs; })
               // (import ./plugin-config/blink-cmp-dictionary)
               // (import ./plugin-config/blink-cmp-git)
