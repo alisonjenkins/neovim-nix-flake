@@ -130,6 +130,7 @@
             shfmt
             stylua
             tectonic
+            wordnet
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
