@@ -117,6 +117,7 @@
             gofumpt
             golangci-lint
             golines
+            grpcurl
             imagemagick
             isort
             jq
