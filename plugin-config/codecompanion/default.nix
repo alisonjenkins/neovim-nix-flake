@@ -84,7 +84,7 @@
                 role = "user",
                 content = function(context)
                   local text = require("codecompanion.helpers.actions").get_code(context.start_line, context.end_line)
-                  return "Can you please sort these Terraform resource blocks alphabetically by their name grouped by their type also alphabetically:\n\n```" .. context.filetype .. "\n" .. text .. "\n```\n\n"
+                  return "Can you please sort these Terraform resource blocks alphabetically by their name grouped by their type also alphabetically. If the block is commented it should still be sorted but still be commented after sorting:\n\n```" .. context.filetype .. "\n" .. text .. "\n```\n\n"
                 end,
                 opts = {
                   contains_code = true,
