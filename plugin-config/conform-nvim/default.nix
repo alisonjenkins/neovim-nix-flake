@@ -6,7 +6,12 @@
       formatters_by_ft = {
         "_" = [ "trim_whitespace" ];
         go = [ "goimports" "golines" "gofmt" "gofumpt" ];
-        javascript = [ [ "prettierd" "prettier" ] ];
+        javascript.__raw = ''
+          {
+            "prettierd",
+            "prettier",
+            stop_after_first = true
+          }'';
         json = [ "jq" ];
         lua = [ "stylua" ];
         python = [ "isort" "black" ];
