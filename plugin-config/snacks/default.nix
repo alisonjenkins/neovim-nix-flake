@@ -59,6 +59,10 @@
         enabled = true;
       };
 
+      input = {
+        enabled = true;
+      };
+
       quickfile = {
         enabled = true;
       };
