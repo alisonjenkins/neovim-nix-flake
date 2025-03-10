@@ -113,11 +113,14 @@
             cowsay
             dwt1-shell-color-scripts
             fortune
+            ghostscript
             gofumpt
             golangci-lint
             golines
+            imagemagick
             isort
             jq
+            mermaid-cli
             nixpkgs-fmt
             nodePackages.prettier
             prettierd
@@ -125,6 +128,7 @@
             rustfmt
             shfmt
             stylua
+            tectonic
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
