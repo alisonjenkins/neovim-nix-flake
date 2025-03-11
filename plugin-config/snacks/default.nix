@@ -81,7 +81,7 @@
       };
 
       statuscolumn = {
-        enabled = true;
+        enabled = false;
       };
 
       picker = {
