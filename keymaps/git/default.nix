@@ -11,7 +11,7 @@
   {
     mode = "n";
     key = "<leader>gb";
-    action = "<cmd>lua require('snacks').picker.git_branches()<CR>";
+    action = "<cmd>lua require('snacks').picker.git_branches({win = { input = { keys = { ['<c-g>'] = { 'git_branch_add', mode = { 'n', 'i' } } } } }})<CR>";
     options = {
       desc = "Branches";
       silent = true;
