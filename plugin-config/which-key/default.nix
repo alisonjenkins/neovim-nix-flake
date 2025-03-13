@@ -9,6 +9,21 @@
           mode = "v";
         }
         {
+          __unkeyed-1 = "<leader>l";
+          desc = "LSP";
+          mode = "v";
+        }
+        {
+          __unkeyed-1 = "<leader>lR";
+          desc = "Rust";
+          mode = "v";
+        }
+        {
+          __unkeyed-1 = "<leader>lR";
+          desc = "Rust";
+          mode = "v";
+        }
+        {
           __unkeyed-1 = "<leader>:";
           desc = "Terminal";
         }
