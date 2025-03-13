@@ -124,6 +124,7 @@
             mermaid-cli
             nixpkgs-fmt
             nodePackages.prettier
+            postgresql
             prettierd
             rust-analyzer
             rustfmt
@@ -139,6 +140,9 @@
             lazydev-nvim
             nvim-jdtls
             outline-nvim
+            vim-dadbod
+            vim-dadbod-completion
+            vim-dadbod-ui
             vim-table-mode
           ];
 
