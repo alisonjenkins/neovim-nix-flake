@@ -48,6 +48,10 @@
           desc = "Step";
         }
         {
+          __unkeyed-1 = "<leader>D";
+          desc = "Databases";
+        }
+        {
           __unkeyed-1 = "<leader>g";
           desc = "Git";
         }
