@@ -194,6 +194,7 @@
           keymaps = [ ]
             ++ import ./keymaps/ai
             ++ import ./keymaps/buffers
+            ++ import ./keymaps/db
             ++ import ./keymaps/debugging
             ++ import ./keymaps/folding
             ++ import ./keymaps/git
