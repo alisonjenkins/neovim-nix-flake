@@ -88,6 +88,7 @@
         matcher = {
           cwd_bonus = true;
           frecency = true;
+          history_bonus = true;
           sort_empty = true;
         };
 
