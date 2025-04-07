@@ -86,6 +86,7 @@
 
       picker = {
         matcher = {
+          cwd_bonus = true;
           frecency = true;
           sort_empty = true;
         };
