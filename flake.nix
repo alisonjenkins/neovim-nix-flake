@@ -3,7 +3,7 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    # neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -23,8 +23,8 @@
           editorconfig.enable = true;
           enableMan = false;
           luaLoader.enable = true;
-          package =
-            inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
+          # package =
+          #   inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
 
           autoCmd = [
             {
