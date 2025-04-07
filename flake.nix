@@ -131,6 +131,7 @@
             shfmt
             stylua
             tectonic
+            websocat
             wordnet
           ];
 
