@@ -129,6 +129,7 @@
             rust-analyzer
             rustfmt
             shfmt
+            sqlite
             stylua
             tectonic
             websocat
