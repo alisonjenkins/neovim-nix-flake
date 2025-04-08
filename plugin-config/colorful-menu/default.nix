@@ -1,0 +1,5 @@
+{
+  colorful-menu = {
+    enable = true;
+  };
+}

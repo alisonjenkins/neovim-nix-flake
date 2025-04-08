@@ -271,6 +271,7 @@
               // (import ./plugin-config/blink-ripgrep)
               // (import ./plugin-config/ccc)
               // (import ./plugin-config/codecompanion)
+              // (import ./plugin-config/colorful-menu)
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/copilot-lua)
               // (import ./plugin-config/crates)
