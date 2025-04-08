@@ -85,7 +85,7 @@
             max_items = null;
             min_keyword_length = 0;
             override = null;
-            score_offset = 0;
+            score_offset = 10;
             should_show_items = true;
             timeout_ms = 2000;
 
@@ -96,7 +96,7 @@
           path = {
             name = "Path";
             module = "blink.cmp.sources.path";
-            score_offset = 3;
+            score_offset = 0;
 
             fallbacks = [
               "buffer"
@@ -111,11 +111,12 @@
           buffer = {
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
+            score_offset = 0;
           };
           copilot = {
             name = "copilot";
             module = "blink-copilot";
-            score_offset = 100;
+            score_offset = 5;
             async = true;
 
             opts = {
@@ -132,14 +133,14 @@
           dictionary = {
             module = "blink-cmp-dictionary";
             name = "Dict";
-            score_offset = 100;
+            score_offset = 1;
             min_keyword_length = 3;
             opts = { };
           };
           git = {
             module = "blink-cmp-git";
             name = "git";
-            score_offset = 100;
+            score_offset = 2;
             opts = {
               commit = { };
               git_centers = { git_hub = { }; };
@@ -149,7 +150,7 @@
             async = true;
             module = "blink-ripgrep";
             name = "Ripgrep";
-            score_offset = 100;
+            score_offset = 4;
             opts = {
               prefix_min_len = 3;
               context_size = 5;
@@ -167,7 +168,7 @@
           lazydev = {
             name = "LazyDev";
             module = "lazydev.integrations.blink";
-            score_offset = 100;
+            score_offset = 10;
           };
         };
       };
