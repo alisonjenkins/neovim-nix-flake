@@ -291,6 +291,7 @@
               // (import ./plugin-config/luasnip)
               // (import ./plugin-config/lz-n)
               // (import ./plugin-config/mini)
+              // (import ./plugin-config/modicator)
               // (import ./plugin-config/navbuddy)
               // (import ./plugin-config/neorg { inherit pkgs; })
               // (import ./plugin-config/neotest)
