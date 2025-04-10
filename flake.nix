@@ -30,7 +30,7 @@
             {
               event = [ "TextYankPost" ];
               pattern = [ "*" ];
-              command = "silent! lua vim.highlight.on_yank()";
+              command = "silent! lua vim.hl.on_yank()";
             }
             {
               event = [ "BufEnter" ];
