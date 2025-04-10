@@ -342,6 +342,11 @@
         {
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
+
+            config = {
+              allowUnfree = true;
+            };
+
             overlays = [
               (final: _prev: {
                 master = import inputs.nixpkgs-master {
@@ -356,7 +361,6 @@
                 };
               })
             ];
-            config.allowUnfree = true;
           };
 
           checks = {
