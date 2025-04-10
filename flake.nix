@@ -121,6 +121,7 @@
             imagemagick
             isort
             jq
+            jupyter
             mermaid-cli
             nixpkgs-fmt
             nodePackages.prettier
@@ -149,9 +150,12 @@
           ];
 
           extraPython3Packages = p: [
+            p.ipykernel
+            p.jupyter-client
             p.numpy
             p.plotly
             p.pnglatex
+            p.pynvim
             p.pyperclip
           ];
 
