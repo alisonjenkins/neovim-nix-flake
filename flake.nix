@@ -125,6 +125,7 @@
             mermaid-cli
             nixpkgs-fmt
             nodePackages.prettier
+            openssl
             postgresql
             prettierd
             rust-analyzer
