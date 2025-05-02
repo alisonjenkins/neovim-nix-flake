@@ -288,6 +288,7 @@
               // (import ./plugin-config/dap-virtual-text)
               // (import ./plugin-config/firenvim)
               // (import ./plugin-config/harpoon)
+              // (import ./plugin-config/indent-tools)
               // (import ./plugin-config/kulala { inherit pkgs; })
               // (import ./plugin-config/lazydev)
               // (import ./plugin-config/leap)

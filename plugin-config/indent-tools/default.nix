@@ -1,0 +1,5 @@
+{
+  indent-tools = {
+    enable = true;
+  };
+}
