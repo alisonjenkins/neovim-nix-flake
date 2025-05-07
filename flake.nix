@@ -287,6 +287,7 @@
               // (import ./plugin-config/dap-ui)
               // (import ./plugin-config/dap-virtual-text)
               // (import ./plugin-config/firenvim)
+              // (import ./plugin-config/git-conflict)
               // (import ./plugin-config/harpoon)
               // (import ./plugin-config/indent-tools)
               // (import ./plugin-config/kulala { inherit pkgs; })

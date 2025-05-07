@@ -1,0 +1,5 @@
+{
+  git-conflict = {
+    enable = true;
+  };
+}
