@@ -19,6 +19,60 @@
   }
   {
     mode = "n";
+    key = "<leader>gco";
+    action = "<cmd>GitConflictChooseOurs<CR>";
+    options = {
+      desc = "Git Conflict - Choose Ours";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gct";
+    action = "<cmd>GitConflictChooseTheirs<CR>";
+    options = {
+      desc = "Git Conflict - Choose Theirs";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gcb";
+    action = "<cmd>GitConflictChooseBoth<CR>";
+    options = {
+      desc = "Git Conflict - Choose Both";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gcl";
+    action = "<cmd>GitConflictListQf<CR>";
+    options = {
+      desc = "Git Conflict - List in Quickfix";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gcj";
+    action = "<cmd>GitConflictNextConflict<CR>";
+    options = {
+      desc = "Git Conflict - Next";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>gck";
+    action = "<cmd>GitConflictPrevConflict<CR>";
+    options = {
+      desc = "Git Conflict - Previous";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gff";
     action = "<cmd>Git fetch origin --prune<CR>";
     options = {

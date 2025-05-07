@@ -56,6 +56,10 @@
           desc = "Git";
         }
         {
+          __unkeyed-1 = "<leader>gc";
+          desc = "Git conflicts";
+        }
+        {
           __unkeyed-1 = "<leader>gf";
           desc = "Git Fetch";
         }
