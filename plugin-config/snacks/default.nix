@@ -52,7 +52,7 @@
       };
 
       image = {
-        enabled = true;
+        enabled = false;
       };
 
       indent = {
