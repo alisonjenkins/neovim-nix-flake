@@ -91,7 +91,7 @@
             max_items = null;
             min_keyword_length = 0;
             override = null;
-            score_offset = 10;
+            score_offset = 4;
             should_show_items = true;
             timeout_ms = 2000;
 
@@ -139,14 +139,13 @@
           dictionary = {
             module = "blink-cmp-dictionary";
             name = "Dict";
-            score_offset = 1;
             min_keyword_length = 3;
             opts = { };
           };
           git = {
             module = "blink-cmp-git";
             name = "git";
-            score_offset = 2;
+            score_offset = 100;
             opts = {
               commit = { };
               git_centers = { git_hub = { }; };
@@ -156,7 +155,7 @@
             async = true;
             module = "blink-ripgrep";
             name = "Ripgrep";
-            score_offset = 4;
+            score_offset = 1;
             opts = {
               prefix_min_len = 3;
               context_size = 5;
