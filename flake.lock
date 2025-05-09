@@ -186,15 +186,16 @@
         "nuschtosSearch": "nuschtosSearch"
       },
       "locked": {
-        "lastModified": 1746749676,
-        "narHash": "sha256-782lJpCRuehoNvvyj5OJLuM3g01T1zXWEBEdZcvuiZc=",
-        "owner": "nix-community",
+        "lastModified": 1746770807,
+        "narHash": "sha256-dNnU09i5l1C7k+s5rLDAQsDnP3UDEGV2lSYeNNwWd5o=",
+        "owner": "alisonjenkins",
         "repo": "nixvim",
-        "rev": "a6eda59091bfb984dde882ae7faad0f48ee8e216",
+        "rev": "5ef39c1c0ef45b3a332018403a4af53055c40cf6",
         "type": "github"
       },
       "original": {
-        "owner": "nix-community",
+        "owner": "alisonjenkins",
+        "ref": "add-bamboo-colourscheme",
         "repo": "nixvim",
         "type": "github"
       }

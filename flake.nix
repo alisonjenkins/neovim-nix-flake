@@ -7,7 +7,8 @@
     nixpkgs-master.url = "github:nixos/nixpkgs";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    nixvim.url = "github:nix-community/nixvim";
+    # nixvim.url = "github:nix-community/nixvim";
+    nixvim.url = "github:alisonjenkins/nixvim/add-bamboo-colourscheme";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
@@ -70,15 +71,6 @@
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
 
-            require('bamboo').setup({
-              style = "multiplex",
-              transparent = true,
-
-              lualine = {
-                transparent = true,
-              };
-            })
-            require('bamboo').load()
             require('outline').setup({})
 
             local blink_compat = require('blink.compat')
@@ -138,7 +130,6 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
-            bamboo-nvim
             blink-compat
             lazydev-nvim
             nvim-jdtls
@@ -337,7 +328,7 @@
           # (import ./colorschemes/vscode)
           # (import ./colorschemes/poimandres)
           # (import ./colorschemes/onedark)
-          {}
+          (import ./colorschemes/bamboo)
         );
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
