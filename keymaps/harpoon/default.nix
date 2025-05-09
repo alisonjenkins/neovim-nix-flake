@@ -8,24 +8,24 @@
       silent = true;
     };
   }
-  {
-    mode = "n";
-    key = "<leader>hh";
-    action = ''<cmd>Telescope harpoon marks<CR>'';
-    options = {
-      desc = "Harpoon Telescope Marks";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>hh";
-    action = ''<cmd>Telescope harpoon marks<CR>'';
-    options = {
-      desc = "Harpoon Telescope Marks";
-      silent = true;
-    };
-  }
+  # {
+  #   mode = "n";
+  #   key = "<leader>hh";
+  #   action = ''<cmd>Telescope harpoon marks<CR>'';
+  #   options = {
+  #     desc = "Harpoon Telescope Marks";
+  #     silent = true;
+  #   };
+  # }
+  # {
+  #   mode = "n";
+  #   key = "<leader>hh";
+  #   action = ''<cmd>Telescope harpoon marks<CR>'';
+  #   options = {
+  #     desc = "Harpoon Telescope Marks";
+  #     silent = true;
+  #   };
+  # }
   {
     mode = "n";
     key = "<leader>hn";

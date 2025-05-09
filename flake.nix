@@ -302,7 +302,7 @@
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/snacks)
               // (import ./plugin-config/tailwind-tools)
-              // (import ./plugin-config/telescope)
+              # // (import ./plugin-config/telescope)
               // (import ./plugin-config/tiny-devicons-auto-colors)
               // (import ./plugin-config/tiny-inline-diagnostic)
               // (import ./plugin-config/treesitter { inherit pkgs; })

@@ -26,15 +26,15 @@
       silent = true;
     };
   }
-  {
-    mode = "n";
-    key = "<leader>bs";
-    action = "<cmd>Telescope buffers<cr>";
-    options = {
-      desc = "Switch Buffer";
-      silent = true;
-    };
-  }
+  # {
+  #   mode = "n";
+  #   key = "<leader>bs";
+  #   action = "<cmd>Telescope buffers<cr>";
+  #   options = {
+  #     desc = "Switch Buffer";
+  #     silent = true;
+  #   };
+  # }
   {
     mode = "n";
     key = "[b";

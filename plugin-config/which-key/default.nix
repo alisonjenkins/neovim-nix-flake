@@ -109,7 +109,7 @@
         }
         {
           __unkeyed-1 = "<leader>s";
-          desc = "Search using Telescope";
+          desc = "Search";
         }
         {
           __unkeyed-1 = "<leader>t";
