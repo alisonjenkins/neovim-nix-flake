@@ -1,6 +1,6 @@
 {
   harpoon = {
     enable = true;
-    enableTelescope = true;
+    enableTelescope = false;
   };
 }
