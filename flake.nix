@@ -70,9 +70,6 @@
             vim.loop.fs_mkdir(vim.o.backupdir, 750)
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
-
-            local blink_compat = require('blink.compat')
-            blink_compat.setup({})
           '';
 
           extraFiles = {
@@ -128,7 +125,6 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
-            blink-compat
             lazydev-nvim
             nvim-jdtls
             vim-dadbod
@@ -257,6 +253,7 @@
             # (import ./plugin-config/alpha)
             (import ./plugin-config/arrow)
               // (import ./plugin-config/blink-cmp { inherit pkgs; })
+              // (import ./plugin-config/blink-compat { inherit pkgs; })
               // (import ./plugin-config/blink-cmp-dictionary)
               // (import ./plugin-config/blink-cmp-git)
               // (import ./plugin-config/blink-copilot)
