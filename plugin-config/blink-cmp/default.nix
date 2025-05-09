@@ -57,6 +57,8 @@
       };
 
       fuzzy = {
+        implementation = "rust";
+
         prebuilt_binaries = {
           download = false;
           force_version = "v${pkgs.vimPlugins.blink-cmp.version}";
