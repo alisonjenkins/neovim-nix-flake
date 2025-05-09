@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    melange = {
+      enable = true;
+    };
+  };
+}

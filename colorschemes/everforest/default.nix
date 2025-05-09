@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    everforest = {
+      enable = true;
+    };
+  };
+}

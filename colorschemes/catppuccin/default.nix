@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    catppuccin = {
+      enable = true;
+    };
+  };
+}

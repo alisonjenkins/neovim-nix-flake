@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    poimandres = {
+      enable = true;
+    };
+  };
+}

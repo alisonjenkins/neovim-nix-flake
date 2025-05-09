@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    ayu = {
+      enable = true;
+    };
+  };
+}

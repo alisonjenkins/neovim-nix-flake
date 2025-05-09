@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    onedark = {
+      enable = true;
+    };
+  };
+}

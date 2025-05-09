@@ -19,7 +19,6 @@
     let
       config = { pkgs, ... }:
         {
-          colorschemes.melange.enable = true;
           editorconfig.enable = true;
           enableMan = false;
           luaLoader.enable = true;
@@ -323,7 +322,23 @@
               // (import ./plugin-config/which-key)
               // (import ./plugin-config/zk)
           );
-        };
+        } // (
+          # (import ./colorschemes/ayu)
+          # (import ./colorschemes/catppuccin)
+          # (import ./colorschemes/everforest)
+          # (import ./colorschemes/gruvbox)
+          # (import ./colorschemes/kanagawa-paper)
+          # (import ./colorschemes/melange)
+          # (import ./colorschemes/modus)
+          # (import ./colorschemes/monokai-pro)
+          # (import ./colorschemes/nightfox)
+          # (import ./colorschemes/rose-pine)
+          # (import ./colorschemes/tokyonight)
+          # (import ./colorschemes/vscode)
+          # (import ./colorschemes/poimandres)
+          # (import ./colorschemes/onedark)
+          {}
+        );
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];

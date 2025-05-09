@@ -1,0 +1,7 @@
+{
+  colorschemes = {
+    nightfox = {
+      enable = true;
+    };
+  };
+}
