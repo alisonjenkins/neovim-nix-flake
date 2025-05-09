@@ -71,8 +71,6 @@
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
 
-            require('outline').setup({})
-
             local blink_compat = require('blink.compat')
             blink_compat.setup({})
           '';
@@ -133,7 +131,6 @@
             blink-compat
             lazydev-nvim
             nvim-jdtls
-            outline-nvim
             vim-dadbod
             vim-dadbod-completion
             vim-dadbod-ui
