@@ -305,6 +305,7 @@
               // (import ./plugin-config/noice { inherit pkgs; })
               // (import ./plugin-config/octo)
               // (import ./plugin-config/oil)
+              // (import ./plugin-config/oil-git-status)
               // (import ./plugin-config/otter)
               // (import ./plugin-config/parinfer-rust)
               // (import ./plugin-config/remote-nvim { inherit pkgs; })
