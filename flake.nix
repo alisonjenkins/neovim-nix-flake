@@ -200,7 +200,11 @@
             ++ import ./keymaps/zk;
 
           performance = {
-            byteCompileLua.enable = true;
+            byteCompileLua = {
+              enable = true;
+              nvimRuntime = true;
+              plugins = true;
+            };
           };
 
           plugins = {
