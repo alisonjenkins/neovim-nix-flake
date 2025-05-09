@@ -118,11 +118,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1746766978,
-        "narHash": "sha256-rzh3eRxzbZEbRCSz++XpqaVlMvNY07345IxZk+j8IkA=",
+        "lastModified": 1746777173,
+        "narHash": "sha256-/PVzwvIbRoYGXJc1MmqCwfdT7KCn5H64IhKt3P+y658=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "eda65471b811941b14e54c4768911f09412389e9",
+        "rev": "36874fb469dc0acc099b8363804997682fc94656",
         "type": "github"
       },
       "original": {
@@ -186,16 +186,15 @@
         "nuschtosSearch": "nuschtosSearch"
       },
       "locked": {
-        "lastModified": 1746770807,
-        "narHash": "sha256-dNnU09i5l1C7k+s5rLDAQsDnP3UDEGV2lSYeNNwWd5o=",
-        "owner": "alisonjenkins",
+        "lastModified": 1746775257,
+        "narHash": "sha256-+L9kHmzBwCOLgRSpISZV27ggIWNOfnF22isLBjpEE9I=",
+        "owner": "nix-community",
         "repo": "nixvim",
-        "rev": "5ef39c1c0ef45b3a332018403a4af53055c40cf6",
+        "rev": "2d485ca1a25244e518ec67e908fef668e05e8fad",
         "type": "github"
       },
       "original": {
-        "owner": "alisonjenkins",
-        "ref": "add-bamboo-colourscheme",
+        "owner": "nix-community",
         "repo": "nixvim",
         "type": "github"
       }
