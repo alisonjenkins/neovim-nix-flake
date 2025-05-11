@@ -108,6 +108,22 @@
           desc = "Rust LSP Move Item";
         }
         {
+          __unkeyed-1 = "<leader>o";
+          desc = "Obsidian";
+        }
+        {
+          __unkeyed-1 = "<leader>od";
+          desc = "Obsidian Day";
+        }
+        {
+          __unkeyed-1 = "<leader>of";
+          desc = "Obsidian follow link";
+        }
+        {
+          __unkeyed-1 = "<leader>on";
+          desc = "Obsidian new note";
+        }
+        {
           __unkeyed-1 = "<leader>s";
           desc = "Search";
         }

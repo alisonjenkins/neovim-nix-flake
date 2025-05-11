@@ -192,6 +192,7 @@
             ++ import ./keymaps/jumps
             ++ import ./keymaps/lsp
             ++ import ./keymaps/notifications
+            ++ import ./keymaps/obsidian
             ++ import ./keymaps/rust-lsp
             ++ import ./keymaps/search
             ++ import ./keymaps/tabs
