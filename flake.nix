@@ -291,6 +291,7 @@
               // (import ./plugin-config/neorg { inherit pkgs; })
               // (import ./plugin-config/neotest)
               // (import ./plugin-config/noice { inherit pkgs; })
+              // (import ./plugin-config/obsidian)
               // (import ./plugin-config/octo)
               // (import ./plugin-config/oil)
               // (import ./plugin-config/oil-git-status)
