@@ -184,7 +184,7 @@
         objdump
         ocaml
         ocaml_interface
-        # ocamllex
+        ocamllex
         odin
         pascal
         passwd
