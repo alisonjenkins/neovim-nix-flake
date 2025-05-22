@@ -257,7 +257,7 @@
           // (
             # (import ./plugin-config/alpha)
             (import ./plugin-config/arrow)
-              // (import ./plugin-config/avante { inherit pkgs; })
+              # // (import ./plugin-config/avante { inherit pkgs; })
               // (import ./plugin-config/blink-cmp { inherit pkgs; })
               // (import ./plugin-config/blink-compat)
               // (import ./plugin-config/blink-cmp-dictionary)
