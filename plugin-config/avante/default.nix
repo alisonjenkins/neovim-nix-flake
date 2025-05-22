@@ -5,7 +5,7 @@
     enable = true;
 
     settings = {
-      provider = "copilot";
+      provider = "gemini";
     };
   };
 }
