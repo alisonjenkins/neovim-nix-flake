@@ -12,5 +12,27 @@
         ];
       };
     };
+
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "AvanteAsk"
+          "AvanteBuild"
+          "AvanteChat"
+          "AvanteChatNew"
+          "AvanteHistory"
+          "AvanteClear"
+          "AvanteEdit"
+          "AvanteFocus"
+          "AvanteRefresh"
+          "AvanteStop"
+          "AvanteSwitchProvider"
+          "AvanteShowRepoMap"
+          "AvanteToggle"
+          "AvanteModels"
+          "AvanteSwitchSelectorProvider"
+        ];
+      };
+    };
   };
 }
