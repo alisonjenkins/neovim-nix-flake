@@ -178,7 +178,6 @@
         nim_format_string
         ninja
         nix
-        norg
         nqc
         nu
         objc
