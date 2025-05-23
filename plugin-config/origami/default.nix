@@ -1,6 +1,6 @@
 {
   origami = {
-    enable = true;
+    enable = false;
 
     settings = { };
   };
