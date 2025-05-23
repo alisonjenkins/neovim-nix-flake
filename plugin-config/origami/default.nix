@@ -1,0 +1,7 @@
+{
+  origami = {
+    enable = true;
+
+    settings = { };
+  };
+}
