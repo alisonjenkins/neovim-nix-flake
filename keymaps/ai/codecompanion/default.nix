@@ -1,7 +1,7 @@
 [
   {
     mode = "n";
-    key = "<leader>aa";
+    key = "<leader>aca";
     action = "<cmd>CodeCompanionActions<CR>";
     options = {
       desc = "Open Code Companion Actions";
@@ -10,7 +10,7 @@
   }
   {
     mode = "v";
-    key = "<leader>aa";
+    key = "<leader>aca";
     action = "<cmd>CodeCompanionActions<CR>";
     options = {
       desc = "Open Code Companion Actions";
@@ -19,7 +19,7 @@
   }
   {
     mode = "n";
-    key = "<leader>ac";
+    key = "<leader>acc";
     action = "<cmd>CodeCompanionChat<CR>";
     options = {
       desc = "Open Code Companion Chat";
@@ -28,7 +28,7 @@
   }
   {
     mode = "n";
-    key = "<leader>aC";
+    key = "<leader>acC";
     action = "<cmd>CodeCompanionCmd<CR>";
     options = {
       desc = "Open Code Companion Command";
@@ -37,7 +37,7 @@
   }
   {
     mode = "n";
-    key = "<leader>ap";
+    key = "<leader>acp";
     action = "<cmd>CodeCompanion<CR>";
     options = {
       desc = "Open Code Companion Prompt";

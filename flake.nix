@@ -182,7 +182,8 @@
           };
 
           keymaps = [ ]
-            ++ import ./keymaps/ai
+            ++ import ./keymaps/ai/avante
+            ++ import ./keymaps/ai/codecompanion
             ++ import ./keymaps/buffers
             ++ import ./keymaps/db
             ++ import ./keymaps/debugging
