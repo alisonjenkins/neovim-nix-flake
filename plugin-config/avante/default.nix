@@ -6,6 +6,11 @@
 
     settings = {
       provider = "copilot";
+
+      behaviour = {
+        use_absolute_path = true;
+      };
+
       gemini = {
         api_key_name = [
           "op" "item" "get" "Gemini API Key" "--fields" "label=password" "--reveal"
