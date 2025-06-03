@@ -121,7 +121,7 @@
           };
           copilot = {
             name = "copilot";
-            module = "blink-copilot";
+            module = "blink-cmp-copilot";
             score_offset = 5;
             async = true;
 
