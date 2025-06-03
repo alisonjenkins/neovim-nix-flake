@@ -96,42 +96,12 @@
         ];
 
         providers = {
-          lsp = {
-            name = "LSP";
-            module = "blink.cmp.sources.lsp";
-            async = false;
-            enabled = true;
-            max_items = null;
-            min_keyword_length = 0;
-            override = null;
-            score_offset = 4;
-            should_show_items = true;
-            timeout_ms = 2000;
-
-            fallbacks = [
-              "buffer"
-            ];
-          };
-          path = {
-            name = "Path";
-            module = "blink.cmp.sources.path";
-            score_offset = 0;
-
-            fallbacks = [
-              "buffer"
-            ];
-
-            opts = {
-              label_trailing_slash = true;
-              show_hidden_files_by_default = false;
-              trailing_slash = false;
-            };
-          };
           buffer = {
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
             score_offset = 0;
           };
+
           copilot = {
             name = "copilot";
             module = "blink-cmp-copilot";
@@ -149,12 +119,14 @@
               };
             };
           };
+
           dictionary = {
             module = "blink-cmp-dictionary";
             name = "Dict";
             min_keyword_length = 3;
             opts = { };
           };
+
           git = {
             module = "blink-cmp-git";
             name = "git";
@@ -164,6 +136,46 @@
               git_centers = { git_hub = { }; };
             };
           };
+
+          lazydev = {
+            name = "LazyDev";
+            module = "lazydev.integrations.blink";
+            score_offset = 10;
+          };
+
+          lsp = {
+            name = "LSP";
+            module = "blink.cmp.sources.lsp";
+            async = false;
+            enabled = true;
+            max_items = null;
+            min_keyword_length = 0;
+            override = null;
+            score_offset = 4;
+            should_show_items = true;
+            timeout_ms = 2000;
+
+            fallbacks = [
+              "buffer"
+            ];
+          };
+
+          path = {
+            name = "Path";
+            module = "blink.cmp.sources.path";
+            score_offset = 0;
+
+            fallbacks = [
+              "buffer"
+            ];
+
+            opts = {
+              label_trailing_slash = true;
+              show_hidden_files_by_default = false;
+              trailing_slash = false;
+            };
+          };
+
           ripgrep = {
             async = true;
             module = "blink-ripgrep";
@@ -182,11 +194,6 @@
               additional_paths = { };
               debug = false;
             };
-          };
-          lazydev = {
-            name = "LazyDev";
-            module = "lazydev.integrations.blink";
-            score_offset = 10;
           };
         };
       };
