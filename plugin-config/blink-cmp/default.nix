@@ -54,6 +54,19 @@
         ghost_text = {
           enabled = true;
         };
+
+        list = {
+          selection = {
+            auto_insert = true;
+            preselect = true;
+          };
+        };
+
+        trigger = {
+          show_on_accept_on_trigger_character = true;
+          show_on_keyword = true;
+          show_on_trigger_character = true;
+        };
       };
 
       fuzzy = {
