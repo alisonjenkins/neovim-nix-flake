@@ -21,6 +21,7 @@
       nushell.enable = true;
       pylsp.enable = true;
       pylyzer.enable = false;
+      qmlls.enable = true;
       ruff_lsp.enable = false;
       superhtml.enable = true;
       tailwindcss.enable = true;
