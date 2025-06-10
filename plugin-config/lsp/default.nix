@@ -11,6 +11,7 @@
       dockerls.enable = true;
       earthlyls.enable = true;
       emmet_ls.enable = true;
+      fortls.enable = true;
       golangci_lint_ls.enable = true;
       gopls.enable = true;
       html.enable = true;
