@@ -120,6 +120,7 @@
             sqlite
             stylua
             tectonic
+            terraform
             websocat
             wordnet
           ];
