@@ -127,7 +127,6 @@
         idris
         ini
         inko
-        ipkg
         ispc
         janet_simple
         java
