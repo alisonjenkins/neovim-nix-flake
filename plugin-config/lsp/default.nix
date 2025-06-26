@@ -20,6 +20,7 @@
       jdtls.enable = false;
       jsonls.enable = true;
       lua_ls.enable = true;
+      marksman.enable = true;
       nushell.enable = true;
       pylsp.enable = true;
       pylyzer.enable = false;
