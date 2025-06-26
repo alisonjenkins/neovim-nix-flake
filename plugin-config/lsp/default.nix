@@ -5,7 +5,7 @@
 
     servers = {
       ansiblels.enable = true;
-      asm_ls.enable = true;
+      asm_lsp.enable = true;
       bashls.enable = true;
       ccls.enable = true;
       cssls.enable = true;
