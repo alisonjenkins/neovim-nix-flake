@@ -31,6 +31,7 @@
       terraformls.enable = true;
       ts_ls.enable = true;
       vacuum.enable = true;
+      # vectorcode_server.enable = true;
       veryl_ls.enable = true;
       zls.enable = false;
 
