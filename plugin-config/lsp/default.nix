@@ -30,6 +30,7 @@
       tailwindcss.enable = true;
       terraformls.enable = true;
       ts_ls.enable = true;
+      vacuum.enable = true;
       veryl_ls.enable = true;
       zls.enable = false;
 
