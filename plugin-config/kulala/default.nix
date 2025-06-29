@@ -1,6 +1,7 @@
 { pkgs }: {
   kulala = {
     enable = true;
+    package = pkgs.stable.vimPlugins.kulala-nvim;
 
     settings = {
       curl_path = "${pkgs.curl}/bin/curl";
