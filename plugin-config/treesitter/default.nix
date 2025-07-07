@@ -298,7 +298,6 @@
         v
         vala
         vento
-        verilog
         vhdl
         vhs
         vim
