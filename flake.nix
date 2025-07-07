@@ -385,8 +385,8 @@
                     src = pkgs.fetchFromGitHub {
                       owner = "yetone";
                       repo = "avante.nvim";
-                      rev = "d98f676e32ff37876c70018a6c73c8462a966718";
-                      hash = "sha256-0Oi1t0L3A0DaEBJRVQ10Kll1YSgBFCUDwihLgtkMvjc=";
+                      rev = "6227d5c34051a132a573fb4d94e9039beb6d8968";
+                      hash = "sha256-1Sqv7ekSsSMIvoQ8gVxkNiDzUkZkh03dBjeBsRl2/ZQ=";
                     };
                   });
                 };
