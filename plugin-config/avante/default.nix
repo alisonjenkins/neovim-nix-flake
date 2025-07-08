@@ -5,7 +5,7 @@
     enable = false;
 
     settings = {
-      provider = "copilot";
+      provider = "gemini";
 
       behaviour = {
         use_absolute_path = true;
