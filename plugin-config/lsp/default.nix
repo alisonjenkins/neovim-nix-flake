@@ -1,4 +1,4 @@
-{
+{pkgs, ...}: {
   lsp = {
     enable = true;
     inlayHints = true;
@@ -7,6 +7,7 @@
       ansiblels.enable = true;
       asm_lsp.enable = true;
       bashls.enable = true;
+      bashls.package = pkgs.master.bash-language-server;
       ccls.enable = true;
       cssls.enable = true;
       dockerls.enable = true;
