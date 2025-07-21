@@ -281,6 +281,7 @@
               // (import ./plugin-config/firenvim)
               // (import ./plugin-config/git-conflict)
               // (import ./plugin-config/harpoon)
+              // (import ./plugin-config/img-clip { inherit  pkgs; })
               // (import ./plugin-config/indent-tools)
               // (import ./plugin-config/kulala { inherit pkgs; })
               // (import ./plugin-config/lazydev)
