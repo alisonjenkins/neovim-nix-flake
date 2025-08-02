@@ -8,7 +8,7 @@
       };
 
       bigfile = {
-        enabled = true;
+        enabled = false;
       };
 
       bufdelete = { };
