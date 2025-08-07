@@ -288,6 +288,7 @@
               // (import ./plugin-config/lazydev)
               // (import ./plugin-config/leap)
               // (import ./plugin-config/lsp { inherit  pkgs; })
+              // (import ./plugin-config/lspkind)
               // (import ./plugin-config/lualine)
               // (import ./plugin-config/luasnip)
               // (import ./plugin-config/lz-n)
