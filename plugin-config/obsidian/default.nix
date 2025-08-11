@@ -13,12 +13,8 @@
 
       workspaces = [
         {
-          name = "work";
-          path = "~/obsidian/work";
-        }
-        {
-          name = "startup";
-          path = "~/obsidian/startup";
+          name = "notes";
+          path = "~/obsidian";
         }
       ];
     };
