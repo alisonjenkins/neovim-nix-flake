@@ -2,7 +2,7 @@
   ...
 }: {
   avante = {
-    enable = false;
+    enable = true;
 
     settings = {
       provider = "gemini";
@@ -17,6 +17,28 @@
             "op" "item" "get" "\"Gemini API Key\"" "--fields" "label=password" "--reveal" "--cache"
           ];
         };
+      };
+    };
+
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "AvanteAsk"
+          "AvanteBuild"
+          "AvanteChat"
+          "AvanteChatNew"
+          "AvanteClear"
+          "AvanteEdit"
+          "AvanteFocus"
+          "AvanteHistory"
+          "AvanteModels"
+          "AvanteRefresh"
+          "AvanteShowRepoMap"
+          "AvanteStop"
+          "AvanteSwitchProvider"
+          "AvanteSwitchSelectorProvider"
+          "AvanteToggle"
+        ];
       };
     };
   };
