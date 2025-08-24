@@ -2,7 +2,7 @@
   ...
 }: {
   avante = {
-    enable = false;
+    enable = true;
 
     settings = {
       provider = "gemini";
