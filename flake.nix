@@ -239,7 +239,6 @@
             numbertoggle.enable = true;
             nvim-ufo.enable = true;
             rainbow-delimiters.enable = true;
-            render-markdown.enable = true;
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
@@ -306,6 +305,7 @@
               // (import ./plugin-config/otter)
               // (import ./plugin-config/parinfer-rust)
               // (import ./plugin-config/remote-nvim { inherit pkgs; })
+              // (import ./plugin-config/render-markdown)
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)
               // (import ./plugin-config/smartcolumn)
