@@ -14,7 +14,7 @@
       providers = {
         gemini = {
           api_key_name = [
-            "op" "item" "get" "Gemini API Key" "--fields" "label=password" "--reveal" "--cache"
+            "op" "item" "get" "\"Gemini API Key\"" "--fields" "label=password" "--reveal" "--cache"
           ];
         };
       };
