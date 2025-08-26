@@ -118,8 +118,8 @@
             rustfmt
             shfmt
             sqlite
+            stable.tectonic
             stylua
-            tectonic
             terraform
             websocat
             wordnet
