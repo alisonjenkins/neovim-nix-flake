@@ -243,6 +243,7 @@
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
+            tardis.enable = true;
             tmux-navigator.enable = true;
             treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
