@@ -244,6 +244,15 @@
   }
   {
     mode = "n";
+    key = "<leader>gT";
+    action = "<cmd>Tardis git<CR>";
+    options = {
+      desc = "Git Time Travel for the current file using Tardis";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gpp";
     action = "<cmd>Git push<CR>";
     options = {
