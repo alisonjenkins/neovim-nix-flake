@@ -216,6 +216,7 @@
             cmp-cmdline.enable = true;
             cmp-dap.enable = true;
             cmp-nvim-lsp.enable = true;
+            comfy-line-numbers.enable = true;
             comment.enable = true;
             committia.enable = true;
             direnv.enable = true;
