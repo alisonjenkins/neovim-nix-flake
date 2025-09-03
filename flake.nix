@@ -208,6 +208,21 @@
               nvimRuntime = true;
               plugins = true;
             };
+
+            combinePlugins = {
+              enable = true;
+
+              standalonePlugins = with pkgs.vimPlugins; [
+                conform-nvim
+                copilot-lua
+                mini-nvim
+                nvim-jdtls
+                nvim-treesitter
+                nvim-treesitter-parsers.http
+                oil-nvim
+                snacks-nvim
+              ];
+            };
           };
 
           plugins = {
