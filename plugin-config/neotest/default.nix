@@ -1,15 +1,17 @@
-{
+{pkgs, ...}: let
+  enable = false;
+in {
   neotest = {
-    enable = true;
+    enable = enable;
 
     adapters = {
-      bash.enable = true;
-      go.enable = true;
-      java.enable = true;
-      plenary.enable = true;
-      python.enable = true;
-      rust.enable = true;
-      zig.enable = true;
+      bash.enable = enable;
+      go.enable = enable;
+      java.enable = enable;
+      plenary.enable = enable;
+      python.enable = enable;
+      rust.enable = enable;
+      zig.enable = enable;
     };
 
     settings = {

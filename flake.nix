@@ -297,7 +297,7 @@
               // (import ./plugin-config/modicator)
               // (import ./plugin-config/navbuddy)
               // (import ./plugin-config/neorg { inherit pkgs; })
-              // (import ./plugin-config/neotest)
+              // (import ./plugin-config/neotest { inherit pkgs; })
               // (import ./plugin-config/noice { inherit pkgs; })
               // (import ./plugin-config/obsidian)
               // (import ./plugin-config/octo)
