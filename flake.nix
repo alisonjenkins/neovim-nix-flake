@@ -280,7 +280,6 @@
               // (import ./plugin-config/dap-ui)
               // (import ./plugin-config/dap-virtual-text)
               // (import ./plugin-config/faster-nvim)
-              // (import ./plugin-config/firenvim)
               // (import ./plugin-config/git-conflict)
               // (import ./plugin-config/harpoon)
               // (import ./plugin-config/img-clip { inherit  pkgs; })
