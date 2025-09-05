@@ -1,6 +1,6 @@
 {
   obsidian = {
-    enable = true;
+    enable = false;
 
     settings = {
       legacy_commands = false;
