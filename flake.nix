@@ -114,6 +114,7 @@
             openssl
             postgresql
             prettierd
+            ripgrep
             rust-analyzer
             rustfmt
             shfmt
