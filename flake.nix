@@ -211,7 +211,7 @@
             };
 
             combinePlugins = {
-              enable = true;
+              enable = false;
 
               standalonePlugins = with pkgs.vimPlugins; [
                 conform-nvim
