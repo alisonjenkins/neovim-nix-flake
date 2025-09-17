@@ -5,7 +5,7 @@
     enable = true;
 
     settings = {
-      provider = "gemini";
+      provider = "openrouter";
 
       behaviour = {
         use_absolute_path = true;
@@ -31,15 +31,16 @@
       };
 
       providers = {
-        gemini = {
+        openrouter = {
           api_key_name = [
-            "op" "item" "get" "\"Gemini API Key\"" "--fields" "label=password" "--reveal" "--cache"
+            "op" "item" "get" "\"OpenRouter API Key\"" "--fields" "label=password" "--reveal" "--cache"
           ];
-          model = "gemini-1.5-pro";
+          model = "gpt-3.5-turbo";
           temperature = 0.2;
           top_p = 0.95;
           top_k = 40;
           cache_enabled = true;
+          endpoint = "https://openrouter.ai/api/v1";
         };
       };
 
