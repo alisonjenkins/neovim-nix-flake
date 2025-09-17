@@ -84,6 +84,7 @@
 
       sources = {
         default = [
+          "avante"
           "buffer"
           "copilot"
           "dictionary"
@@ -173,6 +174,17 @@
               label_trailing_slash = true;
               show_hidden_files_by_default = false;
               trailing_slash = false;
+            };
+          };
+
+          avante = {
+            async = true;
+            module = "avante.integrations.blink";
+            name = "Avante";
+            score_offset = 6;
+            opts = {
+              max_completions = 3;
+              kind = "Avante";
             };
           };
 

@@ -134,4 +134,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>aac";
+    action = "<cmd>AvanteToggleCompletion<CR>";
+    options = {
+      desc = "Toggle Avante completion";
+      silent = true;
+    };
+  }
 ]

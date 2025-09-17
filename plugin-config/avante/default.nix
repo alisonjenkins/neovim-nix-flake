@@ -11,6 +11,13 @@
         use_absolute_path = true;
       };
 
+      completion = {
+        enable = true;
+        trigger_characters = ["."];
+        max_lines = 5;
+        debounce_ms = 300;
+      };
+
       providers = {
         gemini = {
           api_key_name = [
@@ -38,6 +45,7 @@
           "AvanteSwitchProvider"
           "AvanteSwitchSelectorProvider"
           "AvanteToggle"
+          "AvanteToggleCompletion"
         ];
       };
     };
