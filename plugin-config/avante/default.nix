@@ -39,6 +39,7 @@
           temperature = 0.2;
           top_p = 0.95;
           top_k = 40;
+          cache_enabled = true;
         };
       };
 

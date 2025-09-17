@@ -190,7 +190,7 @@
                 backward = true;
                 forward = true;
               };
-              context_window = 15;
+              context_window = 20;
             };
           };
 
