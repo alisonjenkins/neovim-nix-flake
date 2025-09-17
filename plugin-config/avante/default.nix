@@ -5,7 +5,7 @@
     enable = true;
 
     settings = {
-      provider = "gemini";
+      provider = "openrouter";
 
       behaviour = {
         use_absolute_path = true;
@@ -42,10 +42,12 @@
           cache_enabled = true;
         };
         openrouter = {
+          __inherited_from = "openai";
           api_key_name = [
             "op" "item" "get" "\"OpenRouter API Key\"" "--fields" "label=password" "--reveal" "--cache"
           ];
-          model = "openrouter-model";
+          endpoint = "https://openrouter.ai/api/v1";
+          model = "deepseek/deepseek-r1";
           temperature = 0.3;
           top_p = 0.9;
           top_k = 50;
