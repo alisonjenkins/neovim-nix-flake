@@ -12,6 +12,8 @@
         auto_focus_input = true;
         auto_scroll = true;
         show_line_numbers = true;
+        code_action_on_save = true;
+        auto_save_history = true;
       };
 
       completion = {
@@ -21,6 +23,11 @@
         debounce_ms = 300;
         auto_trigger = true;
         context_lines = 10;
+        inline = {
+          enable = true;
+          debounce_ms = 300;
+          auto_trigger = true;
+        };
       };
 
       providers = {
@@ -40,6 +47,17 @@
         width = 0.8;
         height = 0.8;
         position = "50%";
+        highlight = true;
+        syntax_highlighting = true;
+        code_block_background = true;
+        markdown = {
+          code_block_background = true;
+          enable = true;
+        };
+        input = {
+          border = "rounded";
+          highlight = true;
+        };
       };
     };
 
@@ -51,7 +69,9 @@
           "AvanteChat"
           "AvanteChatNew"
           "AvanteClear"
+          "AvanteDocumentation"
           "AvanteEdit"
+          "AvanteExplain"
           "AvanteFocus"
           "AvanteHistory"
           "AvanteModels"

@@ -152,4 +152,22 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>aad";
+    action = "<cmd>AvanteDocumentation<CR>";
+    options = {
+      desc = "Generate documentation for current file";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>aal";
+    action = "<cmd>AvanteExplain<CR>";
+    options = {
+      desc = "Explain current code";
+      silent = true;
+    };
+  }
 ]
