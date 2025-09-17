@@ -97,6 +97,13 @@
         ];
 
         providers = {
+          avante = {
+            module = "blink-cmp-avante";
+            name = "Avante";
+            opts = {
+            };
+          };
+
           buffer = {
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
@@ -174,23 +181,6 @@
               label_trailing_slash = true;
               show_hidden_files_by_default = false;
               trailing_slash = false;
-            };
-          };
-
-          avante = {
-            async = true;
-            module = "avante.integrations.blink";
-            name = "Avante";
-            score_offset = 6;
-            opts = {
-              max_completions = 3;
-              kind = "Avante";
-              debounce = 500;
-              auto_refresh = {
-                backward = true;
-                forward = true;
-              };
-              context_window = 20;
             };
           };
 

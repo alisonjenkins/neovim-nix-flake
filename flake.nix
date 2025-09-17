@@ -127,6 +127,7 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
+            blink-cmp-avante
             lazydev-nvim
             nvim-jdtls
             vim-dadbod
