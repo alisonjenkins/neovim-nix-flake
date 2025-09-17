@@ -143,4 +143,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>aai";
+    action = "<cmd>AvanteToggleInlineCompletion<CR>";
+    options = {
+      desc = "Toggle Avante inline completion";
+      silent = true;
+    };
+  }
 ]

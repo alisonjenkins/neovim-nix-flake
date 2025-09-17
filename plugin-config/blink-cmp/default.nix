@@ -185,6 +185,12 @@
             opts = {
               max_completions = 3;
               kind = "Avante";
+              debounce = 500;
+              auto_refresh = {
+                backward = true;
+                forward = true;
+              };
+              context_window = 15;
             };
           };
 
