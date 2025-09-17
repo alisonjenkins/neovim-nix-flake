@@ -41,17 +41,22 @@
           top_k = 40;
           cache_enabled = true;
         };
+
         openrouter = {
           __inherited_from = "openai";
+          cache_enabled = false;
+          endpoint = "https://openrouter.ai/api/v1";
+          model = "google/gemini-2.5-flash";
+          top_k = 50;
+          top_p = 0.9;
+
           api_key_name = [
             "op" "item" "get" "\"OpenRouter API Key\"" "--fields" "label=password" "--reveal" "--cache"
           ];
-          endpoint = "https://openrouter.ai/api/v1";
-          model = "deepseek/deepseek-r1";
-          temperature = 0.3;
-          top_p = 0.9;
-          top_k = 50;
-          cache_enabled = false;
+
+          extra_request_body = {
+            temperature = 0.3;
+          };
         };
       };
 
