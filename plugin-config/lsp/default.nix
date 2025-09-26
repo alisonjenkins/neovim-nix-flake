@@ -4,7 +4,6 @@
     inlayHints = true;
 
     servers = {
-      ansiblels.enable = true;
       asm_lsp.enable = true;
       bashls.enable = true;
       bashls.package = pkgs.master.bash-language-server;
