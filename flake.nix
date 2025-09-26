@@ -257,6 +257,7 @@
             numbertoggle.enable = true;
             nvim-ufo.enable = true;
             rainbow-delimiters.enable = true;
+            rhubarb.enable = true;
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
