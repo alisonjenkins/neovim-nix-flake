@@ -31,6 +31,7 @@
       tailwindcss.enable = true;
       taplo.enable = true;
       terraformls.enable = true;
+      tflint.enable = true;
       ts_ls.enable = true;
       vacuum.enable = true;
       # vectorcode_server.enable = true;
