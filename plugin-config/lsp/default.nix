@@ -4,6 +4,7 @@
     inlayHints = true;
 
     servers = {
+      # vectorcode_server.enable = true;
       asm_lsp.enable = true;
       bashls.enable = true;
       bashls.package = pkgs.master.bash-language-server;
@@ -35,7 +36,6 @@
       tilt_ls.enable = true;
       ts_ls.enable = true;
       vacuum.enable = true;
-      # vectorcode_server.enable = true;
       veryl_ls.enable = true;
       zls.enable = false;
 
