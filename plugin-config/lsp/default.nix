@@ -27,6 +27,7 @@
       qmlls.enable = true;
       ruff_lsp.enable = false;
       superhtml.enable = true;
+      systemd_ls.enable = true;
       tailwindcss.enable = true;
       terraformls.enable = true;
       ts_ls.enable = true;
