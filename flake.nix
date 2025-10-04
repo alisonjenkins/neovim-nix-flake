@@ -70,6 +70,17 @@
             vim.loop.fs_mkdir(vim.o.backupdir, 750)
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
+
+            -- Suppress lspconfig deprecation warning until Nixvim migrates to vim.lsp.config
+            -- This is a temporary workaround for the "require('lspconfig') is deprecated" warning
+            -- See: https://github.com/neovim/nvim-lspconfig/pull/3232
+            local notify = vim.notify
+            vim.notify = function(msg, level, opts)
+              if type(msg) == "string" and msg:find("lspconfig.*deprecated") then
+                return
+              end
+              notify(msg, level, opts)
+            end
           '';
 
           extraFiles = {
