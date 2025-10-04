@@ -63,6 +63,19 @@
           ];
 
           extraConfigLua = ''
+            -- Suppress lspconfig deprecation warnings in Neovim 0.11
+            local original_notify = vim.notify
+            vim.notify = function(msg, level, opts)
+              -- Filter out lspconfig deprecation warnings
+              if type(msg) == "string" and (
+                msg:find("lspconfig") and msg:find("deprecated") or
+                msg:find("vim.lsp.get_active_clients") and msg:find("deprecated")
+              ) then
+                return
+              end
+              original_notify(msg, level, opts)
+            end
+
             vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
             vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
