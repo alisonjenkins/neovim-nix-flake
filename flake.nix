@@ -187,6 +187,7 @@
           keymaps = [ ]
             ++ import ./keymaps/ai/avante
             ++ import ./keymaps/ai/codecompanion
+            ++ import ./keymaps/ai/sidekick
             ++ import ./keymaps/buffers
             ++ import ./keymaps/db
             ++ import ./keymaps/debugging
@@ -328,6 +329,7 @@
               // (import ./plugin-config/render-markdown)
               // (import ./plugin-config/rustaceanvim { inherit pkgs; })
               // (import ./plugin-config/schemastore)
+              // (import ./plugin-config/sidekick)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/snacks)
               // (import ./plugin-config/tailwind-tools)
