@@ -187,6 +187,7 @@
           keymaps = [ ]
             ++ import ./keymaps/ai/avante
             ++ import ./keymaps/ai/codecompanion
+            ++ import ./keymaps/ai/sidekick
             ++ import ./keymaps/buffers
             ++ import ./keymaps/db
             ++ import ./keymaps/debugging

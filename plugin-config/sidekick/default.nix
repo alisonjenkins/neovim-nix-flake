@@ -3,6 +3,8 @@
     enable = true;
 
     settings = {
+      keys = {};
+
       prompts = {
         explain = "Explain this code";
         diagnostics = {

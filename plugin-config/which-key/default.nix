@@ -29,6 +29,11 @@
           mode = "v";
         }
         {
+          __unkeyed-1 = "<leader>as";
+          desc = "Sidekick";
+          mode = ["n" "v"];
+        }
+        {
           __unkeyed-1 = "<leader>l";
           desc = "LSP";
           mode = "v";
