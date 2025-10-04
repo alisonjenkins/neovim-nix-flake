@@ -9,6 +9,7 @@
       bashls.enable = true;
       bashls.package = pkgs.master.bash-language-server;
       ccls.enable = true;
+      copilot.enable = true;
       cssls.enable = true;
       dockerls.enable = true;
       earthlyls.enable = true;
