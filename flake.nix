@@ -260,6 +260,7 @@
             nvim-ufo.enable = true;
             rainbow-delimiters.enable = true;
             rhubarb.enable = true;
+            roslyn.enable = true;
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
