@@ -10,7 +10,7 @@
   }
   {
     mode = "n";
-    key = "<C-.>";
+    key = "<C-y>";
     action = "<cmd>lua require('sidekick').nes_jump_or_apply()<cr>";
     options = {
       desc = "Goto / Apply Next Edit Suggestion";
