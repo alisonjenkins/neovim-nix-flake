@@ -8,7 +8,6 @@
       asm_lsp.enable = true;
       bashls.enable = true;
       bashls.package = pkgs.master.bash-language-server;
-      ccls.enable = true;
       copilot.enable = true;
       cssls.enable = true;
       dockerls.enable = true;
@@ -39,6 +38,11 @@
       vacuum.enable = true;
       veryl_ls.enable = true;
       zls.enable = false;
+
+      ccls = {
+        enable = true;
+        package = pkgs.stable.ccls;
+      };
 
       helm_ls = {
         enable = true;
