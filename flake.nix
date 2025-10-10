@@ -229,7 +229,7 @@
           };
 
           plugins = {
-            # image.enable = true;
+            image.enable = true;
             bacon.enable = true;
             cmp-cmdline.enable = true;
             cmp-dap.enable = true;
@@ -333,7 +333,7 @@
               // (import ./plugin-config/sidekick)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/snacks)
-              // (import ./plugin-config/tailwind-tools)
+              # // (import ./plugin-config/tailwind-tools)
               // (import ./plugin-config/tiny-devicons-auto-colors)
               // (import ./plugin-config/tiny-inline-diagnostic)
               // (import ./plugin-config/treesitter { inherit pkgs; })
