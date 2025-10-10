@@ -81,14 +81,6 @@
               }
               require('jdtls').start_or_attach(config)
             '';
-            "ftplugin/lua.lua".text = ''
-              local lazydev = require('lazydev')
-              lazydev.setup({
-                enabled = true
-              })
-
-              lazydev.find_workspace(buf)
-            '';
           };
 
           extraPackages = with pkgs; [
@@ -128,7 +120,6 @@
 
           extraPlugins = with pkgs.vimPlugins; [
             blink-cmp-avante
-            lazydev-nvim
             nvim-jdtls
             vim-dadbod
             vim-dadbod-completion
