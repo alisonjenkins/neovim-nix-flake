@@ -24,7 +24,6 @@
       html.enable = true;
       jsonls.enable = true;
       lua_ls.enable = true;
-      marksman.enable = true;
       nushell.enable = true;
       pylsp.enable = true;
       qmlls.enable = true;
@@ -47,6 +46,11 @@
       helm_ls = {
         enable = true;
         filetypes = [ "helm" ];
+      };
+
+      marksman = {
+        enable = true;
+        package = pkgs.stable.marksman;
       };
 
       nixd = {
