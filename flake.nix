@@ -74,13 +74,6 @@
 
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
-            "ftplugin/java.lua".text = ''
-              local config = {
-                cmd = {'${pkgs.jdt-language-server}/bin/jdtls', '--jvm-arg=-javaagent:${pkgs.lombok}/share/java/lombok.jar', '--jvm-arg=-Xbootclasspath/a:${pkgs.lombok}/share/java/lombok.jar'},
-                root_dir = vim.fs.dirname(vim.fs.find({'gradlew', '.git', 'mvnw'}, { upward = true })[1]),
-              }
-              require('jdtls').start_or_attach(config)
-            '';
           };
 
           extraPackages = with pkgs; [
@@ -120,7 +113,6 @@
 
           extraPlugins = with pkgs.vimPlugins; [
             blink-cmp-avante
-            nvim-jdtls
             vim-dadbod
             vim-dadbod-completion
             vim-dadbod-ui
