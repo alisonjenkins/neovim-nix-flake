@@ -254,7 +254,7 @@
   {
     mode = "n";
     key = "<leader>gpp";
-    action = "<cmd>Git push<CR>";
+    action = "<cmd>Git! push<CR>";
     options = {
       desc = "Git Push";
       silent = true;
@@ -263,7 +263,7 @@
   {
     mode = "n";
     key = "<leader>gpf";
-    action = "<cmd>Git pfl<CR>";
+    action = "<cmd>Git! pfl<CR>";
     options = {
       desc = "Git Push --force-with-lease";
       silent = true;
@@ -272,7 +272,7 @@
   {
     mode = "n";
     key = "<leader>gpt";
-    action = "<cmd>Git push --tags<CR>";
+    action = "<cmd>Git! push --tags<CR>";
     options = {
       desc = "Git Push --tags";
       silent = true;
