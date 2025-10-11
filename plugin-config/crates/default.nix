@@ -8,12 +8,6 @@
       smart_insert = true;
       thousands_separator = ",";
 
-      completion = {
-        cmp = {
-          enabled = true;
-        };
-      };
-
       lsp = {
         enabled = true;
         actions = true;
