@@ -1,0 +1,8 @@
+{
+  neogit = {
+    enable = true;
+
+    settings = {
+    };
+  };
+}

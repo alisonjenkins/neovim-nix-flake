@@ -163,7 +163,8 @@
             ++ import ./keymaps/debugging
             ++ import ./keymaps/folding
             ++ import ./keymaps/git
-            ++ import ./keymaps/git/fugitive
+            # ++ import ./keymaps/git/fugitive
+            ++ import ./keymaps/git/neogit
             ++ import ./keymaps/harpoon
             ++ import ./keymaps/jumps
             ++ import ./keymaps/lsp
@@ -212,7 +213,7 @@
             ethersync.enable = true;
             fidget.enable = true;
             friendly-snippets.enable = true;
-            fugitive.enable = true;
+            fugitive.enable = false;
             gitignore.enable = true;
             gitsigns.enable = true;
             hardtime.enable = false;
@@ -229,7 +230,7 @@
             numbertoggle.enable = true;
             nvim-ufo.enable = true;
             rainbow-delimiters.enable = true;
-            rhubarb.enable = true;
+            rhubarb.enable = false;
             roslyn.enable = false;
             sleuth.enable = true;
             smear-cursor.enable = true;
@@ -287,6 +288,7 @@
               // (import ./plugin-config/mini)
               // (import ./plugin-config/modicator)
               // (import ./plugin-config/navbuddy)
+              // (import ./plugin-config/neogit)
               // (import ./plugin-config/neorg { inherit pkgs; })
               // (import ./plugin-config/neotest { inherit pkgs; })
               // (import ./plugin-config/noice { inherit pkgs; })
