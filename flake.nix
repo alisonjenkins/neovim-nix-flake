@@ -270,6 +270,7 @@
               // (import ./plugin-config/dap-python)
               // (import ./plugin-config/dap-ui)
               // (import ./plugin-config/dap-virtual-text)
+              // (import ./plugin-config/diffview)
               // (import ./plugin-config/faster-nvim)
               // (import ./plugin-config/git-conflict)
               // (import ./plugin-config/harpoon)

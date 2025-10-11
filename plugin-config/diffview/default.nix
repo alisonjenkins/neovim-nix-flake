@@ -1,0 +1,8 @@
+{
+  diffview = {
+    enable = true;
+
+    settings = {
+    };
+  };
+}
