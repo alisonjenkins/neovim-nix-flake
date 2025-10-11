@@ -163,6 +163,7 @@
             ++ import ./keymaps/debugging
             ++ import ./keymaps/folding
             ++ import ./keymaps/git
+            ++ import ./keymaps/git/fugitive
             ++ import ./keymaps/harpoon
             ++ import ./keymaps/jumps
             ++ import ./keymaps/lsp
