@@ -19,6 +19,7 @@
       earthlyls.enable = true;
       emmet_ls.enable = true;
       fortls.enable = true;
+      gh_actions_ls.enable = true;
       golangci_lint_ls.enable = true;
       gopls.enable = true;
       html.enable = true;
