@@ -86,6 +86,7 @@
         default = [
           "avante"
           "buffer"
+          "conventional_commits"
           "copilot"
           "dictionary"
           "git"
@@ -108,6 +109,17 @@
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
             score_offset = 0;
+          };
+
+          conventional_commits = {
+            name = "Conventional Commits";
+            module = "blink-cmp-conventional-commits";
+
+            enabled.__raw = ''
+              function()
+                return vim.bo.filetype == "gitcommit"
+              end
+            '';
           };
 
           copilot = {
