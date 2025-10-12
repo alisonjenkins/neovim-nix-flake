@@ -109,6 +109,10 @@
           desc = "Git Rebase";
         }
         {
+          __unkeyed-1 = "<leader>gR";
+          desc = "Git Repo";
+        }
+        {
           __unkeyed-1 = "<leader>gS";
           desc = "Git Stash";
         }
