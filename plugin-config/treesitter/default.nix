@@ -321,6 +321,8 @@
       ];
 
       settings = {
+        incremental_selection = { enable = true; };
+        indent = { enable = false; };
         textobjects.enable = true;
 
         highlight = {
@@ -328,14 +330,10 @@
 
           disable = ''
             function(lang, bufnr)
-            return vim.api.nvim_buf_line_count(bufnr) > 10000
+              return vim.api.nvim_buf_line_count(bufnr) > 10000
             end
           '';
         };
-
-        incremental_selection = { enable = true; };
-
-        indent = { enable = false; };
       };
     };
 }
