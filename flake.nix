@@ -105,6 +105,16 @@
             vim-dadbod-completion
             vim-dadbod-ui
             vim-table-mode
+
+            (pkgs.vimUtils.buildVimPlugin {
+              name = "blink-cmp-tmux";
+              src = pkgs.fetchFromGitHub {
+                owner = "mgalliou";
+                repo = "blink-cmp-tmux";
+                rev = "4586c705b6f80b536c34a61ed0d3cd4d7f08322d";
+                hash = "sha256-99wmBgU7Yt6eIAXppJUOYQVuiFcX8q8pmk6rKv/d87Q=";
+              };
+            })
           ];
 
           extraPython3Packages = p: [

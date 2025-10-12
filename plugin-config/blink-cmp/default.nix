@@ -95,6 +95,7 @@
           "path"
           "ripgrep"
           "snippets"
+          "tmux"
         ];
 
         providers = {
@@ -220,6 +221,21 @@
                   search_casing = "--ignore-case";
                 };
               };
+            };
+          };
+
+          tmux = {
+            module = "blink-cmp-tmux";
+            name = "tmux";
+
+            opts = {
+              all_panes = true;
+              capture_history = true;
+              triggered_only = false;
+
+              trigger_chars = [
+                "."
+              ];
             };
           };
         };
