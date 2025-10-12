@@ -3,15 +3,10 @@
     enable = true;
 
     settings = {
-      server = {
-        override = true;
+      cmp = {
+        highlight = "foreground";
       };
-      document_color = {
-        enabled = true;
-        kind = "inline";
-        inline_symbol = "󰝤 ";
-        debounce = 200;
-      };
+
       conceal = {
         enabled = true;
         min_length = null;
@@ -20,8 +15,16 @@
           fg = "#38BDF8";
         };
       };
-      cmp = {
-        highlight = "foreground";
+
+      document_color = {
+        enabled = true;
+        kind = "inline";
+        inline_symbol = "󰝤 ";
+        debounce = 200;
+      };
+
+      server = {
+        override = true;
       };
     };
   };
