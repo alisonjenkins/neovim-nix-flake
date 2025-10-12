@@ -62,6 +62,26 @@
           };
         };
 
+        menu = {
+          draw.__raw = ''
+            {
+              -- We don't need label_description now because label and label_description are already
+              -- combined together in label by colorful-menu.nvim.
+              columns = { { "kind_icon" }, { "label", gap = 1 } },
+              components = {
+                label = {
+                  text = function(ctx)
+                    return require("colorful-menu").blink_components_text(ctx)
+                  end,
+                  highlight = function(ctx)
+                    return require("colorful-menu").blink_components_highlight(ctx)
+                  end,
+                },
+              },
+            }
+          '';
+        };
+
         trigger = {
           show_on_accept_on_trigger_character = true;
           show_on_keyword = true;
