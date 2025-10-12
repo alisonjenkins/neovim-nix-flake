@@ -3,6 +3,13 @@
     enable = false;
 
     settings = {
+      full_path_list = [ "update_stuff" ];
+      global_bookmarks = false;
+      index_keys = "123456789zxcbnmZXVBNM,afghjklAFGHJKLwrtyuiopWRTYUIOP";
+      leader_key = null;
+      save_key = "cwd";
+      separate_save_and_remove = false;
+
       mappings = {
         edit = "e";
         delete_mode = "d";
@@ -15,12 +22,6 @@
         next_item = "]";
         prev_item = "[";
       };
-      separate_save_and_remove = false;
-      leader_key = null;
-      save_key = "cwd";
-      global_bookmarks = false;
-      index_keys = "123456789zxcbnmZXVBNM,afghjklAFGHJKLwrtyuiopWRTYUIOP";
-      full_path_list = [ "update_stuff" ];
     };
   };
 }
