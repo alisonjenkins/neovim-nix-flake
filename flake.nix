@@ -199,6 +199,7 @@
 
               standalonePlugins = with pkgs.vimPlugins; [
                 conform-nvim
+                copilot-lua
                 mini-nvim
                 nvim-jdtls
                 nvim-treesitter
