@@ -199,6 +199,7 @@
             ++ import ./keymaps/tabs
             ++ import ./keymaps/terminal
             ++ import ./keymaps/testing
+            ++ import ./keymaps/toggles
             ++ import ./keymaps/zk;
 
           performance = {
@@ -330,6 +331,7 @@
               // (import ./plugin-config/sidekick)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/snacks)
+              // (import ./plugin-config/twilight)
               # // (import ./plugin-config/tailwind-tools)
               // (import ./plugin-config/tiny-devicons-auto-colors)
               // (import ./plugin-config/tiny-inline-diagnostic)
