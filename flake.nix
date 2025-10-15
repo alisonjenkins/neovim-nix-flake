@@ -199,6 +199,7 @@
             ++ import ./keymaps/tabs
             ++ import ./keymaps/terminal
             ++ import ./keymaps/testing
+            ++ import ./keymaps/toggles
             ++ import ./keymaps/zk;
 
           performance = {
