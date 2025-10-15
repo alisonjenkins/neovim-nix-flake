@@ -339,6 +339,7 @@
               // (import ./plugin-config/treesitter-context)
               // (import ./plugin-config/trouble)
               // (import ./plugin-config/which-key)
+              // (import ./plugin-config/zen-mode)
               // (import ./plugin-config/zk)
           );
         } // (
