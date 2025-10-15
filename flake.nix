@@ -59,6 +59,7 @@
             vim.loop.fs_mkdir(vim.o.undodir, 750)
 
             require('jj').setup({})
+            require('pipeline').setup({})
           '';
 
           extraFiles = {
@@ -126,6 +127,16 @@
                 repo = "jj.nvim";
                 rev = "d8280091989d10fd95f1109194846b613d5c4bd0";
                 hash = "sha256-7taOkKswx5LdAi3Gx8jKHNskR/bshhc8wc1KrC1DK8Y=";
+              };
+            })
+
+            (pkgs.vimUtils.buildVimPlugin {
+              name = "pipeline-nvim";
+              src = pkgs.fetchFromGitHub {
+                owner = "topaxi";
+                repo = "pipeline.nvim";
+                rev = "d14a27ba7f25ecb72e28bb9844672de99b151eaa";
+                hash = "sha256-Pl1HkXpnyAIVct3BjGtGTQf2M270Gq5wSh+KUKnL1Tk=";
               };
             })
           ];
