@@ -1,0 +1,5 @@
+{
+  "zen-mode" = {
+    enable = true;
+  };
+}
