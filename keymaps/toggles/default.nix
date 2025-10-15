@@ -1,6 +1,15 @@
 [
   {
     mode = "n";
+    key = "<leader>.p";
+    action = "<cmd>Pipeline<CR>";
+    options = {
+      desc = "CI/CD Pipelines";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>.t";
     action = "<cmd>Twilight<CR>";
     options = {
