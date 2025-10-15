@@ -108,6 +108,7 @@
             vim-dadbod
             vim-dadbod-completion
             vim-dadbod-ui
+            vim-pencil
             vim-table-mode
 
             (pkgs.vimUtils.buildVimPlugin {

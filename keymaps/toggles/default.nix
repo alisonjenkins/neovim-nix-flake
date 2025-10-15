@@ -10,6 +10,15 @@
   }
   {
     mode = "n";
+    key = "<leader>.P";
+    action = "<cmd>PencilToggle<CR>";
+    options = {
+      desc = "Toggle Pencil";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>.t";
     action = "<cmd>Twilight<CR>";
     options = {
