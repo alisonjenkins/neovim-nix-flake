@@ -290,8 +290,9 @@
           }
           // (
             # (import ./plugin-config/alpha)
-            (import ./plugin-config/arrow)
               # // (import ./plugin-config/tailwind-tools)
+              (import ./plugin-config/auto-session)
+              // (import ./plugin-config/arrow)
               // (import ./plugin-config/avante { inherit pkgs; })
               // (import ./plugin-config/blink-cmp { inherit pkgs; })
               // (import ./plugin-config/blink-cmp-copilot)
