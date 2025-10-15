@@ -4,6 +4,11 @@
     settings = {
       spec = [
         {
+          __unkeyed-1 = "<leader>.";
+          desc = "Toggles";
+          mode = "n";
+        }
+        {
           __unkeyed-1 = "<leader>a";
           desc = "AI";
           mode = "v";
