@@ -74,7 +74,7 @@
   {
     mode = "n";
     key = "<leader>gRo";
-    action = "<cmd>lua require('snacks').gitbrowse()<CR>";
+    action = "<cmd>:GBrowse<CR>";
     options = {
       desc = "Open Git repo";
       silent = true;
