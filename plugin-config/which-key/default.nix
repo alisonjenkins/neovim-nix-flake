@@ -121,6 +121,10 @@
           desc = "Harpoon";
         }
         {
+          __unkeyed-1 = "<leader>j";
+          desc = "Jujutsu";
+        }
+        {
           __unkeyed-1 = "<leader>l";
           desc = "LSP";
         }

@@ -57,6 +57,8 @@
             vim.loop.fs_mkdir(vim.o.backupdir, 750)
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
+
+            require('jj').setup({})
           '';
 
           extraFiles = {
@@ -79,6 +81,7 @@
             imagemagick
             isort
             jq
+            jujutsu
             jupyter
             mermaid-cli
             nixpkgs-fmt
@@ -113,6 +116,16 @@
                 repo = "blink-cmp-tmux";
                 rev = "4586c705b6f80b536c34a61ed0d3cd4d7f08322d";
                 hash = "sha256-99wmBgU7Yt6eIAXppJUOYQVuiFcX8q8pmk6rKv/d87Q=";
+              };
+            })
+
+            (pkgs.vimUtils.buildVimPlugin {
+              name = "jj-nvim";
+              src = pkgs.fetchFromGitHub {
+                owner = "NicolasGB";
+                repo = "jj.nvim";
+                rev = "d8280091989d10fd95f1109194846b613d5c4bd0";
+                hash = "sha256-7taOkKswx5LdAi3Gx8jKHNskR/bshhc8wc1KrC1DK8Y=";
               };
             })
           ];
@@ -176,6 +189,7 @@
             ++ import ./keymaps/git
             ++ import ./keymaps/git/fugitive
             ++ import ./keymaps/harpoon
+            ++ import ./keymaps/jujutsu
             ++ import ./keymaps/jumps
             ++ import ./keymaps/lsp
             ++ import ./keymaps/notifications
