@@ -10,6 +10,42 @@
   }
   {
     mode = "n";
+    key = "<leader>oc";
+    action = "<cmd>Obsidian toc<cr>";
+    options = {
+      desc = "Table of Contents";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>odt";
+    action = "<cmd>Obsidian today<cr>";
+    options = {
+      desc = "Today";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>odT";
+    action = "<cmd>Obsidian tomorrow<cr>";
+    options = {
+      desc = "Tomorrow";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>ody";
+    action = "<cmd>Obsidian yesterday<cr>";
+    options = {
+      desc = "Yesterday";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>off";
     action = "<cmd>Obsidian follow_link<cr>";
     options = {
@@ -19,19 +55,19 @@
   }
   {
     mode = "n";
-    key = "<leader>ofv";
-    action = "<cmd>Obsidian follow_link vsplit<cr>";
+    key = "<leader>ofh";
+    action = "<cmd>Obsidian follow_link hsplit<cr>";
     options = {
-      desc = "Follow link in vertical split";
+      desc = "Follow link in horizontal split";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>ofh";
-    action = "<cmd>Obsidian follow_link hsplit<cr>";
+    key = "<leader>ofv";
+    action = "<cmd>Obsidian follow_link vsplit<cr>";
     options = {
-      desc = "Follow link in horizontal split";
+      desc = "Follow link in vertical split";
       silent = true;
     };
   }
@@ -127,37 +163,10 @@
   }
   {
     mode = "n";
-    key = "<leader>odt";
-    action = "<cmd>Obsidian today<cr>";
+    key = "<leader>ow";
+    action = "<cmd>Obsidian workspace<cr>";
     options = {
-      desc = "Today";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>odT";
-    action = "<cmd>Obsidian tomorrow<cr>";
-    options = {
-      desc = "Tomorrow";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>ody";
-    action = "<cmd>Obsidian yesterday<cr>";
-    options = {
-      desc = "Yesterday";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>oc";
-    action = "<cmd>Obsidian toc<cr>";
-    options = {
-      desc = "Table of Contents";
+      desc = "Workspace";
       silent = true;
     };
   }
@@ -167,24 +176,6 @@
     action = "<cmd>Obsidian toggle_checkbox<cr>";
     options = {
       desc = "Toggle checkbox";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>ow";
-    action = "<cmd>Obsidian workspace<cr>";
-    options = {
-      desc = "Workspace";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>ow";
-    action = "<cmd>Obsidian workspace<cr>";
-    options = {
-      desc = "Workspace";
       silent = true;
     };
   }
