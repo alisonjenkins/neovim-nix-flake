@@ -1,0 +1,5 @@
+{
+  cybu = {
+    enable = true;
+  };
+}

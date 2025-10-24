@@ -38,7 +38,7 @@
   {
     mode = "n";
     key = "[b";
-    action = "<cmd>bprevious<cr>";
+    action = "<cmd>CybuPrev<cr>";
     options = {
       desc = "Open previous buffer";
       silent = true;
@@ -47,7 +47,7 @@
   {
     mode = "n";
     key = "]b";
-    action = "<cmd>bnext<cr>";
+    action = "<cmd>CybuNext<cr>";
     options = {
       desc = "Move to next buffer";
       silent = true;

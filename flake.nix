@@ -306,6 +306,7 @@
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/copilot-lua)
               // (import ./plugin-config/crates)
+              // (import ./plugin-config/cybu)
               // (import ./plugin-config/dap { inherit pkgs; })
               // (import ./plugin-config/dap-go { inherit pkgs; })
               // (import ./plugin-config/dap-lldb { inherit pkgs; })
