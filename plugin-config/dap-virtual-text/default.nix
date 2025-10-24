@@ -1,3 +1,13 @@
 {
-  dap-virtual-text.enable = true;
+  dap-virtual-text = {
+    enable = true;
+
+    lazyLoad = {
+      settings = {
+        keys = [
+          "<leader>d"
+        ];
+      };
+    };
+  };
 }

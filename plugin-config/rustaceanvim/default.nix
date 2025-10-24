@@ -29,5 +29,11 @@
         };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        ft = "rust";
+      };
+    };
   };
 }

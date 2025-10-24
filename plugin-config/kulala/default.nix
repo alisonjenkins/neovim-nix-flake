@@ -23,5 +23,20 @@
         };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        ft = "http";
+        cmd = [
+          "Kulala"
+          "KulalaRun"
+          "KulalaRunAll"
+          "KulalaToggle"
+          "KulalaJump"
+          "KulalaInspect"
+          "KuralaCopy"
+        ];
+      };
+    };
   };
 }

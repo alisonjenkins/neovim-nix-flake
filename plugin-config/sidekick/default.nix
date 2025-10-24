@@ -33,5 +33,17 @@
         };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "Sidekick"
+          "SidekickAsk"
+        ];
+        keys = [
+          "<leader>as"
+        ];
+      };
+    };
   };
 }

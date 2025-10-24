@@ -17,5 +17,15 @@
         "table"
       ];
     };
+
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "Twilight"
+          "TwilightEnable"
+          "TwilightDisable"
+        ];
+      };
+    };
   };
 }

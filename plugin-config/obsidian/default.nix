@@ -57,5 +57,36 @@
       }
       '';
     };
+
+    lazyLoad = {
+      settings = {
+        ft = "markdown";
+        cmd = [
+          "ObsidianBacklinks"
+          "ObsidianDailies"
+          "ObsidianExtractNote"
+          "ObsidianFollowLink"
+          "ObsidianLink"
+          "ObsidianLinkNew"
+          "ObsidianLinks"
+          "ObsidianNew"
+          "ObsidianOpen"
+          "ObsidianPasteImg"
+          "ObsidianQuickSwitch"
+          "ObsidianRename"
+          "ObsidianSearch"
+          "ObsidianTags"
+          "ObsidianTemplate"
+          "ObsidianTOC"
+          "ObsidianToday"
+          "ObsidianTomorrow"
+          "ObsidianWorkspace"
+          "ObsidianYesterday"
+        ];
+        keys = [
+          "<leader>o"
+        ];
+      };
+    };
   };
 }
