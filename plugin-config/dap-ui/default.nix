@@ -1,3 +1,13 @@
 {
-  dap-ui.enable = true;
+  dap-ui = {
+    enable = true;
+
+    lazyLoad = {
+      settings = {
+        keys = [
+          "<leader>du"
+        ];
+      };
+    };
+  };
 }

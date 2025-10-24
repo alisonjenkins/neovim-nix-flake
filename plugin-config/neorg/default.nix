@@ -17,5 +17,12 @@
         };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        ft = "norg";
+        cmd = "Neorg";
+      };
+    };
   };
 }

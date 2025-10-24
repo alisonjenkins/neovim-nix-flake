@@ -8,5 +8,14 @@
         "markdown"
       ];
     };
+
+    lazyLoad = {
+      settings = {
+        ft = [
+          "markdown"
+          "Avante"
+        ];
+      };
+    };
   };
 }
