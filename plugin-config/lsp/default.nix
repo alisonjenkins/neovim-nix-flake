@@ -27,7 +27,7 @@
       lua_ls.enable = true;
       nushell.enable = true;
       pylsp.enable = true;
-      qmlls.enable = true;
+      # qmlls.enable = true;
       superhtml.enable = true;
       systemd_ls.enable = true;
       tailwindcss.enable = true;
