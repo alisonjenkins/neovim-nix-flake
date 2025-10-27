@@ -146,7 +146,7 @@
             p.ipykernel
             p.jupyter-client
             p.numpy
-            p.plotly
+            # p.plotly
             p.pnglatex
             p.pynvim
             p.pyperclip
