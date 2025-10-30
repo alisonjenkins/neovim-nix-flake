@@ -46,6 +46,15 @@
   }
   {
     mode = "n";
+    key = "<leader>asC";
+    action = "<cmd>lua require('sidekick.cli').toggle({ name = 'claude', focus = true })<cr>";
+    options = {
+      desc = "Sidekick Toggle Claude";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>asg";
     action = "<cmd>lua require('sidekick.cli').toggle({ name = 'Gemini', focus = true })<cr>";
     options = {
