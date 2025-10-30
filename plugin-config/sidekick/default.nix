@@ -5,6 +5,19 @@
     settings = {
       keys = {};
 
+      cli = {
+        mux = {
+          enabled = true;
+          backend = "tmux";
+
+          create = "split";
+          split = {
+            vertical = true;
+            size = 0.4;
+          };
+        };
+      };
+
       prompts = {
         explain = "Explain this code";
         optimize = "How can this code be optimized?";
