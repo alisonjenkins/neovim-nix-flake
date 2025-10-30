@@ -54,6 +54,15 @@
     };
   }
   {
+    mode = ["n" "x"];
+    key = "<leader>asf";
+    action = "<cmd>lua require('sidekick.cli').focus()<cr>";
+    options = {
+      desc = "Sidekick Switch Focus";
+      silent = true;
+    };
+  }
+  {
     mode = "n";
     key = "<leader>asg";
     action = "<cmd>lua require('sidekick.cli').toggle({ name = 'gemini', focus = true })<cr>";
@@ -64,10 +73,73 @@
   }
   {
     mode = "n";
+    key = "<leader>asna";
+    action = "<cmd>lua require('sidekick.nes').apply()<cr>";
+    options = {
+      desc = "Sidekick Apply Next Edit Suggestions";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>asnc";
+    action = "<cmd>lua require('sidekick.nes').clear()<cr>";
+    options = {
+      desc = "Sidekick Clear Next Edit Suggestions";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>asnd";
+    action = "<cmd>lua require('sidekick.nes').disable()<cr>";
+    options = {
+      desc = "Sidekick Disable Next Edit Suggestions";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>asne";
+    action = "<cmd>lua require('sidekick.nes').enable()<cr>";
+    options = {
+      desc = "Sidekick Enable Next Edit Suggestions";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>asnt";
+    action = "<cmd>lua require('sidekick.nes').toggle()<cr>";
+    options = {
+      desc = "Sidekick Toggle Next Edit Suggestions";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>asnu";
+    action = "<cmd>lua require('sidekick.nes').update()<cr>";
+    options = {
+      desc = "Sidekick Update Next Edit Suggestions";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>aso";
     action = "<cmd>lua require('sidekick.cli').toggle({ name = 'opencode', focus = true })<cr>";
     options = {
       desc = "Sidekick Toggle OpenCode";
+      silent = true;
+    };
+  }
+  {
+    mode = ["n" "x"];
+    key = "<leader>asp";
+    action = "<cmd>lua require('sidekick.cli').prompt()<cr>";
+    options = {
+      desc = "Sidekick Select Prompt";
       silent = true;
     };
   }
@@ -95,24 +167,6 @@
     action = "<cmd>lua require('sidekick.cli').send({ msg = '{selection}' })<cr>";
     options = {
       desc = "Send Visual Selection";
-      silent = true;
-    };
-  }
-  {
-    mode = ["n" "x"];
-    key = "<leader>asp";
-    action = "<cmd>lua require('sidekick.cli').prompt()<cr>";
-    options = {
-      desc = "Sidekick Select Prompt";
-      silent = true;
-    };
-  }
-  {
-    mode = ["n" "x"];
-    key = "<leader>asf";
-    action = "<cmd>lua require('sidekick.cli').focus()<cr>";
-    options = {
-      desc = "Sidekick Switch Focus";
       silent = true;
     };
   }

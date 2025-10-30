@@ -39,6 +39,11 @@
           mode = ["n" "v"];
         }
         {
+          __unkeyed-1 = "<leader>asn";
+          desc = "Sidekick Next Edit Suggestions";
+          mode = ["n" "v"];
+        }
+        {
           __unkeyed-1 = "<leader>l";
           desc = "LSP";
           mode = "v";
