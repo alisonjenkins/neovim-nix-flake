@@ -84,6 +84,7 @@
             jq
             jujutsu
             jupyter
+            lsof
             mermaid-cli
             nixpkgs-fmt
             nodePackages.prettier
