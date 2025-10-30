@@ -28,6 +28,15 @@
   }
   {
     mode = "n";
+    key = "<leader>asA";
+    action = "<cmd>lua require('sidekick.cli').toggle({ name = 'aider', focus = true })<cr>";
+    options = {
+      desc = "Sidekick Toggle Aider";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>asg";
     action = "<cmd>lua require('sidekick.cli').toggle({ name = 'Gemini', focus = true })<cr>";
     options = {
