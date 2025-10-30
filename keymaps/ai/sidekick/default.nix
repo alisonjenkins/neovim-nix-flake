@@ -56,7 +56,7 @@
   {
     mode = "n";
     key = "<leader>asg";
-    action = "<cmd>lua require('sidekick.cli').toggle({ name = 'Gemini', focus = true })<cr>";
+    action = "<cmd>lua require('sidekick.cli').toggle({ name = 'gemini', focus = true })<cr>";
     options = {
       desc = "Sidekick Toggle Gemini";
       silent = true;
