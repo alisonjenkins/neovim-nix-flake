@@ -37,6 +37,15 @@
   }
   {
     mode = "n";
+    key = "<leader>asc";
+    action = "<cmd>lua require('sidekick.cli').toggle({ name = 'copilot', focus = true })<cr>";
+    options = {
+      desc = "Sidekick Toggle Copilot";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>asg";
     action = "<cmd>lua require('sidekick.cli').toggle({ name = 'Gemini', focus = true })<cr>";
     options = {
