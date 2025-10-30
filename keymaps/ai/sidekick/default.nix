@@ -63,6 +63,15 @@
     };
   }
   {
+    mode = "n";
+    key = "<leader>aso";
+    action = "<cmd>lua require('sidekick.cli').toggle({ name = 'opencode', focus = true })<cr>";
+    options = {
+      desc = "Sidekick Toggle OpenCode";
+      silent = true;
+    };
+  }
+  {
     mode = "v";
     key = "<leader>ass";
     action = "<cmd>lua require('sidekick.cli').select({ filter = { installed = true } })<cr>";
