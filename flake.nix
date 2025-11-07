@@ -275,7 +275,6 @@
             smear-cursor.enable = true;
             specs.enable = false;
             tardis.enable = true;
-            teamtype.enable = true;
             tmux-navigator.enable = true;
             treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
@@ -291,6 +290,7 @@
           }
           // (
             # (import ./plugin-config/alpha)
+              # // (import ./plugin-config/teamtype)
               # // (import ./plugin-config/tailwind-tools)
               (import ./plugin-config/auto-session)
               // (import ./plugin-config/arrow)
