@@ -60,6 +60,18 @@
             -- LSP performance optimizations
             vim.lsp.set_log_level("ERROR")    -- Reduce LSP logging for performance
             
+            -- Async loading optimizations
+            vim.defer_fn(function()
+              -- Load heavy computation after startup
+              vim.schedule(function()
+                -- Defer expensive operations
+                if vim.fn.argc() == 0 then
+                  -- Only run expensive setup when no files are opened
+                  vim.cmd("silent! UpdateRemotePlugins")
+                end
+              end)
+            end, 10)
+            
             vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
             vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
