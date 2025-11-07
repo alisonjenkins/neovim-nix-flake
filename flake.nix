@@ -199,6 +199,9 @@
             updatetime = 50;     # Optimized from 300ms to 50ms
             wrap = false;
             writebackup = true;
+            # Performance optimizations
+            synmaxcol = 300;     # Limit syntax highlighting columns
+            lazyredraw = true;   # Don't redraw during commands
           };
 
           keymaps = [ ]
