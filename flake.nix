@@ -56,6 +56,10 @@
             vim.g.loaded_ruby_provider = 0  -- Disable Ruby provider
             vim.opt.updatetime = 50          -- Faster CursorHold events (default: 4000ms)
             vim.opt.redrawtime = 1500        -- Faster redraw timeout
+            
+            -- LSP performance optimizations
+            vim.lsp.set_log_level("ERROR")    -- Reduce LSP logging for performance
+            
             vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
             vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
