@@ -203,6 +203,7 @@
             synmaxcol = 300;     # Limit syntax highlighting columns
             lazyredraw = true;   # Don't redraw during commands
             regexpengine = 0;    # Auto-select regex engine for compatibility
+            maxmempattern = 1000; # Limit memory for pattern matching
           };
 
           keymaps = [ ]
