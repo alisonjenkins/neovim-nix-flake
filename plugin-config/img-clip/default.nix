@@ -16,5 +16,14 @@
         };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        ft = "markdown";
+        cmd = [
+          "PasteImage"
+        ];
+      };
+    };
   };
 }

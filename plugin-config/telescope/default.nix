@@ -13,5 +13,11 @@
         settings = { db_safe_mode = false; };
       };
     };
+
+    lazyLoad = {
+      settings = {
+        cmd = "Telescope";
+      };
+    };
   };
 }

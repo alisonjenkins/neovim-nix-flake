@@ -22,13 +22,16 @@ in {
       output_panel = { enabled = true; };
     };
 
-    # lazyLoad = {
-    #   settings = {
-    #     cmd = [
-    #       "Neotest"
-    #       "NeotestJava"
-    #     ];
-    #   };
-    # };
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "Neotest"
+          "NeotestJava"
+        ];
+        keys = [
+          "<leader>t"
+        ];
+      };
+    };
   };
 }

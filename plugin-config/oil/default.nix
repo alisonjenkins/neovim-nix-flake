@@ -22,6 +22,15 @@
         signcolumn = "yes:2";
       };
     };
+
+    lazyLoad = {
+      settings = {
+        cmd = [
+          "Oil"
+          "OilFloat"
+        ];
+      };
+    };
   };
 
 }
