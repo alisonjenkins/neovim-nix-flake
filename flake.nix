@@ -250,7 +250,6 @@
             committia.enable = true;
             direnv.enable = true;
             earthly.enable = true;
-            ethersync.enable = true;
             fidget.enable = true;
             friendly-snippets.enable = true;
             fugitive.enable = true;
@@ -276,6 +275,7 @@
             smear-cursor.enable = true;
             specs.enable = false;
             tardis.enable = true;
+            teamtype.enable = true;
             tmux-navigator.enable = true;
             treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
