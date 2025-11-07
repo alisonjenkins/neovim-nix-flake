@@ -3,7 +3,7 @@
     enable = true;
 
     lazyLoad.settings = {
-      event = [ "VeryLazy" ];
+      event = [ "DeferredUIEnter" ];
     };
 
     settings = {
