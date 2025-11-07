@@ -1,6 +1,11 @@
 {
   which-key = {
     enable = true;
+
+    lazyLoad.settings = {
+      event = [ "VeryLazy" ];
+    };
+
     settings = {
       spec = [
         {
