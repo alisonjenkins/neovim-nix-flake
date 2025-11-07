@@ -2,6 +2,11 @@
   obsidian = {
     enable = true;
 
+    lazyLoad.settings = {
+      cmd = [ "Obsidian" ];
+      ft = [ "markdown" ];
+    };
+
     settings = {
       legacy_commands = false;
       new_notes_location = "current_dir";
