@@ -240,7 +240,6 @@
           };
 
           plugins = {
-            image.enable = true;
             bacon.enable = true;
             cmp-cmdline.enable = true;
             cmp-dap.enable = true;
@@ -259,6 +258,7 @@
             helm.enable = true;
             helpview.enable = true;
             hmts.enable = true;
+            image.enable = true;
             lastplace.enable = true;
             lspkind.enable = true;
             lspsaga.enable = true;
