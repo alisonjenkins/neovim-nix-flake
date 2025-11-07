@@ -23,5 +23,15 @@
         };
       };
     };
+
+    lazyLoad = {
+      enable = true;
+
+      settings = {
+        ft = [
+          "http"
+        ];
+      };
+    };
   };
 }
