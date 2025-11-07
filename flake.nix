@@ -258,7 +258,6 @@
             helm.enable = true;
             helpview.enable = true;
             hmts.enable = true;
-            image.enable = true;
             lastplace.enable = true;
             lspkind.enable = true;
             lspsaga.enable = true;
@@ -317,6 +316,7 @@
               // (import ./plugin-config/faster-nvim)
               // (import ./plugin-config/git-conflict)
               // (import ./plugin-config/harpoon)
+              // (import ./plugin-config/image)
               // (import ./plugin-config/img-clip { inherit  pkgs; })
               // (import ./plugin-config/indent-tools)
               // (import ./plugin-config/kulala { inherit pkgs; })
