@@ -1,5 +1,5 @@
 {
   auto-session = {
-    enable = true;
+    enable = false;
   };
 }
