@@ -307,7 +307,6 @@
             ts-autotag.enable = true;
             ts-context-commentstring.enable = true;
             typst-vim.enable = true;
-            vim-be-good.enable = true;
             vim-css-color.enable = true;
             web-devicons.enable = true;
             wilder.enable = true;
@@ -379,6 +378,7 @@
               // (import ./plugin-config/treesitter-context)
               // (import ./plugin-config/trouble)
               // (import ./plugin-config/twilight)
+              // (import ./plugin-config/vim-be-good)
               // (import ./plugin-config/which-key)
               // (import ./plugin-config/zen-mode)
               // (import ./plugin-config/zk)
