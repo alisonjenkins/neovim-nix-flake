@@ -196,7 +196,7 @@
             termguicolors = true;
             timeoutlen = 300;
             undofile = true;
-            updatetime = 300;
+            updatetime = 50;     # Optimized from 300ms to 50ms
             wrap = false;
             writebackup = true;
           };
