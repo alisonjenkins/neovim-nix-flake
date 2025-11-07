@@ -300,7 +300,6 @@
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
-            tardis.enable = true;
             tmux-navigator.enable = true;
             treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
@@ -372,6 +371,7 @@
               // (import ./plugin-config/sidekick)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/snacks)
+              // (import ./plugin-config/tardis)
               // (import ./plugin-config/tiny-devicons-auto-colors)
               // (import ./plugin-config/tiny-inline-diagnostic)
               // (import ./plugin-config/treesitter { inherit pkgs; })
