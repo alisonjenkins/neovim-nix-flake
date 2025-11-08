@@ -334,7 +334,7 @@
             function(lang, bufnr)
               local line_count = vim.api.nvim_buf_line_count(bufnr)
               -- Disable for very large files
-              if line_count > 5000 then
+              if line_count > 10000 then
                 return true
               end
               -- Disable for certain large filetypes that don't need highlighting
@@ -365,7 +365,7 @@
             disable = ''
               function(lang, bufnr)
                 local line_count = vim.api.nvim_buf_line_count(bufnr)
-                if line_count > 5000 then
+                if line_count > 10000 then
                   return true
                 end
                 local ft = vim.bo[bufnr].filetype
