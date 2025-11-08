@@ -56,32 +56,31 @@
             vim.g.loaded_ruby_provider = 0  -- Disable Ruby provider
             vim.opt.updatetime = 50          -- Faster CursorHold events (default: 4000ms)
             vim.opt.redrawtime = 1500        -- Faster redraw timeout
-            
+
             -- LSP performance optimizations
             vim.lsp.set_log_level("ERROR")    -- Reduce LSP logging for performance
-            
-            -- Async loading optimizations
-            vim.defer_fn(function()
-              -- Load heavy computation after startup
-              vim.schedule(function()
-                -- Defer expensive operations
-                if vim.fn.argc() == 0 then
-                  -- Only run expensive setup when no files are opened
-                  vim.cmd("silent! UpdateRemotePlugins")
-                end
-              end)
-            end, 10)
-            
-            vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
-            vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
+
+            -- Directory setup (sync - needed immediately)
+            vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"
+            vim.o.directory = vim.fn.stdpath("data") .. "/directory"
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
-            vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
+            vim.o.undodir = vim.fn.stdpath("data") .. "/undo"
             vim.loop.fs_mkdir(vim.o.backupdir, 750)
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
 
-            require('jj').setup({})
-            require('pipeline').setup({})
+            -- Defer non-critical plugin setups to speed up startup
+            vim.defer_fn(function()
+              require('jj').setup({})
+              require('pipeline').setup({})
+            end, 5)
+
+            -- Defer UpdateRemotePlugins to avoid blocking startup
+            vim.defer_fn(function()
+              if vim.fn.argc() == 0 then
+                vim.cmd("silent! UpdateRemotePlugins")
+              end
+            end, 100)
           '';
 
           extraFiles = {
@@ -213,8 +212,8 @@
             writebackup = true;
             # Performance optimizations
             synmaxcol = 300;     # Limit syntax highlighting columns
-            lazyredraw = false;   # Don't redraw during commands
-            regexpengine = 0;    # Auto-select regex engine for compatibility
+            lazyredraw = false;   # Don't redraw during macros (keep false for smooth UI)
+            regexpengine = 0;    # Auto-select regex engine
             maxmempattern = 1000; # Limit memory for pattern matching
           };
 
