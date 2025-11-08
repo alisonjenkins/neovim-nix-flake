@@ -1,14 +1,14 @@
 {
   luasnip = {
     enable = true;
-    
+
     # Optimize snippet loading - only load specific snippet packs you need
     fromVscode = [
       {
         # Only load essential snippet collections
-        include = [ 
+        include = [
           "javascript"
-          "typescript" 
+          "typescript"
           "python"
           "go"
           "rust"
