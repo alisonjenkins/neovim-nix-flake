@@ -2,6 +2,11 @@
   oil = {
     enable = true;
 
+    lazyLoad.settings = {
+      keys = [ "-" ];
+      cmd = [ "Oil" ];
+    };
+
     settings = {
       delete_to_trash = true;
       skip_confirm_for_simple_edits = true;

@@ -2,6 +2,11 @@
   neorg = {
     enable = true;
 
+    lazyLoad.settings = {
+      ft = [ "norg" ];
+      cmd = [ "Neorg" ];
+    };
+
     settings = {
       load = {
         "core.defaults" = {

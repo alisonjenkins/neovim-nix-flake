@@ -321,19 +321,41 @@
       ];
 
       settings = {
+        # Performance optimizations for treesitter
         incremental_selection = { enable = true; };
-        indent = { enable = false; };
+        indent = { enable = false; };  # Keep disabled for performance
         textobjects.enable = true;
 
         highlight = {
           enable = true;
 
+          # Optimize highlighting performance
           disable = ''
             function(lang, bufnr)
-              return vim.api.nvim_buf_line_count(bufnr) > 10000
+              local line_count = vim.api.nvim_buf_line_count(bufnr)
+              -- Disable for very large files
+              if line_count > 10000 then
+                return true
+              end
+              -- Disable for certain large filetypes that don't need highlighting
+              local ft = vim.bo[bufnr].filetype
+              if ft == "help" or ft == "man" then
+                return true
+              end
+              return false
             end
           '';
+
+          # Reduce highlighting update frequency for performance
+          additional_vim_regex_highlighting = false;
         };
+
+        # Optimize parser loading
+        auto_install = false;  # Don't auto-install at runtime
+        ensure_installed = []; # All grammars are managed by Nix
+
+        # Performance settings
+        sync_install = false;
       };
     };
 }

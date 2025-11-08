@@ -50,16 +50,160 @@
           ];
 
           extraConfigLua = ''
-            vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"    -- set backup directory to be a subdirectory of data to ensure that backups are not written to git repos
-            vim.o.directory = vim.fn.stdpath("data") .. "/directory" -- Configure 'directory' to ensure that Neovim swap files are not written to repos.
+            -- Performance optimizations
+            vim.g.loaded_node_provider = 0  -- Disable Node.js provider
+            vim.g.loaded_perl_provider = 0  -- Disable Perl provider
+            vim.g.loaded_ruby_provider = 0  -- Disable Ruby provider
+            vim.opt.redrawtime = 1500        -- Faster redraw timeout
+
+            -- LSP performance optimizations
+            vim.lsp.set_log_level("ERROR")    -- Reduce LSP logging for performance
+
+            -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
+            -- This spreads file access over time instead of all at once
+            local lsp_defer_time = 150  -- milliseconds
+
+            -- Track which buffers have had LSP deferred
+            local lsp_deferred_buffers = {}
+
+            -- Store the original buf_attach_client function
+            local original_buf_attach_client = vim.lsp.buf_attach_client
+
+            -- Override buf_attach_client to defer LSP attachment
+            vim.lsp.buf_attach_client = function(client, bufnr)
+              local buf = bufnr or vim.api.nvim_get_current_buf()
+
+              -- Skip if already deferred for this buffer
+              if lsp_deferred_buffers[buf] then
+                return original_buf_attach_client(client, buf)
+              end
+
+              -- Mark as deferred and schedule attachment
+              lsp_deferred_buffers[buf] = true
+              vim.defer_fn(function()
+                -- Check if buffer is still valid
+                if vim.api.nvim_buf_is_valid(buf) then
+                  original_buf_attach_client(client, buf)
+                end
+              end, lsp_defer_time)
+            end
+
+            -- Clean up tracking when buffers are deleted
+            vim.api.nvim_create_autocmd("BufDelete", {
+              callback = function(args)
+                lsp_deferred_buffers[args.buf] = nil
+              end,
+            })
+
+            -- Directory setup (sync - needed immediately)
+            vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"
+            vim.o.directory = vim.fn.stdpath("data") .. "/directory"
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
-            vim.o.undodir = vim.fn.stdpath("data") .. "/undo" -- set undodir to ensure that the undofiles are not saved to git repos.
+            vim.o.undodir = vim.fn.stdpath("data") .. "/undo"
             vim.loop.fs_mkdir(vim.o.backupdir, 750)
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
 
-            require('jj').setup({})
-            require('pipeline').setup({})
+            -- Defer non-critical plugin setups to speed up startup
+            vim.defer_fn(function()
+              require('jj').setup({})
+              require('pipeline').setup({})
+            end, 50)
+
+            -- Defer UpdateRemotePlugins to avoid blocking startup
+            vim.defer_fn(function()
+              if vim.fn.argc() == 0 then
+                vim.cmd("silent! UpdateRemotePlugins")
+              end
+            end, 100)
+
+            -- Additional startup optimizations for AV scanning environments
+            -- Disable some filesystem watchers that trigger excessive AV scans
+            vim.opt.shadafile = "NONE"  -- Disable shada during startup
+            vim.defer_fn(function()
+              vim.opt.shadafile = ""    -- Re-enable after startup complete
+              vim.cmd("silent! rshada") -- Restore session data
+            end, 200)
+
+            -- Reduce filesystem polling for better performance with AV
+            vim.opt.swapfile = true  -- Keep swapfiles but reduce write frequency
+            vim.opt.updatecount = 200  -- Write swap after 200 characters (default: 200)
+
+            -- Batch directory scans to reduce AV overhead
+            vim.opt.wildignore:append({
+              "*.o", "*.obj", "*.dylib", "*.bin", "*.dll", "*.exe",
+              "*/.git/*", "*/.svn/*", "*/.DS_Store", "*/node_modules/*",
+              "*/venv/*", "*/__pycache__/*", "*.pyc",
+              "*/.nix-profile/*", "*/.nix-defexpr/*"
+            })
+
+            -- Custom async git commands that only show output on error
+            -- This replaces Git! push, fetch, etc. with silent versions
+            local function async_git_command(args, desc)
+              local output = {}
+              local stderr = {}
+
+              vim.fn.jobstart(vim.list_extend({"git"}, args), {
+                cwd = vim.fn.FugitiveGitDir() and vim.fn.FugitiveWorkTree() or vim.fn.getcwd(),
+                stdout_buffered = true,
+                stderr_buffered = true,
+                on_stdout = function(_, data)
+                  if data then
+                    vim.list_extend(output, data)
+                  end
+                end,
+                on_stderr = function(_, data)
+                  if data then
+                    vim.list_extend(stderr, data)
+                  end
+                end,
+                on_exit = function(_, exit_code)
+                  if exit_code == 0 then
+                    vim.notify(desc .. " completed successfully", vim.log.levels.INFO)
+                  else
+                    -- Show error in a split
+                    local all_output = vim.list_extend(vim.list_extend({}, output), stderr)
+                    -- Filter out empty lines
+                    all_output = vim.tbl_filter(function(line) return line ~= "" end, all_output)
+
+                    if #all_output > 0 then
+                      local buf = vim.api.nvim_create_buf(false, true)
+                      vim.api.nvim_buf_set_lines(buf, 0, -1, false, all_output)
+                      vim.bo[buf].filetype = "git"
+
+                      vim.cmd("botright split")
+                      vim.api.nvim_win_set_buf(0, buf)
+                      vim.cmd("wincmd p")
+                    end
+
+                    vim.notify(desc .. " failed (exit code: " .. exit_code .. ")", vim.log.levels.ERROR)
+                  end
+                end,
+              })
+            end
+
+            -- Create custom commands
+            vim.api.nvim_create_user_command("GitPushSilent", function()
+              async_git_command({"push"}, "Git push")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitPushForceLeaseSilent", function()
+              async_git_command({"push", "--force-with-lease"}, "Git push --force-with-lease")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitPushTagsSilent", function()
+              async_git_command({"push", "--tags"}, "Git push --tags")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitFetchSilent", function(opts)
+              local args = {"fetch"}
+              if opts.args ~= "" then
+                vim.list_extend(args, vim.split(opts.args, "%s+"))
+              else
+                vim.list_extend(args, {"origin", "--prune"})
+              end
+              async_git_command(args, "Git fetch")
+            end, { nargs = "*" })
           '';
 
           extraFiles = {
@@ -186,9 +330,14 @@
             termguicolors = true;
             timeoutlen = 300;
             undofile = true;
-            updatetime = 300;
+            updatetime = 50;     # Optimized from 300ms to 50ms
             wrap = false;
             writebackup = true;
+            # Performance optimizations
+            synmaxcol = 300;     # Limit syntax highlighting columns
+            lazyredraw = false;   # Don't redraw during macros (keep false for smooth UI)
+            regexpengine = 0;    # Auto-select regex engine
+            maxmempattern = 1000; # Limit memory for pattern matching
           };
 
           keymaps = [ ]
@@ -273,14 +422,12 @@
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
-            tardis.enable = true;
             tmux-navigator.enable = true;
             treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
             ts-autotag.enable = true;
             ts-context-commentstring.enable = true;
             typst-vim.enable = true;
-            vim-be-good.enable = true;
             vim-css-color.enable = true;
             web-devicons.enable = true;
             wilder.enable = true;
@@ -346,12 +493,14 @@
               // (import ./plugin-config/sidekick)
               // (import ./plugin-config/smartcolumn)
               // (import ./plugin-config/snacks)
+              // (import ./plugin-config/tardis)
               // (import ./plugin-config/tiny-devicons-auto-colors)
               // (import ./plugin-config/tiny-inline-diagnostic)
               // (import ./plugin-config/treesitter { inherit pkgs; })
               // (import ./plugin-config/treesitter-context)
               // (import ./plugin-config/trouble)
               // (import ./plugin-config/twilight)
+              // (import ./plugin-config/vim-be-good)
               // (import ./plugin-config/which-key)
               // (import ./plugin-config/zen-mode)
               // (import ./plugin-config/zk)

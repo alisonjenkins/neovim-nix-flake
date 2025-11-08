@@ -2,6 +2,10 @@
   telescope = {
     enable = true;
 
+    lazyLoad.settings = {
+      cmd = [ "Telescope" ];
+    };
+
     extensions = {
       file-browser.enable = true;
       fzy-native.enable = true;

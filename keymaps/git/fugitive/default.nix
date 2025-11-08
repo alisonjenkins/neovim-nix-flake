@@ -11,7 +11,7 @@
   {
     mode = "n";
     key = "<leader>gfF";
-    action = "<cmd>Git fetch origin<CR>";
+    action = "<cmd>GitFetchSilent origin<CR>";
     options = {
       desc = "Git fetch";
       silent = true;
@@ -20,7 +20,7 @@
   {
     mode = "n";
     key = "<leader>gff";
-    action = "<cmd>Git fetch origin --prune<CR>";
+    action = "<cmd>GitFetchSilent origin --prune<CR>";
     options = {
       desc = "Git fetch prune";
       silent = true;
@@ -29,7 +29,7 @@
   {
     mode = "n";
     key = "<leader>gfr";
-    action = "<cmd>Git fetch --refetch<CR>";
+    action = "<cmd>GitFetchSilent --refetch<CR>";
     options = {
       desc = "Git fetch refetch";
       silent = true;
@@ -38,7 +38,7 @@
   {
     mode = "n";
     key = "<leader>gft";
-    action = "<cmd>Git fetch --tags<CR>";
+    action = "<cmd>GitFetchSilent --tags<CR>";
     options = {
       desc = "Git fetch tags";
       silent = true;
@@ -164,7 +164,7 @@
   {
     mode = "n";
     key = "<leader>gpp";
-    action = "<cmd>Git! push<CR>";
+    action = "<cmd>GitPushSilent<CR>";
     options = {
       desc = "Git Push";
       silent = true;
@@ -173,7 +173,7 @@
   {
     mode = "n";
     key = "<leader>gpf";
-    action = "<cmd>Git! pfl<CR>";
+    action = "<cmd>GitPushForceLeaseSilent<CR>";
     options = {
       desc = "Git Push --force-with-lease";
       silent = true;
@@ -182,7 +182,7 @@
   {
     mode = "n";
     key = "<leader>gpt";
-    action = "<cmd>Git! push --tags<CR>";
+    action = "<cmd>GitPushTagsSilent<CR>";
     options = {
       desc = "Git Push --tags";
       silent = true;
