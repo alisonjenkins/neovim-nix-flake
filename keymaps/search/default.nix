@@ -98,4 +98,23 @@
       silent = true;
     };
   }
+  # Search highlighting controls (AV optimization - hlsearch disabled by default)
+  {
+    mode = "n";
+    key = "<leader>sH";
+    action = "<cmd>set hlsearch!<CR>";
+    options = {
+      desc = "Toggle search highlighting";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<Esc>";
+    action = "<cmd>nohlsearch<CR>";
+    options = {
+      desc = "Clear search highlighting";
+      silent = true;
+    };
+  }
 ]

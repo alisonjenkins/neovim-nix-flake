@@ -134,7 +134,17 @@
               "*.o", "*.obj", "*.dylib", "*.bin", "*.dll", "*.exe",
               "*/.git/*", "*/.svn/*", "*/.DS_Store", "*/node_modules/*",
               "*/venv/*", "*/__pycache__/*", "*.pyc",
-              "*/.nix-profile/*", "*/.nix-defexpr/*"
+              "*/.nix-profile/*", "*/.nix-defexpr/*",
+              -- macOS-specific AV exclusions for search performance
+              "*.app/*",                       -- macOS application bundles
+              "*/.Spotlight-V100/*",           -- Spotlight metadata
+              "*/.fseventsd/*",                -- FSEvents
+              "*/.DocumentRevisions-V100/*",   -- Document versions
+              "*/.TemporaryItems/*",           -- Temporary items
+              "*/.Trashes/*",                  -- Trash directories
+              "*/Library/Caches/*",            -- Cache directories
+              "*/DerivedData/*",               -- Xcode derived data
+              "*/.build/*",                    -- Swift/Xcode build artifacts
             })
 
             -- Custom async git commands that only show output on error
@@ -330,7 +340,7 @@
             termguicolors = true;
             timeoutlen = 300;
             undofile = true;
-            updatetime = 50;     # Optimized from 300ms to 50ms
+            updatetime = 300;    # Restored to 300ms for better AV performance (was 50ms)
             wrap = false;
             writebackup = true;
             # Performance optimizations
@@ -338,6 +348,13 @@
             lazyredraw = false;   # Don't redraw during macros (keep false for smooth UI)
             regexpengine = 0;    # Auto-select regex engine
             maxmempattern = 1000; # Limit memory for pattern matching
+            # Search optimizations for AV-heavy environments (macOS Defender)
+            hlsearch = false;    # Disable search highlighting by default (use Telescope/Snacks instead)
+            incsearch = true;    # Keep incremental search enabled
+            # Timeout settings
+            timeout = true;
+            ttimeout = true;
+            ttimeoutlen = 50;
           };
 
           keymaps = [ ]

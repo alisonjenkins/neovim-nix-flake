@@ -33,6 +33,13 @@ This configuration has been optimized to reduce AV scanning overhead while maint
 - Grammars loaded on-demand per filetype
 - All 200+ grammars still available, just not all loaded at once
 
+#### 5. **Aggressive Search Optimizations** (flake.nix:333,342-343; keymaps/search/default.nix:101-130)
+- **Native search highlighting disabled** (`hlsearch = false`) - eliminates AV scanning on every match
+- **UpdateTime restored to 300ms** (from 50ms) - reduces filesystem polling frequency
+- **macOS-specific wildignore patterns** - excludes Spotlight, FSEvents, and system directories
+- **On-demand highlighting** - `<leader>sH` toggles search highlighting when needed
+- **Quick clear** - `Esc` clears any active search highlighting
+
 ## Deployment to Work Laptop
 
 ### Step 1: Deploy the Changes
@@ -159,6 +166,18 @@ vim.defer_fn(function()
   vim.cmd("silent! rshada")
 end, 300)  -- Increased from 200 to 300
 ```
+
+### Native Search (`/`) Still Hangs
+
+The configuration now remaps `/` to use Snacks picker. If you need native search for any reason:
+
+1. **Use `?` for backward search** - Still uses native vim search
+2. **Temporarily enable highlighting**: Press `<leader>sH` to toggle `hlsearch`
+3. **Prefer Snacks/Telescope**: Use `<leader>sl` for line search or `<leader>st` for grep
+
+If you prefer to keep native `/` search:
+- Remove the keymap override in `keymaps/search/default.nix:122-130`
+- Set `hlsearch = true` in `flake.nix:342` (but expect some lag on large files)
 
 ### Still Slow After Exclusions
 
