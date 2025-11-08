@@ -356,28 +356,6 @@
 
         # Performance settings
         sync_install = false;
-
-        # Lazy load modules to reduce startup I/O
-        modules = {
-          highlight = {
-            enable = true;
-            # Defer initial highlighting slightly to spread file I/O
-            disable = ''
-              function(lang, bufnr)
-                local line_count = vim.api.nvim_buf_line_count(bufnr)
-                if line_count > 10000 then
-                  return true
-                end
-                local ft = vim.bo[bufnr].filetype
-                if ft == "help" or ft == "man" then
-                  return true
-                end
-                return false
-              end
-            '';
-            additional_vim_regex_highlighting = false;
-          };
-        };
       };
     };
 }
