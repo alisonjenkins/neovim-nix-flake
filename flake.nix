@@ -54,7 +54,6 @@
             vim.g.loaded_node_provider = 0  -- Disable Node.js provider
             vim.g.loaded_perl_provider = 0  -- Disable Perl provider
             vim.g.loaded_ruby_provider = 0  -- Disable Ruby provider
-            vim.opt.updatetime = 50          -- Faster CursorHold events (default: 4000ms)
             vim.opt.redrawtime = 1500        -- Faster redraw timeout
 
             -- LSP performance optimizations
