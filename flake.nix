@@ -87,7 +87,7 @@
             vim.defer_fn(function()
               require('jj').setup({})
               require('pipeline').setup({})
-            end, 5)
+            end, 50)
 
             -- Defer UpdateRemotePlugins to avoid blocking startup
             vim.defer_fn(function()
