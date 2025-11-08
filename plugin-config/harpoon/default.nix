@@ -9,7 +9,7 @@
         "]h"
         "[h"
         "<leader>h1"
-        "<leader>h2" 
+        "<leader>h2"
         "<leader>h3"
         "<leader>h4"
         "<leader>hm"
