@@ -167,13 +167,10 @@ vim.defer_fn(function()
 end, 300)  -- Increased from 200 to 300
 ```
 
-### Native Search (`/`) Still Hangs
+### Native Search (`/`)
 
-The configuration now remaps `/` to use Snacks picker. If you need native search for any reason:
-
-1. **Use `?` for backward search** - Still uses native vim search
-2. **Temporarily enable highlighting**: Press `<leader>sH` to toggle `hlsearch`
-3. **Prefer Snacks/Telescope**: Use `<leader>sl` for line search or `<leader>st` for grep
+1. **Temporarily enable highlighting**: Press `<leader>sH` to toggle `hlsearch`
+2. **Prefer Snacks/Telescope**: Use `<leader>sl` for line search or `<leader>st` for grep
 
 If you prefer to keep native `/` search:
 - Remove the keymap override in `keymaps/search/default.nix:122-130`
