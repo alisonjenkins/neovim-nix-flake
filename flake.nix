@@ -117,90 +117,73 @@
               "*/.nix-profile/*", "*/.nix-defexpr/*"
             })
 
-            -- Hide Fugitive async command windows and only show on error
-            -- This runs Git! push in background and only opens window if error occurs
-            vim.api.nvim_create_autocmd("BufWinEnter", {
-              pattern = "*",
-              callback = function(args)
-                -- Check if this is a Fugitive async command buffer
-                if vim.bo[args.buf].buftype == "nofile" then
-                  local bufname = vim.api.nvim_buf_get_name(args.buf)
+            -- Custom async git commands that only show output on error
+            -- This replaces Git! push, fetch, etc. with silent versions
+            local function async_git_command(args, desc)
+              local output = {}
+              local stderr = {}
 
-                  -- Skip fugitive:// buffers (Git status, etc - we want those visible)
-                  if bufname:match("^fugitive://") or bufname:match("%.git/index") then
-                    return
+              vim.fn.jobstart(vim.list_extend({"git"}, args), {
+                cwd = vim.fn.FugitiveGitDir() and vim.fn.FugitiveWorkTree() or vim.fn.getcwd(),
+                stdout_buffered = true,
+                stderr_buffered = true,
+                on_stdout = function(_, data)
+                  if data then
+                    vim.list_extend(output, data)
                   end
+                end,
+                on_stderr = function(_, data)
+                  if data then
+                    vim.list_extend(stderr, data)
+                  end
+                end,
+                on_exit = function(_, exit_code)
+                  if exit_code == 0 then
+                    vim.notify(desc .. " completed successfully", vim.log.levels.INFO)
+                  else
+                    -- Show error in a split
+                    local all_output = vim.list_extend(vim.list_extend({}, output), stderr)
+                    -- Filter out empty lines
+                    all_output = vim.tbl_filter(function(line) return line ~= "" end, all_output)
 
-                  -- For async Git command buffers (Git! push, fetch, etc)
-                  -- These have empty names and are created by Git! commands
-                  if bufname == "" and vim.bo[args.buf].filetype == "" then
-                    local first_line = vim.api.nvim_buf_get_lines(args.buf, 0, 1, false)[1] or ""
+                    if #all_output > 0 then
+                      local buf = vim.api.nvim_create_buf(false, true)
+                      vim.api.nvim_buf_set_lines(buf, 0, -1, false, all_output)
+                      vim.bo[buf].filetype = "git"
 
-                    -- Check if this looks like a Git command output buffer
-                    if first_line:match("^git ") or first_line == "" then
-                      -- Find and immediately close the window showing this buffer
-                      -- Don't use vim.schedule - we need to close it before it's visible
-                      for _, w in ipairs(vim.api.nvim_list_wins()) do
-                        if vim.api.nvim_win_is_valid(w) and vim.api.nvim_win_get_buf(w) == args.buf then
-                          -- Close the window immediately to prevent it from being shown
-                          pcall(vim.api.nvim_win_close, w, false)
-                          break
-                        end
-                      end
-
-                      -- Set up monitoring timer
-                      local check_timer = vim.uv.new_timer()
-                      local shown_error = false
-
-                      check_timer:start(500, 300, vim.schedule_wrap(function()
-                        if not vim.api.nvim_buf_is_valid(args.buf) then
-                          check_timer:stop()
-                          return
-                        end
-
-                        local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, false)
-                        local has_error = false
-                        local completed = false
-
-                        for _, line in ipairs(lines) do
-                          -- Check for completion
-                          if line:match("^%[Process exited") then
-                            completed = true
-                            -- Check for non-zero exit
-                            if not line:match("^%[Process exited 0%]") then
-                              has_error = true
-                            end
-                          end
-                          -- Error patterns
-                          if line:match("error:") or line:match("fatal:") or
-                             line:match("rejected") or line:match("failed to") or
-                             line:match("Permission denied") or line:match("Could not") then
-                            has_error = true
-                          end
-                        end
-
-                        -- If error detected and not already shown, open the buffer in a split
-                        if has_error and not shown_error then
-                          shown_error = true
-                          check_timer:stop()
-
-                          -- Open buffer in a split to show the error
-                          vim.cmd("botright split")
-                          vim.api.nvim_win_set_buf(0, args.buf)
-                          vim.cmd("wincmd p")  -- Return focus to previous window
-
-                        elseif completed and not has_error then
-                          -- Success - just stop monitoring, buffer stays hidden
-                          check_timer:stop()
-                          -- Show brief success notification
-                          vim.notify("Git command completed successfully", vim.log.levels.INFO)
-                        end
-                      end))
+                      vim.cmd("botright split")
+                      vim.api.nvim_win_set_buf(0, buf)
+                      vim.cmd("wincmd p")
                     end
+
+                    vim.notify(desc .. " failed (exit code: " .. exit_code .. ")", vim.log.levels.ERROR)
                   end
-                end
-              end,
-            })
+                end,
+              })
+            end
+
+            -- Create custom commands
+            vim.api.nvim_create_user_command("GitPushSilent", function()
+              async_git_command({"push"}, "Git push")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitPushForceLeaseSilent", function()
+              async_git_command({"push", "--force-with-lease"}, "Git push --force-with-lease")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitPushTagsSilent", function()
+              async_git_command({"push", "--tags"}, "Git push --tags")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitFetchSilent", function(opts)
+              local args = {"fetch"}
+              if opts.args ~= "" then
+                vim.list_extend(args, vim.split(opts.args, "%s+"))
+              else
+                vim.list_extend(args, {"origin", "--prune"})
+              end
+              async_git_command(args, "Git fetch")
+            end, { nargs = "*" })
           '';
 
           extraFiles = {
