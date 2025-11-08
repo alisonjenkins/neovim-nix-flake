@@ -62,15 +62,36 @@
             -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
             -- This spreads file access over time instead of all at once
             local lsp_defer_time = 150  -- milliseconds
-            local original_on_attach = vim.lsp.handlers["textDocument/publishDiagnostics"]
 
-            -- Defer initial LSP attachment slightly to allow UI to load first
-            vim.api.nvim_create_autocmd("FileType", {
-              callback = function()
-                -- Small delay allows AV scanning to happen in background
-                vim.defer_fn(function()
-                  -- LSP will attach normally, just slightly deferred
-                end, lsp_defer_time)
+            -- Track which buffers have had LSP deferred
+            local lsp_deferred_buffers = {}
+
+            -- Store the original buf_attach_client function
+            local original_buf_attach_client = vim.lsp.buf_attach_client
+
+            -- Override buf_attach_client to defer LSP attachment
+            vim.lsp.buf_attach_client = function(client, bufnr)
+              local buf = bufnr or vim.api.nvim_get_current_buf()
+
+              -- Skip if already deferred for this buffer
+              if lsp_deferred_buffers[buf] then
+                return original_buf_attach_client(client, buf)
+              end
+
+              -- Mark as deferred and schedule attachment
+              lsp_deferred_buffers[buf] = true
+              vim.defer_fn(function()
+                -- Check if buffer is still valid
+                if vim.api.nvim_buf_is_valid(buf) then
+                  original_buf_attach_client(client, buf)
+                end
+              end, lsp_defer_time)
+            end
+
+            -- Clean up tracking when buffers are deleted
+            vim.api.nvim_create_autocmd("BufDelete", {
+              callback = function(args)
+                lsp_deferred_buffers[args.buf] = nil
               end,
             })
 
