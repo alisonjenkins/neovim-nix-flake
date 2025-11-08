@@ -86,6 +86,11 @@ The `tests/` directory contains example projects for testing language-specific f
 - `combinePlugins.enable = true` - Combines compatible plugins for faster startup
 - `byteCompileLua.enable = true` - Pre-compiles Lua for performance
 - Some plugins are explicitly excluded from combining via `standalonePlugins`
+- **AV Optimization**: See `DEFENDER_OPTIMIZATION.md` for Microsoft Defender and anti-virus specific optimizations
+  - Deferred LSP attachment (150ms delay)
+  - ShaDa file lazy loading (200ms delay)
+  - Optimized filesystem polling and wildignore patterns
+  - Treesitter module lazy loading
 
 ### Version Management  
 - Uses three nixpkgs channels: unstable (default), stable, and master

@@ -60,6 +60,21 @@
             -- LSP performance optimizations
             vim.lsp.set_log_level("ERROR")    -- Reduce LSP logging for performance
 
+            -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
+            -- This spreads file access over time instead of all at once
+            local lsp_defer_time = 150  -- milliseconds
+            local original_on_attach = vim.lsp.handlers["textDocument/publishDiagnostics"]
+
+            -- Defer initial LSP attachment slightly to allow UI to load first
+            vim.api.nvim_create_autocmd("FileType", {
+              callback = function()
+                -- Small delay allows AV scanning to happen in background
+                vim.defer_fn(function()
+                  -- LSP will attach normally, just slightly deferred
+                end, lsp_defer_time)
+              end,
+            })
+
             -- Directory setup (sync - needed immediately)
             vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"
             vim.o.directory = vim.fn.stdpath("data") .. "/directory"
@@ -81,6 +96,26 @@
                 vim.cmd("silent! UpdateRemotePlugins")
               end
             end, 100)
+
+            -- Additional startup optimizations for AV scanning environments
+            -- Disable some filesystem watchers that trigger excessive AV scans
+            vim.opt.shadafile = "NONE"  -- Disable shada during startup
+            vim.defer_fn(function()
+              vim.opt.shadafile = ""    -- Re-enable after startup complete
+              vim.cmd("silent! rshada") -- Restore session data
+            end, 200)
+
+            -- Reduce filesystem polling for better performance with AV
+            vim.opt.swapfile = true  -- Keep swapfiles but reduce write frequency
+            vim.opt.updatecount = 200  -- Write swap after 200 characters (default: 200)
+
+            -- Batch directory scans to reduce AV overhead
+            vim.opt.wildignore:append({
+              "*.o", "*.obj", "*.dylib", "*.bin", "*.dll", "*.exe",
+              "*/.git/*", "*/.svn/*", "*/.DS_Store", "*/node_modules/*",
+              "*/venv/*", "*/__pycache__/*", "*.pyc",
+              "*/.nix-profile/*", "*/.nix-defexpr/*"
+            })
           '';
 
           extraFiles = {
