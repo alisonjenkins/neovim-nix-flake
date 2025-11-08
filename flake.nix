@@ -116,6 +116,91 @@
               "*/venv/*", "*/__pycache__/*", "*.pyc",
               "*/.nix-profile/*", "*/.nix-defexpr/*"
             })
+
+            -- Hide Fugitive async command windows and only show on error
+            -- This runs Git! push in background and only opens window if error occurs
+            vim.api.nvim_create_autocmd("BufWinEnter", {
+              pattern = "*",
+              callback = function(args)
+                -- Check if this is a Fugitive async command buffer
+                if vim.bo[args.buf].buftype == "nofile" then
+                  local bufname = vim.api.nvim_buf_get_name(args.buf)
+
+                  -- Skip fugitive:// buffers (Git status, etc - we want those visible)
+                  if bufname:match("^fugitive://") or bufname:match("%.git/index") then
+                    return
+                  end
+
+                  -- For async Git command buffers (Git! push, fetch, etc)
+                  -- These have empty names and are created by Git! commands
+                  if bufname == "" and vim.bo[args.buf].filetype == "" then
+                    local first_line = vim.api.nvim_buf_get_lines(args.buf, 0, 1, false)[1] or ""
+
+                    -- Check if this looks like a Git command output buffer
+                    if first_line:match("^git ") or first_line == "" then
+                      -- Find and immediately close the window showing this buffer
+                      -- Don't use vim.schedule - we need to close it before it's visible
+                      for _, w in ipairs(vim.api.nvim_list_wins()) do
+                        if vim.api.nvim_win_is_valid(w) and vim.api.nvim_win_get_buf(w) == args.buf then
+                          -- Close the window immediately to prevent it from being shown
+                          pcall(vim.api.nvim_win_close, w, false)
+                          break
+                        end
+                      end
+
+                      -- Set up monitoring timer
+                      local check_timer = vim.uv.new_timer()
+                      local shown_error = false
+
+                      check_timer:start(500, 300, vim.schedule_wrap(function()
+                        if not vim.api.nvim_buf_is_valid(args.buf) then
+                          check_timer:stop()
+                          return
+                        end
+
+                        local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, false)
+                        local has_error = false
+                        local completed = false
+
+                        for _, line in ipairs(lines) do
+                          -- Check for completion
+                          if line:match("^%[Process exited") then
+                            completed = true
+                            -- Check for non-zero exit
+                            if not line:match("^%[Process exited 0%]") then
+                              has_error = true
+                            end
+                          end
+                          -- Error patterns
+                          if line:match("error:") or line:match("fatal:") or
+                             line:match("rejected") or line:match("failed to") or
+                             line:match("Permission denied") or line:match("Could not") then
+                            has_error = true
+                          end
+                        end
+
+                        -- If error detected and not already shown, open the buffer in a split
+                        if has_error and not shown_error then
+                          shown_error = true
+                          check_timer:stop()
+
+                          -- Open buffer in a split to show the error
+                          vim.cmd("botright split")
+                          vim.api.nvim_win_set_buf(0, args.buf)
+                          vim.cmd("wincmd p")  -- Return focus to previous window
+
+                        elseif completed and not has_error then
+                          -- Success - just stop monitoring, buffer stays hidden
+                          check_timer:stop()
+                          -- Show brief success notification
+                          vim.notify("Git command completed successfully", vim.log.levels.INFO)
+                        end
+                      end))
+                    end
+                  end
+                end
+              end,
+            })
           '';
 
           extraFiles = {
