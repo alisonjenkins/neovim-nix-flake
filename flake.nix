@@ -394,6 +394,7 @@
               standalonePlugins = with pkgs.vimPlugins; [
                 conform-nvim
                 copilot-lua
+                friendly-snippets
                 image-nvim
                 mini-nvim
                 nvim-jdtls
