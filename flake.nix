@@ -317,7 +317,7 @@
             autoindent = true;
             backspace = "indent,eol,start";
             backup = true;
-            cmdheight = 2;
+            cmdheight = 0;  # Required when using Noice
             completeopt = "menu,menuone,noselect";
             conceallevel = 0;
             cursorline = true;
