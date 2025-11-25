@@ -596,6 +596,32 @@
                       hash = "sha256-asNRx4dhtzWVK6M2vWqATQtcHzrVQKvGQaqyVGSlunw=";
                     };
                   });
+                  # Override lualine to fetch directly from GitHub, bypassing luarocks hash issue
+                  lualine-nvim = final.vimUtils.buildVimPlugin {
+                    pname = "lualine.nvim";
+                    version = "2024-11-12";
+                    src = final.fetchFromGitHub {
+                      owner = "nvim-lualine";
+                      repo = "lualine.nvim";
+                      rev = "0a5a66803c7407767b799067986b4dc3036e1983";
+                      hash = "sha256-WcH2dWdRDgMkwBQhcgT+Z/ArMdm+VbRhmQftx4t2kNI=";
+                    };
+                  };
+                  # Override bamboo to fetch directly from GitHub, avoiding lualine dependency issues
+                  bamboo-nvim = final.vimUtils.buildVimPlugin rec {
+                    pname = "bamboo.nvim";
+                    version = "2024-11-25";
+                    src = final.fetchFromGitHub {
+                      owner = "ribru17";
+                      repo = "bamboo.nvim";
+                      rev = "1309bc88bffcf1bedc3e84e7fa9004de93da774a";
+                      hash = "sha256-X9KrQg8TlhWGeeg2Loxv4OUBw/3Wt7XFVorDd/75CwA=";
+                    };
+                    # Skip require checks - some modules have optional lualine integration
+                    doCheck = false;
+                    doInstallCheck = false;
+                    nvimRequireCheck = "";
+                  };
                 };
               })
             ];
