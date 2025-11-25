@@ -2,10 +2,12 @@
   oil = {
     enable = true;
 
-    lazyLoad.settings = {
-      keys = [ "-" ];
-      cmd = [ "Oil" ];
-    };
+    # Lazy loading disabled - wasn't working reliably on macOS
+    # Oil is lightweight enough to load on startup
+    # lazyLoad.settings = {
+    #   keys = [ "-" ];
+    #   cmd = [ "Oil" ];
+    # };
 
     settings = {
       delete_to_trash = true;
