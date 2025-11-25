@@ -448,7 +448,7 @@
             typst-vim.enable = true;
             vim-css-color.enable = true;
             web-devicons.enable = true;
-            wilder.enable = true;
+            wilder.enable = false;  # Conflicts with Noice
             wrapping.enable = true;
             zig.enable = true;
           }
