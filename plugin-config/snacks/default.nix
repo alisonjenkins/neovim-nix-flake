@@ -14,7 +14,7 @@
       bufdelete = { };
 
       dashboard = {
-        enabled = true;
+        enabled = false;
 
         formats.__raw = ''
           {
