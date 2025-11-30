@@ -2,9 +2,9 @@
   {
     mode = "n";
     key = "<leader>;";
-    action = "<cmd>lua require('snacks').dashboard()<CR>";
+    action = "<cmd>Startify<CR>";
     options = {
-      desc = "Open Dashboard";
+      desc = "Open Startify";
       silent = true;
     };
   }
