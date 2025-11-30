@@ -117,14 +117,6 @@
               end
             end, 100)
 
-            -- Additional startup optimizations for AV scanning environments
-            -- Disable some filesystem watchers that trigger excessive AV scans
-            vim.opt.shadafile = "NONE"  -- Disable shada during startup
-            vim.defer_fn(function()
-              vim.opt.shadafile = ""    -- Re-enable after startup complete
-              vim.cmd("silent! rshada") -- Restore session data
-            end, 200)
-
             -- Reduce filesystem polling for better performance with AV
             vim.opt.swapfile = true  -- Keep swapfiles but reduce write frequency
             vim.opt.updatecount = 200  -- Write swap after 200 characters (default: 200)
