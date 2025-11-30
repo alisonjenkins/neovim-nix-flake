@@ -5,7 +5,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     # neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
     # nixvim.url = "github:alisonjenkins/nixvim/add-bamboo-colourscheme";
