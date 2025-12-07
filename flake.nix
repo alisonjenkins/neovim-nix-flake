@@ -350,8 +350,8 @@
           };
 
           keymaps = [ ]
-            ++ import ./keymaps/ai/codecompanion
             ++ import ./keymaps/ai/sidekick
+            # ++ import ./keymaps/ai/codecompanion
             # ++ import ./keymaps/ai/avante
             ++ import ./keymaps/buffers
             ++ import ./keymaps/db
@@ -449,6 +449,7 @@
             # (import ./plugin-config/alpha)
               # // (import ./plugin-config/teamtype)
               # // (import ./plugin-config/tailwind-tools)
+              # // (import ./plugin-config/codecompanion)
               # // (import ./plugin-config/avante { inherit pkgs; })
               (import ./plugin-config/auto-session)
               // (import ./plugin-config/arrow)
@@ -459,7 +460,6 @@
               // (import ./plugin-config/blink-compat)
               // (import ./plugin-config/blink-ripgrep)
               // (import ./plugin-config/ccc)
-              // (import ./plugin-config/codecompanion)
               // (import ./plugin-config/colorful-menu)
               // (import ./plugin-config/conform-nvim)
               // (import ./plugin-config/copilot-lua)

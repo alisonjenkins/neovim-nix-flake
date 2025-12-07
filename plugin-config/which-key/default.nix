@@ -19,11 +19,6 @@
           mode = "v";
         }
         {
-          __unkeyed-1 = "<leader>ac";
-          desc = "CodeCompanion";
-          mode = "v";
-        }
-        {
           __unkeyed-1 = "<leader>as";
           desc = "Sidekick";
           mode = ["n" "v"];
@@ -47,6 +42,11 @@
         #   __unkeyed-1 = "<leader>aaS";
         #   desc = "Avante Switch";
         #   mode = "n";
+        # }
+        # {
+        #   __unkeyed-1 = "<leader>ac";
+        #   desc = "CodeCompanion";
+        #   mode = "v";
         # }
         {
           __unkeyed-1 = "<leader>l";
@@ -75,13 +75,13 @@
           __unkeyed-1 = "<leader>a";
           desc = "AI";
         }
-        {
-          __unkeyed-1 = "<leader>ac";
-          desc = "CodeCompanion";
-        }
         # {
         #   __unkeyed-1 = "<leader>aa";
         #   desc = "Avante";
+        # }
+        # {
+        #   __unkeyed-1 = "<leader>ac";
+        #   desc = "CodeCompanion";
         # }
         {
           __unkeyed-1 = "<leader>d";
