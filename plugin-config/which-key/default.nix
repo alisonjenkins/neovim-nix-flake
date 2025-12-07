@@ -18,16 +18,6 @@
           desc = "AI";
           mode = "v";
         }
-        {
-          __unkeyed-1 = "<leader>as";
-          desc = "Sidekick";
-          mode = ["n" "v"];
-        }
-        {
-          __unkeyed-1 = "<leader>asn";
-          desc = "Sidekick Next Edit Suggestions";
-          mode = ["n" "v"];
-        }
         # {
         #   __unkeyed-1 = "<leader>aa";
         #   desc = "Avante";
@@ -47,6 +37,16 @@
         #   __unkeyed-1 = "<leader>ac";
         #   desc = "CodeCompanion";
         #   mode = "v";
+        # }
+        # {
+        #   __unkeyed-1 = "<leader>as";
+        #   desc = "Sidekick";
+        #   mode = ["n" "v"];
+        # }
+        # {
+        #   __unkeyed-1 = "<leader>asn";
+        #   desc = "Sidekick Next Edit Suggestions";
+        #   mode = ["n" "v"];
         # }
         {
           __unkeyed-1 = "<leader>l";
