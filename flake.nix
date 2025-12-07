@@ -206,6 +206,26 @@
               end
               async_git_command(args, "Git fetch")
             end, { nargs = "*" })
+
+            -- Load Terraform snippets from vscode-terraform-doc-snippets plugin
+            vim.schedule(function()
+              -- Check if luasnip is loaded
+              local ok, luasnip = pcall(require, "luasnip")
+              if not ok then return end
+
+              local luasnip_vscode = require("luasnip.loaders.from_vscode")
+
+              -- Find the vscode-terraform-doc-snippets plugin path
+              local terraform_snippets_path = vim.fn.glob(vim.fn.stdpath("data") .. "/nvim/site/pack/*/start/vscode-terraform-doc-snippets")
+
+              if terraform_snippets_path ~= "" then
+                -- Load the Terraform snippets from the plugin
+                luasnip_vscode.lazy_load({ paths = { terraform_snippets_path } })
+              end
+
+              -- Ensure terraform filetype uses terraform snippets
+              luasnip.filetype_extend("terraform", { "terraform" })
+            end)
           '';
 
           extraFiles = {
@@ -257,6 +277,16 @@
             vim-dadbod-ui
             vim-pencil
             vim-table-mode
+
+            (pkgs.vimUtils.buildVimPlugin {
+              name = "vscode-terraform-doc-snippets";
+              src = pkgs.fetchFromGitHub {
+                owner = "run-at-scale";
+                repo = "vscode-terraform-doc-snippets";
+                rev = "6ab3e44b566e660f38922cf908e6e547eaa5d4b4";
+                hash = "sha256-v392tyzXV+zyBNt5OCB2NBCK7JcByrTa5Ne/nFtSCJI=";
+              };
+            })
 
             (pkgs.vimUtils.buildVimPlugin {
               name = "blink-cmp-tmux";

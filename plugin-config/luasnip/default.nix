@@ -7,16 +7,17 @@
       {
         # Only load essential snippet collections
         include = [
-          "javascript"
-          "typescript"
-          "python"
-          "go"
-          "rust"
-          "lua"
-          "nix"
-          "markdown"
-          "html"
           "css"
+          "go"
+          "html"
+          "javascript"
+          "lua"
+          "markdown"
+          "nix"
+          "python"
+          "rust"
+          "terraform"
+          "typescript"
         ];
       }
     ];
@@ -29,7 +30,7 @@
       # Performance optimizations
       update_events = [ "TextChanged" "TextChangedI" ];
       delete_check_events = [ "TextChanged" ];
-      enable_autosnippets = false;  # Disable if you don't use them
+      enable_autosnippets = false; # Disable if you don't use them
     };
   };
 }
