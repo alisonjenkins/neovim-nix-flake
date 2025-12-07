@@ -323,7 +323,7 @@
       settings = {
         # Performance optimizations for treesitter
         incremental_selection = { enable = true; };
-        indent = { enable = false; };  # Keep disabled for performance
+        indent = { enable = false; }; # Keep disabled for performance
         textobjects.enable = true;
 
         highlight = {
@@ -351,8 +351,8 @@
         };
 
         # Optimize parser loading
-        auto_install = false;  # Don't auto-install at runtime
-        ensure_installed = []; # All grammars are managed by Nix
+        auto_install = false; # Don't auto-install at runtime
+        ensure_installed = [ ]; # All grammars are managed by Nix
 
         # Performance settings
         sync_install = false;

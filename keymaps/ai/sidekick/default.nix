@@ -54,7 +54,7 @@
     };
   }
   {
-    mode = ["n" "x"];
+    mode = [ "n" "x" ];
     key = "<leader>asf";
     action = "<cmd>lua require('sidekick.cli').focus()<cr>";
     options = {
@@ -135,7 +135,7 @@
     };
   }
   {
-    mode = ["n" "x"];
+    mode = [ "n" "x" ];
     key = "<leader>asp";
     action = "<cmd>lua require('sidekick.cli').prompt()<cr>";
     options = {
@@ -153,7 +153,7 @@
     };
   }
   {
-    mode = ["n" "x"];
+    mode = [ "n" "x" ];
     key = "<leader>ast";
     action = "<cmd>lua require('sidekick.cli').send({ msg = '{this}' })<cr>";
     options = {

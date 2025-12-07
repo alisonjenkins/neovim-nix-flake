@@ -57,8 +57,8 @@
 
         list = {
           selection = {
-            auto_insert = false;  # Disabled - let user explicitly select completions
-            preselect = true;  # Still highlight first item
+            auto_insert = false; # Disabled - let user explicitly select completions
+            preselect = true; # Still highlight first item
           };
         };
 
@@ -127,8 +127,8 @@
           buffer = {
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
-            score_offset = -3;  # Lower priority - only as fallback
-            min_keyword_length = 3;  # Don't trigger too early
+            score_offset = -3; # Lower priority - only as fallback
+            min_keyword_length = 3; # Don't trigger too early
           };
 
           conventional_commits = {
@@ -163,15 +163,15 @@
           dictionary = {
             module = "blink-cmp-dictionary";
             name = "Dict";
-            min_keyword_length = 4;  # Increased to reduce noise
-            score_offset = -5;  # Very low priority
+            min_keyword_length = 4; # Increased to reduce noise
+            score_offset = -5; # Very low priority
             opts = { };
           };
 
           git = {
             module = "blink-cmp-git";
             name = "git";
-            score_offset = 5;  # Much lower - only slightly above LSP
+            score_offset = 5; # Much lower - only slightly above LSP
 
             # Only enable in git-related contexts
             enabled.__raw = ''
@@ -190,18 +190,18 @@
           lazydev = {
             name = "LazyDev";
             module = "lazydev.integrations.blink";
-            score_offset = 10;  # High priority for Neovim Lua development
+            score_offset = 10; # High priority for Neovim Lua development
           };
 
           lsp = {
             name = "LSP";
             module = "blink.cmp.sources.lsp";
-            async = true;  # Changed to async for better performance
+            async = true; # Changed to async for better performance
             enabled = true;
             max_items = null;
             min_keyword_length = 0;
             override = null;
-            score_offset = 4;  # Moderate priority - LSP is usually most relevant
+            score_offset = 4; # Moderate priority - LSP is usually most relevant
             should_show_items = true;
             timeout_ms = 2000;
 
@@ -213,7 +213,7 @@
           path = {
             name = "Path";
             module = "blink.cmp.sources.path";
-            score_offset = 3;  # Good priority for path completions
+            score_offset = 3; # Good priority for path completions
 
             fallbacks = [
               "buffer"
@@ -230,9 +230,9 @@
             async = true;
             module = "blink-ripgrep";
             name = "Ripgrep";
-            score_offset = -2;  # Lower priority - useful but not primary
+            score_offset = -2; # Lower priority - useful but not primary
             opts = {
-              prefix_min_len = 4;  # Increased to reduce noise
+              prefix_min_len = 4; # Increased to reduce noise
               project_root_marker = ".git";
               additional_rg_options = { };
               fallback_to_regex_highlighting = true;
@@ -256,12 +256,12 @@
           tmux = {
             module = "blink-cmp-tmux";
             name = "tmux";
-            score_offset = -4;  # Low priority
+            score_offset = -4; # Low priority
 
             opts = {
               all_panes = true;
               capture_history = true;
-              triggered_only = true;  # Only trigger on specific chars
+              triggered_only = true; # Only trigger on specific chars
 
               trigger_chars = [
                 "."

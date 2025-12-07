@@ -1,5 +1,4 @@
-{
-  ...
+{ ...
 }: {
   avante = {
     enable = true;
@@ -18,7 +17,7 @@
 
       completion = {
         enable = true;
-        trigger_characters = ["." ":" "_"];
+        trigger_characters = [ "." ":" "_" ];
         max_lines = 5;
         debounce_ms = 300;
         auto_trigger = true;
@@ -33,7 +32,14 @@
       providers = {
         gemini = {
           api_key_name = [
-            "op" "item" "get" "\"Gemini API Key\"" "--fields" "label=password" "--reveal" "--cache"
+            "op"
+            "item"
+            "get"
+            "\"Gemini API Key\""
+            "--fields"
+            "label=password"
+            "--reveal"
+            "--cache"
           ];
           model = "gemini-1.5-pro";
           temperature = 0.2;
@@ -51,7 +57,14 @@
           top_p = 0.9;
 
           api_key_name = [
-            "op" "item" "get" "\"OpenRouter API Key\"" "--fields" "label=password" "--reveal" "--cache"
+            "op"
+            "item"
+            "get"
+            "\"OpenRouter API Key\""
+            "--fields"
+            "label=password"
+            "--reveal"
+            "--cache"
           ];
 
           extra_request_body = {

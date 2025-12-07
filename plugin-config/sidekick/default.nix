@@ -3,7 +3,7 @@
     enable = true;
 
     settings = {
-      keys = {};
+      keys = { };
 
       cli = {
         mux = {

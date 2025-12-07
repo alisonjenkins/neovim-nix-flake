@@ -1,6 +1,8 @@
-{pkgs, ...}: let
+{ pkgs, ... }:
+let
   enable = false;
-in {
+in
+{
   neotest = {
     enable = enable;
 

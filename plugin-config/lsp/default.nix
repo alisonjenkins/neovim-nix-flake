@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   lsp = {
     enable = true;
     inlayHints = true;

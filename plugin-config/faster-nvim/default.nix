@@ -3,6 +3,6 @@
     autoLoad = true;
     enable = true;
 
-    settings = {};
+    settings = { };
   };
 }

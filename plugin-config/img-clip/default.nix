@@ -1,4 +1,4 @@
-{...}: {
+{ ... }: {
   img-clip = {
     enable = true;
 
