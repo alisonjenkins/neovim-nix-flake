@@ -117,12 +117,12 @@
         cmdline = [ ];
 
         providers = {
-          avante = {
-            module = "blink-cmp-avante";
-            name = "Avante";
-            opts = {
-            };
-          };
+          # avante = {
+          #   module = "blink-cmp-avante";
+          #   name = "Avante";
+          #   opts = {
+          #   };
+          # };
 
           buffer = {
             name = "Buffer";

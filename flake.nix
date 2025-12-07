@@ -350,9 +350,9 @@
           };
 
           keymaps = [ ]
-            ++ import ./keymaps/ai/avante
             ++ import ./keymaps/ai/codecompanion
             ++ import ./keymaps/ai/sidekick
+            # ++ import ./keymaps/ai/avante
             ++ import ./keymaps/buffers
             ++ import ./keymaps/db
             ++ import ./keymaps/debugging
@@ -449,9 +449,9 @@
             # (import ./plugin-config/alpha)
               # // (import ./plugin-config/teamtype)
               # // (import ./plugin-config/tailwind-tools)
+              # // (import ./plugin-config/avante { inherit pkgs; })
               (import ./plugin-config/auto-session)
               // (import ./plugin-config/arrow)
-              // (import ./plugin-config/avante { inherit pkgs; })
               // (import ./plugin-config/blink-cmp { inherit pkgs; })
               // (import ./plugin-config/blink-cmp-copilot)
               // (import ./plugin-config/blink-cmp-dictionary)
@@ -581,14 +581,14 @@
               })
               (final: prev: {
                 vimPlugins = prev.vimPlugins // {
-                  avante-nvim = prev.vimPlugins.avante-nvim.overrideAttrs (oldAttrs: {
-                    src = pkgs.fetchFromGitHub {
-                      owner = "yetone";
-                      repo = "avante.nvim";
-                      rev = "4390828e88c8526649d1af7000df5c512fa49bbb";
-                      hash = "sha256-asNRx4dhtzWVK6M2vWqATQtcHzrVQKvGQaqyVGSlunw=";
-                    };
-                  });
+                  # avante-nvim = prev.vimPlugins.avante-nvim.overrideAttrs (oldAttrs: {
+                  #   src = pkgs.fetchFromGitHub {
+                  #     owner = "yetone";
+                  #     repo = "avante.nvim";
+                  #     rev = "4390828e88c8526649d1af7000df5c512fa49bbb";
+                  #     hash = "sha256-asNRx4dhtzWVK6M2vWqATQtcHzrVQKvGQaqyVGSlunw=";
+                  #   };
+                  # });
                   # Override lualine to fetch directly from GitHub, bypassing luarocks hash issue
                   lualine-nvim = final.vimUtils.buildVimPlugin {
                     pname = "lualine.nvim";
