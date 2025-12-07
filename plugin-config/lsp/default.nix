@@ -14,7 +14,7 @@
       asm_lsp.enable = true;
       bashls.enable = true;
       bashls.package = pkgs.master.bash-language-server;
-      copilot.enable = true;
+      copilot.enable = false;
       cssls.enable = true;
       dockerls.enable = true;
       earthlyls.enable = true;

@@ -10,7 +10,7 @@
           Color = "󰏘";
           Constant = "󰏿";
           Constructor = "󰒓";
-          Copilot = "";
+          # Copilot = "";
           Enum = "󰦨";
           EnumMember = "󰦨";
           Event = "󱐋";
@@ -109,7 +109,7 @@
           "path"
           "snippets"
           "lazydev"
-          "copilot"
+          # "copilot"
           "buffer"
         ];
 
@@ -142,23 +142,23 @@
             '';
           };
 
-          copilot = {
-            name = "copilot";
-            module = "blink-cmp-copilot";
-            score_offset = 8;  # High priority for AI suggestions
-            async = true;
-
-            opts = {
-              max_completions = 3;
-              max_attempts = 4;
-              kind = "Copilot";
-              debounce = 500;  # Reduced from 750ms for faster response
-              auto_refresh = {
-                backward = true;
-                forward = true;
-              };
-            };
-          };
+          # copilot = {
+          #   name = "copilot";
+          #   module = "blink-cmp-copilot";
+          #   score_offset = 8;  # High priority for AI suggestions
+          #   async = true;
+          #
+          #   opts = {
+          #     max_completions = 3;
+          #     max_attempts = 4;
+          #     kind = "Copilot";
+          #     debounce = 500;  # Reduced from 750ms for faster response
+          #     auto_refresh = {
+          #       backward = true;
+          #       forward = true;
+          #     };
+          #   };
+          # };
 
           dictionary = {
             module = "blink-cmp-dictionary";
