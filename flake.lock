@@ -72,11 +72,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1765159931,
-        "narHash": "sha256-U2O6uFNxvVvCb8S93/0ZKGfRxT6gpkyaVUS4E1K1YOg=",
+        "lastModified": 1765178262,
+        "narHash": "sha256-qMqO/w5aArV04nFyAtfIFWmaBF+7WljjQY3SJ/UFbNg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "3aed0c5f5ed3127090255970d286398ef8cad0fa",
+        "rev": "2cdd44334bcac1c66b89419654dbbc8eafb04f5d",
         "type": "github"
       },
       "original": {
@@ -140,15 +140,16 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1765150443,
-        "narHash": "sha256-GD6nEEVPdbMSo+8BKfZ0nK8n+Zzs95tipPLCSB0IXQA=",
-        "owner": "nix-community",
+        "lastModified": 1765178813,
+        "narHash": "sha256-NDlIQTTVO9gFR7XOWr6Qwh5L3OHHR7T7FxBVJeW4wtE=",
+        "owner": "alisonjenkins",
         "repo": "nixvim",
-        "rev": "451b1806a6da6b69f01c7fc98d751bcad8fdbf28",
+        "rev": "0ccb5f5b7e58ced9b09600dfd3468ec47b0fc463",
         "type": "github"
       },
       "original": {
-        "owner": "nix-community",
+        "owner": "alisonjenkins",
+        "ref": "fix/sidekick-nes-disabled",
         "repo": "nixvim",
         "type": "github"
       }

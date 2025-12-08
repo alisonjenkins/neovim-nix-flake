@@ -7,8 +7,8 @@
     nixpkgs-master.url = "github:nixos/nixpkgs";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    nixvim.url = "github:nix-community/nixvim";
-    # nixvim.url = "github:alisonjenkins/nixvim/add-bamboo-colourscheme";
+    # nixvim.url = "github:nix-community/nixvim";
+    nixvim.url = "github:alisonjenkins/nixvim/fix/sidekick-nes-disabled";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
