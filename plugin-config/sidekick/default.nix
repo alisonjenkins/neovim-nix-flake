@@ -3,6 +3,12 @@
     enable = true;
 
     settings = {
+      opts = {
+        nes = {
+          enabled = false;
+        };
+      };
+
       keys = { };
 
       cli = {
