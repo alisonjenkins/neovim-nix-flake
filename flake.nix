@@ -381,7 +381,7 @@
 
           keymaps = [ ]
           # ++ import ./keymaps/ai/codecompanion
-          # ++ import ./keymaps/ai/sidekick
+          ++ import ./keymaps/ai/sidekick
           # ++ import ./keymaps/ai/avante
           ++ import ./keymaps/buffers
           ++ import ./keymaps/db
@@ -531,7 +531,7 @@
             // (import ./plugin-config/render-markdown)
             // (import ./plugin-config/rustaceanvim { inherit pkgs; })
             // (import ./plugin-config/schemastore)
-            # // (import ./plugin-config/sidekick)
+            // (import ./plugin-config/sidekick)
             // (import ./plugin-config/smartcolumn)
             // (import ./plugin-config/snacks)
             // (import ./plugin-config/tardis)
