@@ -540,6 +540,7 @@
             // (import ./plugin-config/treesitter { inherit pkgs; })
             // (import ./plugin-config/treesitter-context)
             // (import ./plugin-config/trouble)
+            // (import ./plugin-config/tv)
             // (import ./plugin-config/twilight)
             // (import ./plugin-config/vim-be-good)
             // (import ./plugin-config/which-key)
