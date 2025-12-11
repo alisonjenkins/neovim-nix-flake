@@ -64,8 +64,17 @@
   }
   {
     mode = "n";
+    key = "<leader>ss";
+    action = "<cmd>Tv<CR>";
+    options = {
+      desc = "Search TV channels";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>st";
-    action = "<cmd>lua require('snacks').picker.grep()<CR>";
+    action = "<cmd>Tv text<CR>";
     options = {
       desc = "Live Grep";
       silent = true;
