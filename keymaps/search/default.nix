@@ -29,7 +29,7 @@
   {
     mode = "n";
     key = "<leader>f";
-    action = "<cmd>Tv files<CR>";
+    action = "<cmd>lua require('snacks').picker.files()<CR>";
     options = {
       desc = "Find Files";
       silent = true;
@@ -38,7 +38,7 @@
   {
     mode = "n";
     key = "<leader>sf";
-    action = "<cmd>Tv files<CR>";
+    action = "<cmd>lua require('snacks').picker.files()<CR>";
     options = {
       desc = "Files";
       silent = true;
