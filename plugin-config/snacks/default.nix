@@ -92,6 +92,13 @@
           };
         };
 
+        win.__raw = ''
+          {
+            position = "float",
+            relative = "editor",
+          }
+        '';
+
         layout = {
           __raw = ''
             {
