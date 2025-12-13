@@ -74,7 +74,7 @@
   {
     mode = "n";
     key = "<leader>st";
-    action = "<cmd>Tv text<CR>";
+    action = "<cmd>lua require('snacks').picker.grep()<CR>";
     options = {
       desc = "Live Grep";
       silent = true;
