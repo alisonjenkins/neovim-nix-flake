@@ -108,3 +108,11 @@ The `tests/` directory contains example projects for testing language-specific f
 
 ### Custom Lua Setup
 Extra Lua configuration in `extraConfigLua` sets up safe directories for backups, swap files, and undo files outside of git repositories.
+
+### Code Organization Standards
+- **Alphabetical Ordering**: Maintain alphabetical order for plugins and attributes wherever possible unless it would break functionality
+  - `extraPlugins` - Keep plugin list alphabetically sorted
+  - `extraPackages` - Keep package list alphabetically sorted
+  - `plugin-config` imports - Keep import statements alphabetically sorted
+  - `keymaps` imports - Keep keymap imports alphabetically sorted
+  - Exception: Base configuration objects (e.g., `auto-session` in plugin-config merges) should remain at the top for functionality
