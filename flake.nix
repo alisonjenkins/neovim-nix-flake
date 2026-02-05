@@ -450,7 +450,7 @@
             lastplace.enable = true;
             lspkind.enable = true;
             lspsaga.enable = true;
-            markdown-preview.enable = true;
+            markdown-preview.enable = false; # Disabled due to memory constraints during nix build on macOS
             molten.enable = true;
             navic.enable = true;
             nix.enable = true;
