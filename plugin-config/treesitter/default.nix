@@ -20,7 +20,6 @@
         bibtex
         bicep
         bitbake
-        blueprint
         bp
         c
         c_sharp
@@ -77,7 +76,6 @@
         fsh
         fsharp
         func
-        fusion
         gap
         gaptst
         gdscript
@@ -138,7 +136,6 @@
         jsdoc
         json
         json5
-        jsonc
         jsonnet
         julia
         just
@@ -230,7 +227,6 @@
         rescript
         rnoweb
         robot
-        robots
         roc
         ron
         rst
