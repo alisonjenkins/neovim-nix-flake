@@ -14,6 +14,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `nix develop` - Enter development shell with `just` and `nix-fast-build`
 - `just list` - Show all available just commands
 
+### GitHub Actions & CI/CD
+- **build-and-cache.yaml**: Builds the Nix flake and caches to Cachix on push to main
+- **update.yaml**: Updates flake lock file on schedule or manual trigger
+- **trigger-nix-config-update.yaml**: Triggers updates on `alisonjenkins/nix-config` repository when changes merge to main
+  - Requires `NIX_CONFIG_TRIGGER_TOKEN` secret (GitHub PAT with repo or Actions permissions)
+
+Note: `just update` requires 1Password CLI (`op`) for GitHub authentication token retrieval.
+
 ## Architecture Overview
 
 This is a **NixVim-based Neovim configuration** packaged as a Nix flake. The configuration is highly modular and declarative.
@@ -92,10 +100,11 @@ The `tests/` directory contains example projects for testing language-specific f
   - Optimized filesystem polling and wildignore patterns
   - Treesitter module lazy loading
 
-### Version Management  
+### Version Management
 - Uses three nixpkgs channels: unstable (default), stable, and master
+- Overlay system defined in flake.nix allows mixing packages from different channels
 - Custom plugin versions pinned via overlays
-- Renovate bot configured for dependency updates
+- Renovate bot (`renovate.json`) automatically creates PRs for dependency updates
 
 ### Custom Lua Setup
 Extra Lua configuration in `extraConfigLua` sets up safe directories for backups, swap files, and undo files outside of git repositories.
