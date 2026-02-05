@@ -675,6 +675,11 @@
 
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
+
+            -- Peek.nvim setup
+            require("peek").setup({})
+            vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
+            vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
           '';
 
           extraFiles = {
@@ -696,6 +701,7 @@
             black
             cowsay
             curl
+            deno
             direnv
             fd
             fortune
@@ -727,12 +733,14 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
+            blink-cmp-avante
             blink-cmp-conventional-commits
             blink-cmp-env
             blink-cmp-spell
             blink-emoji-nvim
             claudecode-nvim
             inc-rename-nvim
+            peek-nvim
             perfanno-nvim
             vim-dadbod
             vim-dadbod-completion
