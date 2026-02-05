@@ -1,3 +1,6 @@
+let
+  config = import ./config.nix;
+in
 {
   sidekick = {
     enable = true;
@@ -5,7 +8,7 @@
     settings = {
       opts = {
         nes = {
-          enabled = false;
+          enabled = config.nesEnabled;
         };
       };
 

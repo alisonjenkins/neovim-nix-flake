@@ -41,7 +41,7 @@
         {
           __unkeyed-1 = "<leader>as";
           desc = "Sidekick";
-          mode = ["n" "v"];
+          mode = [ "n" "v" ];
         }
         # {
         #   __unkeyed-1 = "<leader>asn";
