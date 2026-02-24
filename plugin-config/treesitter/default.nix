@@ -1,10 +1,23 @@
 { pkgs, ... }:
-{
-  treesitter =
-    {
-      enable = true;
+let
+  # Override Python grammar with newer version that supports except* (PEP 654)
+  # TODO: Remove this override once nixpkgs updates to tree-sitter-python v0.26.0+
+  pythonGrammar = pkgs.tree-sitter.buildGrammar {
+    language = "python";
+    version = "0.25.0-unstable-2025-09-15";
+    src = pkgs.fetchFromGitHub {
+      owner = "tree-sitter";
+      repo = "tree-sitter-python";
+      # Commit after v0.25.0 that includes except* support
+      rev = "26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64";
+      hash = "sha256-gHeja/X/Ux8fa5rh0b69/bcUcmHBcXsK5uJ1ibtuI20=";
+    };
+  };
 
-      grammarPackages = if pkgs.stdenv.isLinux then pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars else with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
+  # Get base grammar list, excluding python
+  baseGrammars = if pkgs.stdenv.isLinux
+    then pkgs.vimPlugins.nvim-treesitter.passthru.allGrammars
+    else with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
         ada
         agda
         angular
@@ -208,7 +221,7 @@
         puppet
         purescript
         pymanifest
-        python
+        # python - using custom override (see pythonGrammar above)
         ql
         qmldir
         qmljs
@@ -315,6 +328,16 @@
         ziggy
         ziggy_schema
       ];
+in
+{
+  treesitter =
+    {
+      enable = true;
+
+      # Always append custom Python grammar to override the default
+      grammarPackages = if pkgs.stdenv.isLinux
+        then baseGrammars ++ [ pythonGrammar ]
+        else baseGrammars ++ [ pythonGrammar ];
 
       settings = {
         # Performance optimizations for treesitter
