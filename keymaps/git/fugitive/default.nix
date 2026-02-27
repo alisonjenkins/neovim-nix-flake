@@ -74,18 +74,18 @@
   {
     mode = "n";
     key = "<leader>grm";
-    action = "<cmd>Git rebase master<CR>";
+    action.__raw = ''
+      function()
+        local branch = vim.trim(vim.fn.system("git rev-parse --abbrev-ref origin/HEAD 2>/dev/null"))
+        if vim.v.shell_error ~= 0 or branch == "" then
+          branch = "main"
+        end
+        branch = branch:gsub("^origin/", "")
+        vim.cmd("!git fetch origin " .. branch .. ":" .. branch .. " && git rebase --autostash" .. branch)
+      end
+    '';
     options = {
-      desc = "Git Rebase master";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>grM";
-    action = "<cmd>Git rebase main<CR>";
-    options = {
-      desc = "Git Rebase main";
+      desc = "Git Rebase against default branch";
       silent = true;
     };
   }
