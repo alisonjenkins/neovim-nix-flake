@@ -26,7 +26,7 @@ jobs:
           name: ajenkins-public
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - uses: DeterminateSystems/flake-checker-action@main
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
       - name: Run `nix build`
         run: |
           export CACHIX_AUTH_TOKEN="${{ secrets.CACHIX_AUTH_TOKEN }}"
