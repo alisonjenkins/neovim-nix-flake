@@ -81,7 +81,14 @@
           branch = "main"
         end
         branch = branch:gsub("^origin/", "")
-        vim.cmd("!git fetch origin " .. branch .. ":" .. branch .. " && git rebase --autostash" .. branch)
+
+        vim.notify("Fetching and rebasing against " .. branch .. "...", vim.log.levels.INFO)
+        local output = vim.fn.system("git fetch origin " .. branch .. ":" .. branch .. " && git rebase --autostash " .. branch)
+        if vim.v.shell_error == 0 then
+          vim.notify("Rebase against " .. branch .. " succeeded", vim.log.levels.INFO)
+        else
+          vim.notify("Rebase against " .. branch .. " failed:\n" .. output, vim.log.levels.ERROR)
+        end
       end
     '';
     options = {
