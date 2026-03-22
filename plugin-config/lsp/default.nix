@@ -39,10 +39,7 @@
       vacuum.enable = true;
       veryl_ls.enable = true;
 
-      ccls = {
-        enable = true;
-        package = pkgs.stable.ccls;
-      };
+      clangd.enable = true;
 
       helm_ls = {
         enable = true;

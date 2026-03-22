@@ -252,17 +252,12 @@
             isort
             jq
             jujutsu
-            jupyter
             lsof
-            mermaid-cli
             nixpkgs-fmt
             nodePackages.prettier
             openssl
-            postgresql
             prettierd
             ripgrep
-            rust-analyzer
-            rustfmt
             shfmt
             sqlite
             stable.tectonic
