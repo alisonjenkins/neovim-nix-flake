@@ -254,7 +254,7 @@
             jujutsu
             lsof
             nixpkgs-fmt
-            nodePackages.prettier
+            prettier
             openssl
             prettierd
             ripgrep
