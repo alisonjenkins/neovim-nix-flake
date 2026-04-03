@@ -602,6 +602,11 @@
                   config.allowUnfree = true;
                 };
               })
+              # Pin claude-code to nixpkgs-master — nixos-unstable lags behind
+              # and yanked versions cause build failures
+              (final: _prev: {
+                inherit (final.master) claude-code claude-code-bin;
+              })
               (final: _prev: {
                 stable = import inputs.nixpkgs-stable {
                   system = final.stdenv.hostPlatform.system;
