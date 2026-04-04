@@ -8,6 +8,7 @@
     };
 
     settings = {
+      ui.enable = false;
       legacy_commands = false;
       new_notes_location = "current_dir";
 

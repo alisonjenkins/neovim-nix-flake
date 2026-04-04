@@ -57,7 +57,7 @@
             vim.opt.redrawtime = 1500        -- Faster redraw timeout
 
             -- LSP performance optimizations
-            vim.lsp.set_log_level("ERROR")    -- Reduce LSP logging for performance
+            vim.lsp.log.set_level("ERROR")    -- Reduce LSP logging for performance
 
             -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
             -- This spreads file access over time instead of all at once
@@ -449,7 +449,7 @@
             lspkind.enable = true;
             lspsaga.enable = true;
             markdown-preview.enable = false; # Disabled due to memory constraints during nix build on macOS
-            molten.enable = true;
+            molten.enable = false;
             navic.enable = true;
             nix.enable = true;
             numbertoggle.enable = true;
@@ -615,6 +615,9 @@
               })
               (final: prev: {
                 vimPlugins = prev.vimPlugins // {
+                  # Pin nvim-treesitter from master for Neovim 0.12 ABI 15 compatible queries
+                  inherit (final.master.vimPlugins) nvim-treesitter;
+
                   # avante-nvim = prev.vimPlugins.avante-nvim.overrideAttrs (oldAttrs: {
                   #   src = pkgs.fetchFromGitHub {
                   #     owner = "yetone";
