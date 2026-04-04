@@ -618,6 +618,45 @@
                   # Pin nvim-treesitter from master for Neovim 0.12 ABI 15 compatible queries
                   inherit (final.master.vimPlugins) nvim-treesitter;
 
+                  # Patch cybu.nvim for Neovim 0.12 deprecated vim.validate API
+                  cybu-nvim = prev.vimPlugins.cybu-nvim.overrideAttrs (_: {
+                    postPatch = ''
+                      substituteInPlace lua/cybu/init.lua \
+                        --replace-fail 'vim.validate({ user_config = { user_config, "table", true } })' \
+                          'vim.validate("user_config", user_config, "table", true)' \
+                        --replace-fail 'vim.validate({ direction = { direction, "string", false } })' \
+                          'vim.validate("direction", direction, "string", false)'
+                    '';
+                  });
+                  # Patch git-conflict.nvim for Neovim 0.12 deprecated API fixes
+                  git-conflict-nvim = prev.vimPlugins.git-conflict-nvim.overrideAttrs (_: {
+                    postPatch = ''
+                      substituteInPlace lua/git-conflict.lua \
+                        --replace-fail 'vim.highlight.priorities.user' 'vim.hl.priorities.user'
+                      substituteInPlace lua/git-conflict/colors.lua \
+                        --replace-fail "vim.validate({ rgb_24bit = { rgb_24bit, 'n', true } })" \
+                          "vim.validate('rgb_24bit', rgb_24bit, 'number', true)"
+                    '';
+                  });
+                  # Patch wrapping.nvim for Neovim 0.12 deprecated vim.validate API
+                  wrapping-nvim = prev.vimPlugins.wrapping-nvim.overrideAttrs (_: {
+                    postPatch = ''
+                      ${final.python3}/bin/python3 -c "
+import re, pathlib
+p = pathlib.Path('lua/wrapping/init.lua')
+src = p.read_text()
+# Replace old-style vim.validate({...}) with individual vim.validate() calls
+old = re.search(r'vim\.validate\(\{.*?\}\)', src, re.DOTALL).group(0)
+# Extract field entries from the old validate call
+entries = re.findall(r'(\w+)\s*=\s*\{\s*opts\.(\w+),\s*\"(\w+)\"\s*\}', old)
+new_lines = []
+for name, field, typ in entries:
+    new_lines.append(f'    vim.validate(\"{name}\", opts.{field}, \"{typ}\")')
+p.write_text(src.replace(old, '\n'.join(new_lines)))
+"
+                    '';
+                  });
+
                   # avante-nvim = prev.vimPlugins.avante-nvim.overrideAttrs (oldAttrs: {
                   #   src = pkgs.fetchFromGitHub {
                   #     owner = "yetone";
