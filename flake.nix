@@ -426,10 +426,14 @@
               -- Ensure terraform filetype uses terraform snippets
               luasnip.filetype_extend("terraform", { "terraform" })
             end)
+
+            -- Terraform/OpenTofu tools: docs lookup and security scanning
+            require("terraform-tools").setup()
           '';
 
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
+            "lua/terraform-tools.lua".source = ./lua/terraform-tools.lua;
             # Patched Python highlights query without "except*" keyword
             # TODO: Remove once nvim-treesitter fixes the query upstream
             "queries/python/highlights.scm".source = ./queries/python/highlights.scm;
@@ -445,6 +449,7 @@
             (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
             black
             cowsay
+            curl
             fd
             fortune
             ghostscript
@@ -458,8 +463,8 @@
             jujutsu
             lsof
             nixpkgs-fmt
-            prettier
             openssl
+            prettier
             prettierd
             ripgrep
             shfmt
@@ -467,6 +472,8 @@
             stable.tectonic
             stylua
             terraform
+            tfsec
+            trivy
             websocat
             wordnet
           ];
@@ -483,16 +490,6 @@
             vim-dadbod-ui
             vim-pencil
             vim-table-mode
-
-            (pkgs.vimUtils.buildVimPlugin {
-              name = "vscode-terraform-doc-snippets";
-              src = pkgs.fetchFromGitHub {
-                owner = "run-at-scale";
-                repo = "vscode-terraform-doc-snippets";
-                rev = "6ab3e44b566e660f38922cf908e6e547eaa5d4b4";
-                hash = "sha256-v392tyzXV+zyBNt5OCB2NBCK7JcByrTa5Ne/nFtSCJI=";
-              };
-            })
 
             (pkgs.vimUtils.buildVimPlugin {
               name = "blink-cmp-dap";
@@ -532,6 +529,16 @@
                 repo = "pipeline.nvim";
                 rev = "d14a27ba7f25ecb72e28bb9844672de99b151eaa";
                 hash = "sha256-Pl1HkXpnyAIVct3BjGtGTQf2M270Gq5wSh+KUKnL1Tk=";
+              };
+            })
+
+            (pkgs.vimUtils.buildVimPlugin {
+              name = "vscode-terraform-doc-snippets";
+              src = pkgs.fetchFromGitHub {
+                owner = "run-at-scale";
+                repo = "vscode-terraform-doc-snippets";
+                rev = "6ab3e44b566e660f38922cf908e6e547eaa5d4b4";
+                hash = "sha256-v392tyzXV+zyBNt5OCB2NBCK7JcByrTa5Ne/nFtSCJI=";
               };
             })
           ];
@@ -622,6 +629,7 @@
           ++ import ./keymaps/rust-lsp
           ++ import ./keymaps/search
           ++ import ./keymaps/tabs
+          ++ import ./keymaps/terraform
           ++ import ./keymaps/terminal
           ++ import ./keymaps/testing
           ++ import ./keymaps/toggles
@@ -736,11 +744,13 @@
             // (import ./plugin-config/neorg { inherit pkgs; })
             // (import ./plugin-config/neotest)
             // (import ./plugin-config/noice { inherit pkgs; })
+            // (import ./plugin-config/none-ls)
             // (import ./plugin-config/obsidian)
             // (import ./plugin-config/octo)
             // (import ./plugin-config/oil)
             // (import ./plugin-config/oil-git-status)
             // (import ./plugin-config/origami)
+
             // (import ./plugin-config/otter)
             // (import ./plugin-config/parinfer-rust)
             // (import ./plugin-config/remote-nvim { inherit pkgs; })

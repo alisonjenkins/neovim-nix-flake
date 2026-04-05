@@ -167,6 +167,10 @@
           desc = "Search";
         }
         {
+          __unkeyed-1 = "<leader>sT";
+          desc = "Terraform/OpenTofu Docs";
+        }
+        {
           __unkeyed-1 = "<leader>t";
           desc = "Testing";
         }
