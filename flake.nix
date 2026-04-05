@@ -8,7 +8,6 @@
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
-    # nixvim.url = "github:alisonjenkins/nixvim/fix/sidekick-nes-disabled";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
@@ -273,9 +272,9 @@
             vim.o.directory = vim.fn.stdpath("data") .. "/directory"
             vim.o.sessionoptions = vim.o.sessionoptions .. ",globals"
             vim.o.undodir = vim.fn.stdpath("data") .. "/undo"
-            vim.loop.fs_mkdir(vim.o.backupdir, 750)
-            vim.loop.fs_mkdir(vim.o.directory, 750)
-            vim.loop.fs_mkdir(vim.o.undodir, 750)
+            vim.uv.fs_mkdir(vim.o.backupdir, 750)
+            vim.uv.fs_mkdir(vim.o.directory, 750)
+            vim.uv.fs_mkdir(vim.o.undodir, 750)
 
             -- Fix vim-tmux-navigator terminal mode keymaps: the plugin's default
             -- terminal mappings use <C-w>: to escape terminal mode before running
@@ -579,9 +578,7 @@
           };
 
           keymaps = [ ]
-          # ++ import ./keymaps/ai/avante
           ++ import ./keymaps/ai/claudecode
-          # ++ import ./keymaps/ai/codecompanion
           ++ import ./keymaps/ai/sidekick
           ++ import ./keymaps/buffers
           ++ import ./keymaps/db
@@ -664,10 +661,6 @@
             specs.enable = false;
             startify.enable = false;
             tmux-navigator.enable = true;
-            # treesitter-refactor is archived/deprecated and incompatible with
-            # nvim-treesitter main branch (define_modules removed). LSP provides
-            # equivalent features (rename, goto definition, document highlights).
-            # treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
             ts-autotag.enable = true;
             ts-context-commentstring.enable = true;
@@ -679,13 +672,8 @@
             zig.enable = true;
           }
           // (
-            # (import ./plugin-config/alpha)
             # // (import ./plugin-config/teamtype)
             # // (import ./plugin-config/tailwind-tools)
-            # // (import ./plugin-config/copilot-lua)
-            # // (import ./plugin-config/blink-cmp-copilot)
-            # // (import ./plugin-config/codecompanion)
-            # // (import ./plugin-config/avante { inherit pkgs; })
             (import ./plugin-config/auto-session)
             // (import ./plugin-config/arrow)
             // (import ./plugin-config/blink-cmp { inherit pkgs; })
@@ -701,7 +689,7 @@
             // (import ./plugin-config/dap { inherit pkgs; })
             // (import ./plugin-config/dap-go { inherit pkgs; })
             // (import ./plugin-config/dap-lldb { inherit pkgs; })
-            // (import ./plugin-config/dap-python)
+            // (import ./plugin-config/dap-python { inherit pkgs; })
             // (import ./plugin-config/dap-ui)
             // (import ./plugin-config/dap-virtual-text)
             // (import ./plugin-config/faster-nvim)
