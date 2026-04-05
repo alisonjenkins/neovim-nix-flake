@@ -192,6 +192,10 @@
           desc = "Tabs";
         }
         {
+          __unkeyed-1 = "<leader>x";
+          desc = "Trouble";
+        }
+        {
           __unkeyed-1 = "<leader>z";
           desc = "Zettelkasten";
         }

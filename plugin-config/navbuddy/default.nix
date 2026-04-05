@@ -3,7 +3,6 @@
     enable = true;
 
     lazyLoad.settings = {
-      cmd = [ "Navbuddy" ];
       event = [ "LspAttach" ];
     };
 
