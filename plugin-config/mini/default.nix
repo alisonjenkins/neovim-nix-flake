@@ -38,6 +38,29 @@
         };
       };
 
+      starter = {
+        header.__raw = ''
+          (function()
+            local hour = tonumber(os.date("%H"))
+            local greeting
+            if hour < 6 then greeting = "Good night"
+            elseif hour < 12 then greeting = "Good morning"
+            elseif hour < 18 then greeting = "Good afternoon"
+            else greeting = "Good evening"
+            end
+            return greeting .. ", " .. (vim.env.USER or "user")
+          end)()
+        '';
+        items.__raw = ''
+          {
+            require('mini.starter').sections.recent_files(5, false),
+            require('mini.starter').sections.recent_files(5, true),
+            require('mini.starter').sections.builtin_actions(),
+          }
+        '';
+        footer = "";
+      };
+
       surround = {
         mappings = {
           add = "gsa";

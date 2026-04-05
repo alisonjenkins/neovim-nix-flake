@@ -2,9 +2,9 @@
   {
     mode = "n";
     key = "<leader>;";
-    action = "<cmd>Startify<CR>";
+    action = "<cmd>lua require('mini.starter').open()<CR>";
     options = {
-      desc = "Open Startify";
+      desc = "Open Dashboard";
       silent = true;
     };
   }
