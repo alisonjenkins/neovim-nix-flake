@@ -99,7 +99,7 @@ let
     }
     {
       mode = "n";
-      key = "<leader>asc";
+      key = "<leader>asC";
       action = "<cmd>lua require('sidekick.cli').toggle({ name = 'copilot', focus = true })<cr>";
       options = {
         desc = "Sidekick Toggle Copilot";
@@ -108,7 +108,7 @@ let
     }
     {
       mode = "n";
-      key = "<leader>asC";
+      key = "<leader>asc";
       action = "<cmd>lua require('sidekick.cli').toggle({ name = 'claude', focus = true })<cr>";
       options = {
         desc = "Sidekick Toggle Claude";
