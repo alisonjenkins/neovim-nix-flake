@@ -50,6 +50,118 @@
           ];
 
           extraConfigLua = ''
+            -- Neovim 0.12 compatibility: wrap add_predicate/add_directive so third-party
+            -- plugin handlers automatically receive single TSNode instead of TSNode[] lists.
+            -- This runs before plugins load, so all subsequent handler registrations are wrapped.
+            do
+              local ts_query = require("vim.treesitter.query")
+              local orig_add_predicate = ts_query.add_predicate
+              local orig_add_directive = ts_query.add_directive
+
+              local function unwrap_match(match)
+                local unwrapped = {}
+                for k, v in pairs(match) do
+                  unwrapped[k] = (type(v) == "table") and v[1] or v
+                end
+                return unwrapped
+              end
+
+              ts_query.add_predicate = function(name, handler, opts)
+                local wrapped = function(match, ...)
+                  return handler(unwrap_match(match), ...)
+                end
+                return orig_add_predicate(name, wrapped, opts)
+              end
+
+              ts_query.add_directive = function(name, handler, opts)
+                local wrapped = function(match, ...)
+                  return handler(unwrap_match(match), ...)
+                end
+                return orig_add_directive(name, wrapped, opts)
+              end
+            end
+
+            -- Fix Snacks picker cursor jump: nvim_win_call from plugins (lualine etc.)
+            -- briefly exits insert mode in prompt buftype. The prompt auto-re-enters
+            -- insert without "!", leaving cursor 1 position back. Fix by wrapping
+            -- nvim_win_call to restore insert mode at end of line when in picker input.
+            do
+              local orig_win_call = vim.api.nvim_win_call
+              vim.api.nvim_win_call = function(win, fn)
+                local cur_buf = vim.api.nvim_get_current_buf()
+                local was_insert = vim.fn.mode():find("^i") ~= nil
+                local is_picker = was_insert and vim.bo[cur_buf].buftype == "prompt"
+                    and vim.bo[cur_buf].filetype == "snacks_picker_input"
+                local saved_col
+                if is_picker then
+                  saved_col = vim.api.nvim_win_get_cursor(0)[2]
+                end
+                local result = orig_win_call(win, fn)
+                if is_picker and not vim.fn.mode():find("^i") then
+                  vim.cmd("startinsert!")
+                elseif is_picker and vim.fn.mode():find("^i") then
+                  local cur_col = vim.api.nvim_win_get_cursor(0)[2]
+                  if cur_col < saved_col then
+                    pcall(vim.api.nvim_win_set_cursor, 0, { 1, saved_col })
+                  end
+                end
+                return result
+              end
+            end
+
+            -- Fix ts-context-commentstring: get_parser returns nil in Neovim 0.12
+            -- (upstream fix: github.com/JoosepAlviste/nvim-ts-context-commentstring/commit/0e8937ba)
+            vim.api.nvim_create_autocmd("VimEnter", {
+              once = true,
+              callback = function()
+                vim.schedule(function()
+                  local ok, utils = pcall(require, "ts_context_commentstring.utils")
+                  if ok and utils then
+                    utils.is_treesitter_active = function(bufnr)
+                      bufnr = bufnr or 0
+                      local ok2, parser = pcall(vim.treesitter.get_parser, bufnr)
+                      return ok2 and parser ~= nil
+                    end
+                  end
+                end)
+              end,
+            })
+
+            -- Fix indent-tools: make_repeatable_move_pair was removed from
+            -- nvim-treesitter-textobjects, replaced by make_repeatable_move
+            do
+              local ok, rm = pcall(require, "nvim-treesitter-textobjects.repeatable_move")
+              if not ok then
+                ok, rm = pcall(require, "nvim-treesitter.textobjects.repeatable_move")
+              end
+              if ok and rm and not rm.make_repeatable_move_pair and rm.make_repeatable_move then
+                rm.make_repeatable_move_pair = function(forward_fn, backward_fn)
+                  return rm.make_repeatable_move(forward_fn), rm.make_repeatable_move(backward_fn)
+                end
+              end
+            end
+
+            -- Suppress Neovim 0.12 deprecation warnings from plugins using old APIs
+            -- vim.lsp.get_buffers_by_client_id (used by nvim-navbuddy)
+            vim.lsp.get_buffers_by_client_id = function(client_id)
+              local client = vim.lsp.get_client_by_id(client_id)
+              if not client then return {} end
+              return vim.tbl_keys(client.attached_buffers)
+            end
+            -- vim.validate old table syntax → new style (used by indent-tools.nvim)
+            do
+              local orig_validate = vim.validate
+              vim.validate = function(first, ...)
+                if type(first) == "table" and select("#", ...) == 0 then
+                  for name, spec in pairs(first) do
+                    orig_validate(name, spec[1], spec[2], spec[3])
+                  end
+                  return
+                end
+                return orig_validate(first, ...)
+              end
+            end
+
             -- Performance optimizations
             vim.g.loaded_node_provider = 0  -- Disable Node.js provider
             vim.g.loaded_perl_provider = 0  -- Disable Perl provider
