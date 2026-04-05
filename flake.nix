@@ -127,6 +127,31 @@
               end,
             })
 
+            -- Silence otter-ls activation warning (vim.lsp.start returns nil in Neovim 0.12)
+            vim.api.nvim_create_autocmd("VimEnter", {
+              once = true,
+              callback = function()
+                vim.schedule(function()
+                  local ok, otter = pcall(require, "otter.lsp")
+                  if ok and otter and otter.start then
+                    local orig_start = otter.start
+                    otter.start = function(...)
+                      local result = orig_start(...)
+                      return result
+                    end
+                  end
+                  -- Suppress the specific notify_once message
+                  local orig_notify_once = vim.notify_once
+                  vim.notify_once = function(msg, ...)
+                    if type(msg) == "string" and msg:find("%[otter%] activation of otter%-ls failed") then
+                      return
+                    end
+                    return orig_notify_once(msg, ...)
+                  end
+                end)
+              end,
+            })
+
             -- Fix ts-context-commentstring: get_parser returns nil in Neovim 0.12
             -- (upstream fix: github.com/JoosepAlviste/nvim-ts-context-commentstring/commit/0e8937ba)
             vim.api.nvim_create_autocmd("VimEnter", {
