@@ -277,6 +277,29 @@
             vim.loop.fs_mkdir(vim.o.directory, 750)
             vim.loop.fs_mkdir(vim.o.undodir, 750)
 
+            -- Fix vim-tmux-navigator terminal mode keymaps: the plugin's default
+            -- terminal mappings use <C-w>: to escape terminal mode before running
+            -- the command, but this doesn't work in snacks.nvim terminals (used by
+            -- Claude Code) and leaks command text into the terminal input. Override
+            -- with <cmd> which works directly from terminal mode.
+            vim.api.nvim_create_autocmd("VimEnter", {
+              once = true,
+              callback = function()
+                vim.keymap.set("t", "<C-h>", "<cmd>TmuxNavigateLeft<CR>", { silent = true })
+                vim.keymap.set("t", "<C-j>", "<cmd>TmuxNavigateDown<CR>", { silent = true })
+                vim.keymap.set("t", "<C-k>", "<cmd>TmuxNavigateUp<CR>", { silent = true })
+                vim.keymap.set("t", "<C-l>", "<cmd>TmuxNavigateRight<CR>", { silent = true })
+              end,
+            })
+
+            -- Claude Code integration (WebSocket MCP protocol)
+            require('claudecode').setup({
+              terminal = {
+                split_side = "right",
+                split_width_percentage = 0.40,
+              },
+            })
+
             -- Defer non-critical plugin setups to speed up startup
             vim.defer_fn(function()
               require('jj').setup({})
@@ -447,6 +470,7 @@
           extraPlugins = with pkgs.vimPlugins; [
             blink-cmp-avante
             blink-cmp-conventional-commits
+            claudecode-nvim
             vim-dadbod
             vim-dadbod-completion
             vim-dadbod-ui
@@ -555,9 +579,10 @@
           };
 
           keymaps = [ ]
+          # ++ import ./keymaps/ai/avante
+          ++ import ./keymaps/ai/claudecode
           # ++ import ./keymaps/ai/codecompanion
           ++ import ./keymaps/ai/sidekick
-          # ++ import ./keymaps/ai/avante
           ++ import ./keymaps/buffers
           ++ import ./keymaps/db
           ++ import ./keymaps/debugging
