@@ -1,36 +1,22 @@
-{ pkgs, ... }:
-let
-  enable = false;
-in
 {
   neotest = {
-    enable = enable;
+    enable = true;
 
     adapters = {
-      bash.enable = enable;
-      go.enable = enable;
-      java.enable = enable;
-      plenary.enable = enable;
-      python.enable = enable;
-      rust.enable = enable;
-      zig.enable = enable;
+      bash.enable = true;
+      go.enable = true;
+      java.enable = true;
+      plenary.enable = true;
+      python.enable = true;
+      rust.enable = true;
+      zig.enable = true;
     };
 
     settings = {
       log_level = "warn";
-
       discovery = { enabled = true; };
-
       output_panel = { enabled = true; };
     };
 
-    # lazyLoad = {
-    #   settings = {
-    #     cmd = [
-    #       "Neotest"
-    #       "NeotestJava"
-    #     ];
-    #   };
-    # };
   };
 }
