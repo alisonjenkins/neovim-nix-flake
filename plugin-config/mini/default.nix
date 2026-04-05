@@ -48,7 +48,16 @@
             elseif hour < 18 then greeting = "Good afternoon"
             else greeting = "Good evening"
             end
-            return greeting .. ", " .. (vim.env.USER or "user")
+            local header = greeting .. ", " .. (vim.env.USER or "user") .. "\n\n"
+            local handle = io.popen("fortune -s 2>/dev/null | cowsay 2>/dev/null")
+            if handle then
+              local result = handle:read("*a")
+              handle:close()
+              if result and result ~= "" then
+                header = header .. result
+              end
+            end
+            return header
           end)()
         '';
         items.__raw = ''
