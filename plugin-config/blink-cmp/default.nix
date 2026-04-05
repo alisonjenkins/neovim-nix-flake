@@ -113,20 +113,6 @@
           "buffer"
         ];
 
-        # Context-specific sources for git files
-        cmdline.__raw = ''
-          function()
-            local type = vim.fn.getcmdtype()
-            if type == "/" or type == "?" then
-              return { "buffer" }
-            end
-            if type == ":" then
-              return { "cmdline", "path" }
-            end
-            return {}
-          end
-        '';
-
         providers = {
           buffer = {
             name = "Buffer";
@@ -272,6 +258,21 @@
             };
           };
         };
+      };
+
+      cmdline = {
+        sources.__raw = ''
+          function()
+            local type = vim.fn.getcmdtype()
+            if type == "/" or type == "?" then
+              return { "buffer" }
+            end
+            if type == ":" then
+              return { "cmdline", "path" }
+            end
+            return {}
+          end
+        '';
       };
 
       signature = {
