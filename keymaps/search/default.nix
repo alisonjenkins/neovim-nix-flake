@@ -83,9 +83,9 @@
   {
     mode = "n";
     key = "<leader>sp";
-    action = "<cmd>lua require('snacks').picker.projects()<CR>";
+    action = "<cmd>lua require('snacks').picker.zoxide()<CR>";
     options = {
-      desc = "Projects";
+      desc = "Search for projects via zoxide";
       silent = true;
     };
   }
