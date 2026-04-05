@@ -128,16 +128,7 @@
   {
     mode = "n";
     key = "<leader>lo";
-    action = "<cmd>Outline<cr>";
-    options = {
-      desc = "LSP Outline";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
-    key = "<leader>lO";
-    action = "<cmd>Outline!<cr>";
+    action = "<cmd>Lspsaga outline<cr>";
     options = {
       desc = "LSP Outline";
       silent = true;
