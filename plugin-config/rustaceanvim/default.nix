@@ -4,21 +4,16 @@
 
     settings = {
       dap = {
-        adapter = {
-          host = "127.0.0.1";
-          port = ''''${port}'';
-          type = "server";
-
-          executable = {
-            command = ''${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/adapter/codelldb'';
-            args = [
-              "--liblldb"
-              ''${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/lldb/lib/liblldb.so''
-              "--port"
-              ''''${port}''
-            ];
-          };
-        };
+        adapter.__raw = ''
+          {
+            type = "executable",
+            command = "${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/adapter/codelldb",
+            args = {
+              "--liblldb",
+              "${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/lldb/lib/liblldb.so",
+            },
+          }
+        '';
 
         configuration = {
           sourceLanguages = [ "rust" ];
