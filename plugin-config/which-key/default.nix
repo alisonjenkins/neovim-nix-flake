@@ -139,6 +139,14 @@
           desc = "Rust LSP Move Item";
         }
         {
+          __unkeyed-1 = "<leader>p";
+          desc = "Profiling";
+        }
+        {
+          __unkeyed-1 = "<leader>pl";
+          desc = "Load Profile";
+        }
+        {
           __unkeyed-1 = "<leader>o";
           desc = "Obsidian";
         }

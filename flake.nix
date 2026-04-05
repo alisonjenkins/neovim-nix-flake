@@ -307,6 +307,9 @@
               require('pipeline').setup({})
             end, 50)
 
+            -- Performance annotation (perf/flamegraph overlay)
+            require('perfanno').setup({})
+
             -- Defer UpdateRemotePlugins to avoid blocking startup
             vim.defer_fn(function()
               if vim.fn.argc() == 0 then
@@ -474,6 +477,7 @@
             blink-cmp-spell
             blink-emoji-nvim
             claudecode-nvim
+            perfanno-nvim
             vim-dadbod
             vim-dadbod-completion
             vim-dadbod-ui
@@ -614,6 +618,7 @@
           ++ import ./keymaps/lsp
           ++ import ./keymaps/notifications
           ++ import ./keymaps/obsidian
+          ++ import ./keymaps/profiling
           ++ import ./keymaps/rust-lsp
           ++ import ./keymaps/search
           ++ import ./keymaps/tabs
