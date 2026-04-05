@@ -18,7 +18,7 @@
   vim.api.nvim_buf_set_keymap(
     0,
     "n",
-    "ghi",
+    "ght",
     "<cmd>lua require('kulala').toggle_view()<cr>",
     { noremap = true, silent = true, desc = "Toggle http request body and headers" }
   )

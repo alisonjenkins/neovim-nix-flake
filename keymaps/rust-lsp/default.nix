@@ -179,13 +179,4 @@
       silent = true;
     };
   }
-  {
-    mode = "v";
-    key = "<leader>lRg";
-    action = "<cmd>RustLsp crateGraph<cr>";
-    options = {
-      desc = "RustLsp crate graph";
-      silent = true;
-    };
-  }
 ]

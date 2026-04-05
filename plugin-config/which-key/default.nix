@@ -18,25 +18,14 @@
           desc = "AI";
           mode = "v";
         }
-        # {
-        #   __unkeyed-1 = "<leader>aa";
-        #   desc = "Avante";
-        #   mode = "v";
-        # }
-        # {
-        #   __unkeyed-1 = "<leader>aac";
-        #   desc = "Avante Chat";
-        #   mode = "n";
-        # }
-        # {
-        #   __unkeyed-1 = "<leader>aaS";
-        #   desc = "Avante Switch";
-        #   mode = "n";
-        # }
         {
           __unkeyed-1 = "<leader>ac";
           desc = "Claude Code";
           mode = [ "n" "v" ];
+        }
+        {
+          __unkeyed-1 = "<leader>gPp";
+          desc = "Reopen PR";
         }
         {
           __unkeyed-1 = "<leader>as";
@@ -59,11 +48,6 @@
           mode = "v";
         }
         {
-          __unkeyed-1 = "<leader>lR";
-          desc = "Rust";
-          mode = "v";
-        }
-        {
           __unkeyed-1 = "<leader>:";
           desc = "Terminal";
         }
@@ -74,14 +58,6 @@
         {
           __unkeyed-1 = "<leader>a";
           desc = "AI";
-        }
-        # {
-        #   __unkeyed-1 = "<leader>aa";
-        #   desc = "Avante";
-        # }
-        {
-          __unkeyed-1 = "<leader>ac";
-          desc = "Claude Code";
         }
         {
           __unkeyed-1 = "<leader>d";

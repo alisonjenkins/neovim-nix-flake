@@ -127,15 +127,6 @@
   }
   {
     mode = "n";
-    key = "<leader>gPl";
-    action = "<cmd>Octo pr list<CR>";
-    options = {
-      desc = "List PRs";
-      silent = true;
-    };
-  }
-  {
-    mode = "n";
     key = "<leader>gPR";
     action = "<cmd>Octo pr reload<CR>";
     options = {
@@ -226,7 +217,7 @@
   }
   {
     mode = "n";
-    key = "<leader>gPC";
+    key = "<leader>gPp";
     action = "<cmd>Octo pr reopen<CR>";
     options = {
       desc = "Reopen PR";
