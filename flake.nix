@@ -469,8 +469,10 @@
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
-            blink-cmp-avante
             blink-cmp-conventional-commits
+            blink-cmp-env
+            blink-cmp-spell
+            blink-emoji-nvim
             claudecode-nvim
             vim-dadbod
             vim-dadbod-completion
@@ -485,6 +487,17 @@
                 repo = "vscode-terraform-doc-snippets";
                 rev = "6ab3e44b566e660f38922cf908e6e547eaa5d4b4";
                 hash = "sha256-v392tyzXV+zyBNt5OCB2NBCK7JcByrTa5Ne/nFtSCJI=";
+              };
+            })
+
+            (pkgs.vimUtils.buildVimPlugin {
+              name = "blink-cmp-dap";
+              doCheck = false;
+              src = pkgs.fetchFromGitHub {
+                owner = "mayromr";
+                repo = "blink-cmp-dap";
+                rev = "772c51ff57025b0a02fcee31d1a3bd369ae370d5";
+                hash = "sha256-iDoMOaxxCkwsn109PJehokUjYiIQESujC2fAyZeRIhc=";
               };
             })
 

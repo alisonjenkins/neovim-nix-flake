@@ -103,7 +103,6 @@
       };
 
       sources = {
-        # Prioritize LSP, snippets, and path - the most commonly useful sources
         default = [
           "lsp"
           "path"
@@ -112,6 +111,15 @@
           "dap"
           "buffer"
         ];
+
+        per_filetype = {
+          gitcommit = [ "conventional_commits" "git" "emoji" "spell" "buffer" ];
+          NeogitCommitMessage = [ "conventional_commits" "git" "emoji" "spell" "buffer" ];
+          markdown = [ "lsp" "path" "snippets" "emoji" "spell" "buffer" ];
+          sh = [ "lsp" "path" "snippets" "env" "buffer" ];
+          bash = [ "lsp" "path" "snippets" "env" "buffer" ];
+          nix = [ "lsp" "path" "snippets" "env" "buffer" ];
+        };
 
         providers = {
           buffer = {
@@ -134,19 +142,47 @@
 
           dap = {
             name = "DAP";
-            module = "blink_compat.source";
+            module = "blink-cmp-dap";
             score_offset = 5;
+          };
+
+          emoji = {
+            module = "blink-emoji";
+            name = "Emoji";
+            score_offset = -1;
 
             enabled.__raw = ''
               function()
-                local ok, dap = pcall(require, "dap")
-                return ok and dap.session() ~= nil
+                local ft = vim.bo.filetype
+                return ft == "gitcommit" or ft == "markdown" or ft == "NeogitCommitMessage"
               end
             '';
+          };
 
-            opts = {
-              name = "dap";
-            };
+          env = {
+            module = "blink-cmp-env";
+            name = "Env";
+            score_offset = -2;
+
+            enabled.__raw = ''
+              function()
+                local ft = vim.bo.filetype
+                return ft == "sh" or ft == "bash" or ft == "zsh" or ft == "nix"
+              end
+            '';
+          };
+
+          spell = {
+            module = "blink-cmp-spell";
+            name = "Spell";
+            score_offset = -5;
+
+            enabled.__raw = ''
+              function()
+                local ft = vim.bo.filetype
+                return ft == "markdown" or ft == "text" or ft == "gitcommit" or ft == "NeogitCommitMessage"
+              end
+            '';
           };
 
           dictionary = {
@@ -261,6 +297,12 @@
       };
 
       cmdline = {
+        completion.menu.auto_show.__raw = ''
+          function(ctx)
+            return vim.fn.getcmdtype() == ":"
+          end
+        '';
+
         sources.__raw = ''
           function()
             local type = vim.fn.getcmdtype()
