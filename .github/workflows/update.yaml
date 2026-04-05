@@ -2,7 +2,7 @@ name: Update and push flake lock
 
 on:
   schedule:
-    - cron: "* 1 * * *"
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 jobs:

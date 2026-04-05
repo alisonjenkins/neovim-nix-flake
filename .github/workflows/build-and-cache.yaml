@@ -27,9 +27,15 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - uses: DeterminateSystems/flake-checker-action@main
       - uses: docker/setup-qemu-action@v4
+      - name: Run `nix flake check`
+        run: nix flake check
+      - name: Check formatting
+        run: nix fmt -- --check .
       - name: Run `nix build`
-        run: |
-          export CACHIX_AUTH_TOKEN="${{ secrets.CACHIX_AUTH_TOKEN }}"
-          nix develop --command bash -c "nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+        run: nix develop --command bash -c "nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
+      - name: Test Neovim starts
+        run: nix run . -- --headless +q
       - name: Push to cache
         run: cachix push ajenkins-public $(nix path-info --all)
