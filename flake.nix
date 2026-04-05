@@ -109,6 +109,24 @@
               end
             end
 
+            -- Fix twilight.nvim: get_parser returns nil in Neovim 0.12
+            vim.api.nvim_create_autocmd("VimEnter", {
+              once = true,
+              callback = function()
+                vim.schedule(function()
+                  local ok, tw = pcall(require, "twilight.view")
+                  if ok and tw then
+                    local orig_get_node = tw.get_node
+                    tw.get_node = function(buf, line)
+                      local ok2, parser = pcall(vim.treesitter.get_parser, buf)
+                      if not ok2 or not parser then return nil end
+                      return orig_get_node(buf, line)
+                    end
+                  end
+                end)
+              end,
+            })
+
             -- Fix ts-context-commentstring: get_parser returns nil in Neovim 0.12
             -- (upstream fix: github.com/JoosepAlviste/nvim-ts-context-commentstring/commit/0e8937ba)
             vim.api.nvim_create_autocmd("VimEnter", {
