@@ -98,4 +98,67 @@
       silent = true;
     };
   }
+  {
+    mode = [ "n" "v" ];
+    key = "<leader>de";
+    action = "<cmd>lua require'dapui'.eval()<cr>";
+    options = {
+      desc = "Evaluate Expression";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>dp";
+    action = "<cmd>lua require'dap'.pause()<cr>";
+    options = {
+      desc = "DAP Pause";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>dR";
+    action = "<cmd>lua require'dap'.restart()<cr>";
+    options = {
+      desc = "DAP Restart";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>dC";
+    action = "<cmd>lua require'dap'.run_to_cursor()<cr>";
+    options = {
+      desc = "Run to Cursor";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>dw";
+    action = "<cmd>lua require'dapui'.elements.watches.add(vim.fn.expand('<cword>'))<cr>";
+    options = {
+      desc = "Watch Word Under Cursor";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>df";
+    action = "<cmd>lua require'dapui'.float_element()<cr>";
+    options = {
+      desc = "Float Element";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>tD";
+    action = "<cmd>lua require'neotest'.run.run({strategy = 'dap'})<cr>";
+    options = {
+      desc = "Debug Nearest Test";
+      silent = true;
+    };
+  }
 ]
