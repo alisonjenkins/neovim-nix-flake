@@ -32,11 +32,6 @@
           desc = "Sidekick";
           mode = [ "n" "v" ];
         }
-        # {
-        #   __unkeyed-1 = "<leader>asn";
-        #   desc = "Sidekick Next Edit Suggestions";
-        #   mode = ["n" "v"];
-        # }
         {
           __unkeyed-1 = "<leader>l";
           desc = "LSP";
@@ -58,6 +53,10 @@
         {
           __unkeyed-1 = "<leader>a";
           desc = "AI";
+        }
+        {
+          __unkeyed-1 = "<leader>ac";
+          desc = "Claude Code";
         }
         {
           __unkeyed-1 = "<leader>d";
