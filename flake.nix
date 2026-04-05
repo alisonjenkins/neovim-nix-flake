@@ -294,8 +294,10 @@
             -- Claude Code integration (WebSocket MCP protocol)
             require('claudecode').setup({
               terminal = {
-                split_side = "right",
-                split_width_percentage = 0.40,
+                provider = "external",
+                provider_opts = {
+                  external_terminal_cmd = "tmux split-window -h -l 40%% '%s'",
+                },
               },
             })
 
