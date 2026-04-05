@@ -592,7 +592,14 @@
             ttimeoutlen = 50;
           };
 
-          keymaps = [ ]
+          keymaps = [
+            {
+              mode = "n";
+              key = "-";
+              action = "<cmd>Oil<CR>";
+              options = { desc = "Open parent directory"; silent = true; };
+            }
+          ]
           ++ import ./keymaps/ai/claudecode
           ++ import ./keymaps/ai/sidekick
           ++ import ./keymaps/buffers

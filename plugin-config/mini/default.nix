@@ -39,6 +39,7 @@
       };
 
       starter = {
+        query_updaters = "abcdefghijklmnopqrstuvwxyz0123456789_.";
         header.__raw = ''
           (function()
             local hour = tonumber(os.date("%H"))
