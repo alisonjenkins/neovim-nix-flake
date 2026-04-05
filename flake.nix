@@ -662,7 +662,7 @@
             sleuth.enable = true;
             smear-cursor.enable = true;
             specs.enable = false;
-            startify.enable = false;
+            startify.enable = true;
             tmux-navigator.enable = true;
             # treesitter-refactor is archived/deprecated and incompatible with
             # nvim-treesitter main branch (define_modules removed). LSP provides
