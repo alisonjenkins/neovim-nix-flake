@@ -109,21 +109,25 @@
           "path"
           "snippets"
           "lazydev"
-          # "copilot"
+          "dap"
           "buffer"
         ];
 
         # Context-specific sources for git files
-        cmdline = [ ];
+        cmdline.__raw = ''
+          function()
+            local type = vim.fn.getcmdtype()
+            if type == "/" or type == "?" then
+              return { "buffer" }
+            end
+            if type == ":" then
+              return { "cmdline", "path" }
+            end
+            return {}
+          end
+        '';
 
         providers = {
-          # avante = {
-          #   module = "blink-cmp-avante";
-          #   name = "Avante";
-          #   opts = {
-          #   };
-          # };
-
           buffer = {
             name = "Buffer";
             module = "blink.cmp.sources.buffer";
@@ -142,23 +146,22 @@
             '';
           };
 
-          # copilot = {
-          #   name = "copilot";
-          #   module = "blink-cmp-copilot";
-          #   score_offset = 8;  # High priority for AI suggestions
-          #   async = true;
-          #
-          #   opts = {
-          #     max_completions = 3;
-          #     max_attempts = 4;
-          #     kind = "Copilot";
-          #     debounce = 500;  # Reduced from 750ms for faster response
-          #     auto_refresh = {
-          #       backward = true;
-          #       forward = true;
-          #     };
-          #   };
-          # };
+          dap = {
+            name = "DAP";
+            module = "blink_compat.source";
+            score_offset = 5;
+
+            enabled.__raw = ''
+              function()
+                local ok, dap = pcall(require, "dap")
+                return ok and dap.session() ~= nil
+              end
+            '';
+
+            opts = {
+              name = "dap";
+            };
+          };
 
           dictionary = {
             module = "blink-cmp-dictionary";
