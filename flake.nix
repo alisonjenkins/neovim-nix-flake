@@ -363,6 +363,10 @@
             # Patched Python highlights query without "except*" keyword
             # TODO: Remove once nvim-treesitter fixes the query upstream
             "queries/python/highlights.scm".source = ./queries/python/highlights.scm;
+            # Patched gotmpl highlights: remove "else if" node type not in grammar
+            "queries/gotmpl/highlights.scm".source = ./queries/gotmpl/highlights.scm;
+            # Patched php_only highlights: remove "from" node type not in grammar
+            "queries/php_only/highlights.scm".source = ./queries/php_only/highlights.scm;
           };
 
           extraPackages = with pkgs; [
