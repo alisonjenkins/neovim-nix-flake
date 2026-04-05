@@ -152,6 +152,24 @@
               end,
             })
 
+            -- Fix kulala HTTP syntax highlighting: kulala registers kulala_http as the
+            -- treesitter language for http filetype, but the highlighter was already started
+            -- with the http language. Restart highlighting after kulala loads so it picks up
+            -- the kulala_http queries.
+            vim.api.nvim_create_autocmd("FileType", {
+              pattern = { "http", "rest" },
+              callback = function(ev)
+                vim.defer_fn(function()
+                  if not vim.api.nvim_buf_is_valid(ev.buf) then return end
+                  local lang = vim.treesitter.language.get_lang("http")
+                  if lang == "kulala_http" then
+                    vim.treesitter.stop(ev.buf)
+                    vim.treesitter.start(ev.buf, "kulala_http")
+                  end
+                end, 100)
+              end,
+            })
+
             -- Fix ts-context-commentstring: get_parser returns nil in Neovim 0.12
             -- (upstream fix: github.com/JoosepAlviste/nvim-ts-context-commentstring/commit/0e8937ba)
             vim.api.nvim_create_autocmd("VimEnter", {
@@ -621,7 +639,10 @@
             specs.enable = false;
             startify.enable = false;
             tmux-navigator.enable = true;
-            treesitter-refactor.enable = true;
+            # treesitter-refactor is archived/deprecated and incompatible with
+            # nvim-treesitter main branch (define_modules removed). LSP provides
+            # equivalent features (rename, goto definition, document highlights).
+            # treesitter-refactor.enable = true;
             treesitter-textobjects.enable = true;
             ts-autotag.enable = true;
             ts-context-commentstring.enable = true;

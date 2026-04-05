@@ -15,6 +15,8 @@ Sec-Fetch-Dest: document
 Accept-Language: en-US,en;q=0.5
 Sec-Fetch-Site: cross-site
 
+###
+
 # curl 'https://github.com/mistweaverco/kulala.nvim' --compressed -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate, br, zstd' -H 'Referer: https://www.google.com/' -H 'DNT: 1' -H 'Sec-GPC: 1' -H 'Connection: keep-alive' -H 'Cookie: _octo=GH1.1.907653850.1733579809; logged_in=yes; _device_id=9e70375c9e539e07728a9c4efe687fc3; saved_user_sessions=1176328%3Az8VP6a5wdGGio61JGIuFz1G9gqy1uy_cfELTvUu1iCD5WNHb; user_session=z8VP6a5wdGGio61JGIuFz1G9gqy1uy_cfELTvUu1iCD5WNHb; dotcom_user=alisonjenkins; color_mode=%7B%22color_mode%22%3A%22dark%22%2C%22light_theme%22%3A%7B%22name%22%3A%22light%22%2C%22color_mode%22%3A%22light%22%7D%2C%22dark_theme%22%3A%7B%22name%22%3A%22dark%22%2C%22color_mode%22%3A%22dark%22%7D%7D; _gh_sess=4GelcW%2Bfc4wh%2FDaDmeqOONKFge1xfxSfjg8QgqNktoC2Hg9cyvpE1CwKqQSOmzmQUIsh4j0iUsV7VlV3b55VCk3%2Bl03owarlR7wh9MENkujGpzWmCCa4VxzZlKRQZM61OqA77gasI%2FtggYDs%2FoBW2AhIksaPMPB1SFxoGiKv0m3oTWhAiMUTxOO78JfgXKMjblClDGJUIK4qPuASOnnex1meBIziphFJjC9gti8S7YEPVtPTZXyiOaX0Ok%2BboOMp7J1Wd%2BTThN3bdAcmGUEjpLU61iE%2BMm9w%2F9xePJKUAEbrgf9mVk5IwajB%2FLqY4JpVS%2FmNXnLPDZDx9lKI--PR%2Fh2zb1xlLxnN5Y--7y63v%2FqjbQ5pYMw8w3xkPw%3D%3D; cpu_bucket=xlg; preferred_color_mode=dark; tz=Europe%2FLondon' -H 'Upgrade-Insecure-Requests: 1' -H 'Sec-Fetch-Dest: document' -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-Site: cross-site' -H 'If-None-Match: W/"f931bf1140bd2de6a2c78e6f913ef4fe"' -H 'Priority: u=0, i' -H 'TE: trailers'
 GET https://github.com/mistweaverco/kulala.nvim
 TE: trailers
@@ -33,5 +35,3 @@ Accept-Encoding: gzip, deflate, br, zstd
 DNT: 1
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0
 Sec-GPC: 1
-
-
