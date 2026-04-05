@@ -14,10 +14,12 @@
         };
         "core.dirman" = {
           config = {
-            workspaces = {
-              home = "~/git/todo/home";
-              work = "~/git/todo/work";
-            };
+            workspaces.__raw = ''
+              {
+                home = vim.fn.getenv("NEORG_HOME_DIR") ~= vim.NIL and vim.fn.getenv("NEORG_HOME_DIR") or "~/git/todo/home",
+                work = vim.fn.getenv("NEORG_WORK_DIR") ~= vim.NIL and vim.fn.getenv("NEORG_WORK_DIR") or "~/git/todo/work",
+              }
+            '';
           };
         };
       };

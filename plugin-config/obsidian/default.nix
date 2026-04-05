@@ -38,12 +38,15 @@
 
       workspaces.__raw = ''
         {
-          unpack(vim.fn.isdirectory(vim.fn.expand('~') .. '/obsidian') and {
-            {
-              name = "startup",
-              path = "~/obsidian",
-            }
-          } or {}),
+          unpack((function()
+            local vault = vim.fn.getenv("OBSIDIAN_VAULT_DIR") ~= vim.NIL and vim.fn.getenv("OBSIDIAN_VAULT_DIR") or (vim.fn.expand('~') .. '/obsidian')
+            return vim.fn.isdirectory(vault) == 1 and {
+              {
+                name = "startup",
+                path = vault,
+              }
+            } or {}
+          end)()),
           {
             name = "no-vault",
             path = function()
