@@ -8,7 +8,41 @@
       };
 
       bigfile = {
-        enabled = false;
+        enabled = true;
+        size = 1048576; # 1MB
+        setup.__raw = ''
+          function(ctx)
+            vim.cmd([[NoMatchParen]])
+            -- Disable snacks word highlighting
+            require("snacks").words.enabled = false
+            -- Disable mini.hipatterns pattern scanning
+            vim.b[ctx.buf].minihipatterns_disable = true
+            -- Disable snacks indent guides
+            vim.b[ctx.buf].snacks_indent = false
+            -- Disable snacks scope highlighting
+            vim.b[ctx.buf].snacks_scope = false
+            -- Disable snacks smooth scrolling (very expensive on huge buffers)
+            vim.b[ctx.buf].snacks_scroll = false
+            -- Hook FileType so we clear syntax/rendering AFTER filetype scripts run,
+            -- not via vim.schedule which races against those scripts
+            vim.api.nvim_create_autocmd("FileType", {
+              buffer = ctx.buf,
+              once = true,
+              callback = function()
+                if not vim.api.nvim_buf_is_valid(ctx.buf) then return end
+                vim.bo[ctx.buf].syntax = ""
+                pcall(vim.treesitter.stop, ctx.buf)
+                vim.opt_local.relativenumber = false
+                vim.opt_local.cursorline = false
+                vim.opt_local.foldcolumn = "0"
+                vim.opt_local.foldmethod = "manual"
+                if package.loaded["mini.indentscope"] then
+                  vim.b[ctx.buf].miniindentscope_disable = true
+                end
+              end,
+            })
+          end
+        '';
       };
 
       bufdelete = { };
