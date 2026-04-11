@@ -46,6 +46,16 @@
               pattern = [ "*.tf" " *.tfvars" " *.hcl" ];
               command = "set filetype=terraform";
             }
+            {
+              event = "VimEnter";
+              once = true;
+              callback.__raw = ''
+                function()
+                  -- Start lspmux daemon; silently fails if already running (port already bound)
+                  vim.fn.jobstart({ "${pkgs.lspmux}/bin/lspmux", "server" }, { detach = true })
+                end
+              '';
+            }
           ];
 
           extraConfigLua = ''
@@ -461,6 +471,7 @@
             isort
             jq
             jujutsu
+            lspmux
             lsof
             nixpkgs-fmt
             openssl
@@ -839,6 +850,19 @@
                 stable = import inputs.nixpkgs-stable {
                   system = final.stdenv.hostPlatform.system;
                   config.allowUnfree = true;
+                };
+              })
+              (final: _prev: {
+                lspmux = final.rustPlatform.buildRustPackage {
+                  pname = "lspmux";
+                  version = "0.3.0";
+                  src = final.fetchCrate {
+                    pname = "lspmux";
+                    version = "0.3.0";
+                    hash = "sha256-+hnYb/ue8DVPtoNkIawlrVI2og6Wym09fRagZOUkVgY=";
+                  };
+                  cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
+                  meta.mainProgram = "lspmux";
                 };
               })
               (final: prev: {
