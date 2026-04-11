@@ -41,7 +41,7 @@
       starter = {
         query_updaters = "abcdefghijklmnopqrstuvwxyz0123456789_.";
         header.__raw = ''
-          (function()
+          function()
             local hour = tonumber(os.date("%H"))
             local greeting
             if hour < 6 then greeting = "Good night"
@@ -50,16 +50,13 @@
             else greeting = "Good evening"
             end
             local header = greeting .. ", " .. (vim.env.USER or "user") .. "\n\n"
-            local handle = io.popen("fortune -s 2>/dev/null | cowsay 2>/dev/null")
-            if handle then
-              local result = handle:read("*a")
-              handle:close()
-              if result and result ~= "" then
-                header = header .. result
-              end
+            -- fortune/cowsay is computed asynchronously in extraConfigLua to avoid
+            -- blocking the dashboard on AV binary scans; result arrives via refresh()
+            if vim.g._fortune_result then
+              header = header .. vim.g._fortune_result
             end
             return header
-          end)()
+          end
         '';
         items.__raw = ''
           {

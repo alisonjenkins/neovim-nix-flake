@@ -349,6 +349,42 @@
               "*/.build/*",                    -- Swift/Xcode build artifacts
             })
 
+            -- Pre-compute fortune/cowsay asynchronously so mini.starter header is non-blocking.
+            -- On AV-scanned machines, io.popen() would stall Lua until Defender finishes
+            -- scanning the fortune and cowsay nix-store binaries. Instead, kick the job off
+            -- when mini.starter opens (FileType starter), store the result in a global, and
+            -- refresh the starter buffer once the output arrives.
+            -- Using {"sh", "-c", ...} avoids loading the user's full interactive shell
+            -- (zsh + oh-my-zsh etc.) which can itself add 500ms+ of startup overhead.
+            vim.g._fortune_result = nil
+            vim.api.nvim_create_autocmd("User", {
+              pattern = "MiniStarterOpened",
+              once = true,
+              callback = function()
+                local starter_buf = vim.api.nvim_get_current_buf()
+                vim.fn.jobstart({"sh", "-c", "fortune -s 2>/dev/null | cowsay 2>/dev/null"}, {
+                  stdout_buffered = true,
+                  on_stdout = function(_, data)
+                    if data then
+                      local lines = vim.tbl_filter(function(l) return l ~= "" end, data)
+                      if #lines > 0 then
+                        vim.g._fortune_result = table.concat(lines, "\n")
+                      end
+                    end
+                  end,
+                  on_exit = function()
+                    vim.schedule(function()
+                      if vim.api.nvim_buf_is_valid(starter_buf)
+                        and vim.api.nvim_get_current_buf() == starter_buf
+                      then
+                        pcall(require("mini.starter").refresh)
+                      end
+                    end)
+                  end,
+                })
+              end,
+            })
+
             -- Custom async git commands that only show output on error
             -- This replaces Git! push, fetch, etc. with silent versions
             local function async_git_command(args, desc)
