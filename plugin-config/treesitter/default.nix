@@ -405,11 +405,16 @@ in
           disable = ''
             function(lang, bufnr)
               local line_count = vim.api.nvim_buf_line_count(bufnr)
-              -- Disable for very large files
+              -- Disable for very large files (by line count)
               if line_count > 10000 then
                 return true
               end
-              -- Disable for certain large filetypes that don't need highlighting
+              -- Disable for large files regardless of line count (e.g. minified files, single-line logs)
+              local name = vim.api.nvim_buf_get_name(bufnr)
+              if name ~= "" and vim.fn.getfsize(name) > 1024 * 1024 then
+                return true
+              end
+              -- Disable for certain filetypes that don't need highlighting
               local ft = vim.bo[bufnr].filetype
               if ft == "help" or ft == "man" then
                 return true
