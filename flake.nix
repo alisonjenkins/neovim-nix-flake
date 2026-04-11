@@ -295,6 +295,90 @@
               end,
             })
 
+            -- Large file handling: disable expensive options before file is read.
+            -- Uses vim.uv.fs_stat (reliable for files of any size, no -2 edge case).
+            vim.api.nvim_create_autocmd("BufReadPre", {
+              callback = function(ev)
+                local file = vim.fn.expand("<afile>:p")
+                local stat = vim.uv.fs_stat(file)
+                if not stat or stat.type ~= "file" then return end
+                local size = stat.size
+
+                -- 10 MB+: disable disk-heavy features
+                if size > 10 * 1024 * 1024 then
+                  vim.opt_local.swapfile = false
+                  vim.opt_local.undofile = false
+                  vim.opt_local.backup = false
+                  vim.opt_local.writebackup = false
+                  vim.opt_local.foldmethod = "manual"
+                  vim.opt_local.undolevels = -1
+                end
+
+                -- 100 MB+: suppress FileType and Syntax events during the read so no
+                -- plugin processes the entire buffer before we can disable features.
+                if size > 100 * 1024 * 1024 then
+                  local saved_ei = vim.o.eventignore
+                  vim.o.eventignore = saved_ei == "" and "FileType,Syntax"
+                    or saved_ei .. ",FileType,Syntax"
+                  vim.api.nvim_create_autocmd("BufReadPost", {
+                    buffer = ev.buf,
+                    once = true,
+                    callback = function()
+                      vim.o.eventignore = saved_ei
+                      vim.bo[ev.buf].syntax = ""
+                      vim.opt_local.foldmethod = "manual"
+                      vim.opt_local.relativenumber = false
+                      vim.opt_local.cursorline = false
+                      vim.notify(
+                        string.format(
+                          "Large file (%.0f MB) — most features disabled",
+                          size / 1024 / 1024
+                        ),
+                        vim.log.levels.WARN
+                      )
+                    end,
+                  })
+                end
+              end,
+            })
+
+            -- :LspLogTail — open the last 2 MB of the LSP log in a scratch buffer.
+            -- The full log can grow to several GB; this avoids loading the whole file.
+            vim.api.nvim_create_user_command("LspLogTail", function()
+              local log = vim.fn.stdpath("state") .. "/lsp.log"
+              local stat = vim.uv.fs_stat(log)
+              if not stat then
+                vim.notify("LSP log not found: " .. log, vim.log.levels.WARN)
+                return
+              end
+              vim.cmd("enew")
+              vim.bo.buftype = "nofile"
+              vim.bo.bufhidden = "wipe"
+              vim.bo.swapfile = false
+              pcall(vim.api.nvim_buf_set_name, 0, "lsp.log [tail]")
+              local data = vim.fn.system("tail -c 2097152 " .. vim.fn.shellescape(log))
+              local lines = vim.split(data, "\n", { plain = true })
+              vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+              vim.bo.modified = false
+              vim.bo.readonly = true
+              vim.notify(
+                string.format("LSP log (%.0f MB total) — showing last 2 MB", stat.size / 1024 / 1024),
+                vim.log.levels.INFO
+              )
+            end, { desc = "Open tail of LSP log in scratch buffer" })
+
+            -- :LspLogClear — truncate the LSP log file to zero bytes.
+            vim.api.nvim_create_user_command("LspLogClear", function()
+              local log = vim.fn.stdpath("state") .. "/lsp.log"
+              local fd = vim.uv.fs_open(log, "w", 420)
+              if fd then
+                vim.uv.fs_close(fd)
+                vim.notify("LSP log cleared: " .. log, vim.log.levels.INFO)
+              else
+                vim.notify("Failed to clear LSP log: " .. log, vim.log.levels.ERROR)
+              end
+            end, { desc = "Truncate the LSP log file to zero bytes" })
+
             -- Directory setup (sync - needed immediately)
             vim.o.backupdir = vim.fn.stdpath("data") .. "/backup"
             vim.o.directory = vim.fn.stdpath("data") .. "/directory"
