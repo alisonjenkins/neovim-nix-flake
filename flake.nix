@@ -238,8 +238,11 @@
             vim.g.loaded_ruby_provider = 0  -- Disable Ruby provider
             vim.opt.redrawtime = 1500        -- Faster redraw timeout
 
-            -- LSP performance optimizations
-            vim.lsp.log.set_level("ERROR")    -- Reduce LSP logging for performance
+            -- Disable LSP logging entirely: server stderr (nixd IPC traces,
+            -- terraform-ls job progress) is logged as [ERROR] regardless of its
+            -- actual severity, making the log useless and growing it to gigabytes.
+            -- Real LSP errors surface as diagnostics in the buffer, not in this file.
+            vim.lsp.log.set_level("off")
 
             -- Prevent marksman from attaching to temp files (e.g. Claude Code prompt files
             -- in /private/tmp). marksman searches the parent dir for wiki-link backlinks and
