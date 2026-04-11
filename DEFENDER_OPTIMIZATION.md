@@ -18,10 +18,9 @@ This configuration has been optimized to reduce AV scanning overhead while maint
 - AV can scan files in background while UI loads
 - **No functionality lost** - LSP still works normally, just slightly deferred
 
-#### 2. **ShaDa File Deferral** (flake.nix:100-106)
-- Session data (marks, registers, history) loading deferred 200ms
-- Prevents AV from scanning session files during critical startup phase
-- Session data still restored, just after UI is ready
+#### 2. ~~ShaDa File Deferral~~ — **Intentionally NOT applied**
+- ShaDa deferral was considered but rejected: deferring ShaDa loading causes mini.starter's `recent_files` sections to be empty at launch, since they read from ShaDa at open time
+- ShaDa must be loaded synchronously before VimEnter so the dashboard shows the correct recent files list
 
 #### 3. **Reduced Filesystem Polling** (flake.nix:108-118)
 - Optimized swap file write frequency
@@ -33,7 +32,13 @@ This configuration has been optimized to reduce AV scanning overhead while maint
 - Grammars loaded on-demand per filetype
 - All 200+ grammars still available, just not all loaded at once
 
-#### 5. **Aggressive Search Optimizations** (flake.nix:333,342-343; keymaps/search/default.nix:101-130)
+#### 5. **Async mini.starter fortune/cowsay** (flake.nix; plugin-config/mini/default.nix)
+- The dashboard header previously called `io.popen("fortune -s | cowsay")` synchronously, blocking Lua until AV finished scanning both nix-store binaries
+- Replaced with `vim.fn.jobstart()` which fires immediately at startup in parallel with everything else
+- Dashboard now appears instantly with just the greeting; cowsay box appears asynchronously via `MiniStarter.refresh()` once the job completes
+- **No functionality lost** - fortune/cowsay still displayed, just slightly deferred
+
+#### 6. **Aggressive Search Optimizations** (flake.nix:333,342-343; keymaps/search/default.nix:101-130)
 - **Native search highlighting disabled** (`hlsearch = false`) - eliminates AV scanning on every match
 - **UpdateTime restored to 300ms** (from 50ms) - reduces filesystem polling frequency
 - **macOS-specific wildignore patterns** - excludes Spotlight, FSEvents, and system directories
@@ -154,17 +159,6 @@ If LSP feels sluggish, you can reduce the defer time in `flake.nix:65`:
 
 ```lua
 local lsp_defer_time = 150  -- Try reducing to 100 or 50
-```
-
-### Missing Session Data
-
-If you notice missing marks/registers, increase the shada defer time in `flake.nix:103`:
-
-```lua
-vim.defer_fn(function()
-  vim.opt.shadafile = ""
-  vim.cmd("silent! rshada")
-end, 300)  -- Increased from 200 to 300
 ```
 
 ### Native Search (`/`)
