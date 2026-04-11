@@ -42,6 +42,9 @@
       };
 
       server = {
+        # Route rust-analyzer through lspmux so multiple Neovim instances share one instance
+        cmd.__raw = ''{ "${pkgs.lspmux}/bin/lspmux", "client", "--server-path", "rust-analyzer" }'';
+
         default_settings = {
           rust-analyzer = {
             files = { excludeDirs = [ ".direnv" ]; };
