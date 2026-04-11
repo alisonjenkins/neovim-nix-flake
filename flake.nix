@@ -241,6 +241,21 @@
             -- LSP performance optimizations
             vim.lsp.log.set_level("ERROR")    -- Reduce LSP logging for performance
 
+            -- Prevent marksman from attaching to temp files (e.g. Claude Code prompt files
+            -- in /private/tmp). marksman searches the parent dir for wiki-link backlinks and
+            -- hits permission-denied Nix sandbox dirs, causing error spam and 2GB+ log files.
+            vim.api.nvim_create_autocmd("LspAttach", {
+              callback = function(args)
+                local client = vim.lsp.get_client_by_id(args.data.client_id)
+                if client and client.name == "marksman" then
+                  local fname = vim.api.nvim_buf_get_name(args.buf)
+                  if fname:match("^/tmp/") or fname:match("^/private/tmp/") then
+                    vim.lsp.buf_detach_client(args.buf, args.data.client_id)
+                  end
+                end
+              end,
+            })
+
             -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
             -- This spreads file access over time instead of all at once
             local lsp_defer_time = 150  -- milliseconds
