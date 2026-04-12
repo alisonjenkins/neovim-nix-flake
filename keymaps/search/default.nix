@@ -94,11 +94,41 @@
               end
             end,
           },
+          confirm = function(picker, item)
+            vim.notify('zoxide confirm fired: ' .. vim.inspect(item and item.file))
+            if not item then return end
+            picker:close()
+            vim.schedule(function()
+            require('snacks').picker.files({
+              cwd = item.file,
+              actions = {
+                oil_open_cwd = function(p)
+                  local cwd = p:cwd()
+                  p:close()
+                  vim.cmd('Oil ' .. vim.fn.fnameescape(cwd))
+                end,
+                tcd_cwd = function(p)
+                  local cwd = p:cwd()
+                  p:close()
+                  vim.cmd('tcd ' .. vim.fn.fnameescape(cwd))
+                end,
+              },
+              win = {
+                input = {
+                  keys = {
+                    ['<c-e>'] = { 'oil_open_cwd', mode = { 'n', 'i' }, desc = 'Open in Oil' },
+                    ['<c-g>'] = { 'tcd_cwd', mode = { 'n', 'i' }, desc = 'Change directory' },
+                  },
+                },
+              },
+            })
+            end)
+          end,
           win = {
             input = {
               keys = {
                 ['<c-e>'] = { 'oil_open', mode = { 'n', 'i' }, desc = 'Open in Oil' },
-                ['<c-d>'] = { 'tcd', mode = { 'n', 'i' }, desc = 'Change directory' },
+                ['<c-g>'] = { 'tcd', mode = { 'n', 'i' }, desc = 'Change directory' },
               },
             },
           },
@@ -133,11 +163,41 @@
               end
             end,
           },
+          confirm = function(picker, item)
+            vim.notify('zoxide confirm fired: ' .. vim.inspect(item and item.file))
+            if not item then return end
+            picker:close()
+            vim.schedule(function()
+            require('snacks').picker.files({
+              cwd = item.file,
+              actions = {
+                oil_open_cwd = function(p)
+                  local cwd = p:cwd()
+                  p:close()
+                  vim.cmd('Oil ' .. vim.fn.fnameescape(cwd))
+                end,
+                tcd_cwd = function(p)
+                  local cwd = p:cwd()
+                  p:close()
+                  vim.cmd('tcd ' .. vim.fn.fnameescape(cwd))
+                end,
+              },
+              win = {
+                input = {
+                  keys = {
+                    ['<c-e>'] = { 'oil_open_cwd', mode = { 'n', 'i' }, desc = 'Open in Oil' },
+                    ['<c-g>'] = { 'tcd_cwd', mode = { 'n', 'i' }, desc = 'Change directory' },
+                  },
+                },
+              },
+            })
+            end)
+          end,
           win = {
             input = {
               keys = {
                 ['<c-e>'] = { 'oil_open', mode = { 'n', 'i' }, desc = 'Open in Oil' },
-                ['<c-d>'] = { 'tcd', mode = { 'n', 'i' }, desc = 'Change directory' },
+                ['<c-g>'] = { 'tcd', mode = { 'n', 'i' }, desc = 'Change directory' },
               },
             },
           },
