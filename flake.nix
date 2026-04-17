@@ -43,7 +43,7 @@
             }
             {
               event = [ "BufRead" "BufNewFile" ];
-              pattern = [ "*.tf" " *.tfvars" " *.hcl" ];
+              pattern = [ "*.tf" "*.tfvars" "*.hcl" "*.tofu" ];
               command = "set filetype=terraform";
             }
             {
