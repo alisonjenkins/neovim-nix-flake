@@ -135,7 +135,7 @@
           desc = "Rust LSP";
         }
         {
-          __unkeyed-1 = "<leader>lrm";
+          __unkeyed-1 = "<leader>lRm";
           desc = "Rust LSP Move Item";
         }
         {

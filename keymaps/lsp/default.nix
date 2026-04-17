@@ -1,35 +1,92 @@
 [
+  # Navigation — go-to actions via snacks picker
   {
     mode = "n";
     key = "gd";
-    action = "<cmd>Lspsaga goto_definition<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_definitions() end
+    '';
     options = {
-      desc = "Goto definition of highlighted item";
+      desc = "Goto Definition";
       silent = true;
     };
   }
   {
     mode = "n";
     key = "gD";
-    action = "<cmd>Lspsaga goto_type_definition<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_declarations() end
+    '';
     options = {
-      desc = "Goto type definition of highlighted item";
+      desc = "Goto Declaration";
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "gy";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_type_definitions() end
+    '';
+    options = {
+      desc = "Goto Type Definition";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "gr";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_references() end
+    '';
+    options = {
+      desc = "References";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "gI";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_implementations() end
+    '';
+    options = {
+      desc = "Goto Implementation";
+      silent = true;
+    };
+  }
+
+  # Hover / signature help
   {
     mode = "n";
     key = "K";
-    action = "<cmd>Lspsaga hover_doc<CR>";
+    action.__raw = ''
+      function() vim.lsp.buf.hover() end
+    '';
     options = {
-      desc = "Show docs for hovered item.";
+      desc = "Hover Documentation";
       silent = true;
     };
   }
   {
-    mode = "n";
+    mode = "i";
+    key = "<C-k>";
+    action.__raw = ''
+      function() vim.lsp.buf.signature_help() end
+    '';
+    options = {
+      desc = "Signature Help";
+      silent = true;
+    };
+  }
+
+  # Code actions / format
+  {
+    mode = [ "n" "v" ];
     key = "<leader>lc";
-    action = "<cmd>Lspsaga code_action<cr>";
+    action.__raw = ''
+      function() vim.lsp.buf.code_action() end
+    '';
     options = {
       desc = "Code Action";
       silent = true;
@@ -37,26 +94,45 @@
   }
   {
     mode = "n";
-    key = "<leader>lff";
-    action = "<cmd>Lspsaga finder<cr>";
+    key = "<leader>lf";
+    action.__raw = ''
+      function() require("conform").format({ async = true, lsp_fallback = true }) end
+    '';
     options = {
-      desc = "Finder";
+      desc = "Format Buffer";
+      silent = true;
+    };
+  }
+
+  # Finder / call hierarchy via snacks picker
+  {
+    mode = "n";
+    key = "<leader>lff";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_references() end
+    '';
+    options = {
+      desc = "Find References";
       silent = true;
     };
   }
   {
     mode = "n";
     key = "<leader>lfi";
-    action = "<cmd>Lspsaga finder imp<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_implementations() end
+    '';
     options = {
-      desc = "Find Implementation";
+      desc = "Find Implementations";
       silent = true;
     };
   }
   {
     mode = "n";
     key = "<leader>lfI";
-    action = "<cmd>Lspsaga incoming_calls<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_incoming_calls() end
+    '';
     options = {
       desc = "Find Incoming Calls";
       silent = true;
@@ -65,12 +141,34 @@
   {
     mode = "n";
     key = "<leader>lfo";
-    action = "<cmd>Lspsaga outgoing_calls<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_outgoing_calls() end
+    '';
     options = {
       desc = "Find Outgoing Calls";
       silent = true;
     };
   }
+
+  # Inlay hints toggle
+  {
+    mode = "n";
+    key = "<leader>li";
+    action.__raw = ''
+      function()
+        vim.lsp.inlay_hint.enable(
+          not vim.lsp.inlay_hint.is_enabled({ bufnr = 0 }),
+          { bufnr = 0 }
+        )
+      end
+    '';
+    options = {
+      desc = "Toggle Inlay Hints";
+      silent = true;
+    };
+  }
+
+  # Navbuddy
   {
     mode = "n";
     key = "<leader>ln";
@@ -82,17 +180,21 @@
   }
   {
     mode = "n";
-    key = "<leader>lr";
-    action = "<cmd>Lspsaga rename<cr>";
+    key = "<leader>lo";
+    action = "<cmd>Navbuddy<cr>";
     options = {
-      desc = "Rename";
+      desc = "LSP Outline (Navbuddy)";
       silent = true;
     };
   }
+
+  # Peek (snacks preview pane serves the same purpose)
   {
     mode = "n";
     key = "<leader>lpd";
-    action = "<cmd>Lspsaga peek_definition<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_definitions() end
+    '';
     options = {
       desc = "Peek Definition";
       silent = true;
@@ -101,12 +203,59 @@
   {
     mode = "n";
     key = "<leader>lpt";
-    action = "<cmd>Lspsaga peek_type_definition<cr>";
+    action.__raw = ''
+      function() require("snacks").picker.lsp_type_definitions() end
+    '';
     options = {
       desc = "Peek Type Definition";
       silent = true;
     };
   }
+
+  # Rename — inc-rename with live preview when the server supports it,
+  # otherwise fall back to vim.lsp.buf.rename() (shows Neovim's standard error
+  # if no server has rename capability, e.g. terraform-ls which does not implement
+  # textDocument/rename as of v0.38.6; see hashicorp/terraform-ls#1155).
+  {
+    mode = "n";
+    key = "<leader>lr";
+    action.__raw = ''
+      function()
+        local clients = vim.lsp.get_clients({ bufnr = 0, method = "textDocument/rename" })
+        if #clients > 0 then
+          vim.api.nvim_feedkeys(":IncRename " .. vim.fn.expand("<cword>"), "n", false)
+        else
+          vim.lsp.buf.rename()
+        end
+      end
+    '';
+    options = {
+      desc = "Rename";
+      silent = true;
+    };
+  }
+
+  # Symbols
+  {
+    mode = "n";
+    key = "<leader>ls";
+    action = "<cmd>lua require('snacks').picker.lsp_symbols()<cr>";
+    options = {
+      desc = "LSP Symbols";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>lS";
+    action = "<cmd>lua require('snacks').picker.lsp_workspace_symbols()<cr>";
+    options = {
+      desc = "LSP Workspace Symbols";
+      silent = true;
+    };
+  }
+
+  # Bacon (Rust background checker)
   {
     mode = "n";
     key = "<leader>lbl";
@@ -125,30 +274,41 @@
       silent = true;
     };
   }
+
+  # Trouble — diagnostic lists
   {
     mode = "n";
-    key = "<leader>lo";
-    action = "<cmd>Lspsaga outline<cr>";
+    key = "<leader>xx";
+    action = "<cmd>Trouble diagnostics toggle<cr>";
     options = {
-      desc = "LSP Outline";
+      desc = "Workspace Diagnostics (Trouble)";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>ls";
-    action = "<cmd>lua require('snacks').picker.lsp_symbols()<cr>";
+    key = "<leader>xb";
+    action = "<cmd>Trouble diagnostics toggle filter.buf=0<cr>";
     options = {
-      desc = "LSP Symbols";
+      desc = "Buffer Diagnostics (Trouble)";
       silent = true;
     };
   }
   {
     mode = "n";
-    key = "<leader>lS";
-    action = "<cmd>lua require('snacks').picker.lsp_workspace_symbols()<cr>";
+    key = "<leader>xl";
+    action = "<cmd>Trouble loclist toggle<cr>";
     options = {
-      desc = "LSP Workspace Symbols";
+      desc = "Location List (Trouble)";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>xq";
+    action = "<cmd>Trouble qflist toggle<cr>";
+    options = {
+      desc = "Quickfix List (Trouble)";
       silent = true;
     };
   }

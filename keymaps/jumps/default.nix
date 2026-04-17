@@ -2,7 +2,9 @@
   {
     mode = "n";
     key = "[d";
-    action = "<cmd>Lspsaga diagnostic_jump_prev<cr>";
+    action.__raw = ''
+      function() vim.diagnostic.jump({ count = -1 }) end
+    '';
     options = {
       desc = "Jump to previous diagnostic";
       silent = true;
@@ -11,7 +13,9 @@
   {
     mode = "n";
     key = "]d";
-    action = "<cmd>Lspsaga diagnostic_jump_next<cr>";
+    action.__raw = ''
+      function() vim.diagnostic.jump({ count = 1 }) end
+    '';
     options = {
       desc = "Jump to next diagnostic";
       silent = true;
