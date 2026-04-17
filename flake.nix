@@ -262,20 +262,71 @@
             -- Point terraform-ls at the project's terraform binary via direnv.
             -- Projects may use nix devshells (via direnv) to supply a specific terraform
             -- version; direnv may not have activated in Neovim's PATH yet when before_init
-            -- runs, so use `direnv exec ROOT which terraform` with an explicit absolute path
-            -- (vim.fn.system inherits Neovim's CWD, not the buffer's directory, so `cd &&
-            -- direnv exec .` would target the wrong directory).
-            -- Falls back to exepath() when direnv is unavailable or produces no result.
+            -- runs. We pre-warm the path asynchronously (via jobstart) and fall back to
+            -- exepath() in before_init so we never block the UI waiting for direnv.
             -- vim.lsp.config merges on repeated calls, so this adds before_init on top of the
             -- capabilities-only config emitted by NixVim's LSP module.
+
+            -- Async cache of terraform binary paths keyed by project root directory.
+            -- nil = not yet started, false = job pending, string = resolved path.
+            local terraform_path_cache = {}
+
+            local function prewarm_terraform_path(root)
+              if terraform_path_cache[root] ~= nil then return end
+              terraform_path_cache[root] = false  -- mark pending
+              -- Prefer `terraform`; fall back to `tofu` for OpenTofu-only projects.
+              vim.fn.jobstart(
+                { "direnv", "exec", root, "sh", "-c", "which terraform 2>/dev/null || which tofu 2>/dev/null" },
+                {
+                  stdout_buffered = true,
+                  stderr_buffered = true,
+                  on_stdout = function(_, data)
+                    local path = (data and data[1] or ""):gsub("%s+$", "")
+                    if path ~= "" and vim.fn.executable(path) == 1 then
+                      terraform_path_cache[root] = path
+                    end
+                  end,
+                  on_exit = function()
+                    -- If on_stdout didn't store a valid path, fall back to exepath
+                    if terraform_path_cache[root] == false then
+                      local path = vim.fn.exepath("terraform")
+                      if path == "" then path = vim.fn.exepath("tofu") end
+                      terraform_path_cache[root] = path
+                    end
+                  end,
+                }
+              )
+            end
+
+            -- Pre-warm the cache before the buffer is read so the path is likely
+            -- resolved by the time terraformls fires before_init.
+            vim.api.nvim_create_autocmd("BufReadPre", {
+              pattern = { "*.tf", "*.tfvars", "*.hcl", "*.tofu" },
+              callback = function()
+                local file = vim.fn.expand("<afile>:p")
+                local dir = vim.fn.fnamemodify(file, ":h")
+                local root = vim.fn.getcwd()
+                for _, marker in ipairs({ ".terraform", ".git", ".envrc" }) do
+                  local found = vim.fn.finddir(marker, dir .. ";")
+                  if found ~= "" then
+                    root = vim.fn.fnamemodify(found, ":h")
+                    break
+                  end
+                end
+                prewarm_terraform_path(root)
+              end,
+            })
+
             vim.lsp.config("terraformls", {
               before_init = function(params, config)
                 local root = config.root_dir or vim.fn.getcwd()
-                local direnv_tf = vim.fn.system(
-                  "direnv exec " .. vim.fn.shellescape(root) .. " which terraform 2>/dev/null"
-                ):gsub("%s+$", "")
-                local terraform_path = (direnv_tf ~= "" and vim.fn.executable(direnv_tf) == 1)
-                  and direnv_tf
+                -- Kick off async resolution (no-op if already started or cached)
+                prewarm_terraform_path(root)
+                -- Use cached path if ready; fall back to exepath without blocking.
+                -- The direnv Neovim plugin updates PATH on DirChanged so exepath()
+                -- usually already points to the correct direnv-managed terraform.
+                local cached = terraform_path_cache[root]
+                local terraform_path = (type(cached) == "string" and cached ~= "" and cached)
                   or vim.fn.exepath("terraform")
                 if terraform_path ~= "" then
                   params.initializationOptions = params.initializationOptions or {}
