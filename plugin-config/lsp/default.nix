@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, terraform-ls-rs, ... }:
 let
   lspmuxBin = "${pkgs.lspmux}/bin/lspmux";
 
@@ -59,90 +59,115 @@ in
       # ruff_lsp.enable = false;
       # vectorcode_server.enable = true;
       # zls.enable = false;
+      copilot.enable = false;
+      # qmlls.enable = true;
+
       asm_lsp = {
         enable = true;
         cmd = mux "${pkgs.asm-lsp}/bin/asm-lsp";
       };
+
       bashls = {
         enable = true;
         package = pkgs.master.bash-language-server;
         cmd = mux "${bashLsWrapped}/bin/bash-language-server";
       };
+
+      ccls = {
+        enable = true;
+      };
+
       clangd = {
         enable = true;
         cmd = mux "${pkgs.clang-tools}/bin/clangd";
       };
-      copilot.enable = false;
+
       cssls = {
         enable = true;
         cmd = mux "${cssLsWrapped}/bin/vscode-css-language-server";
       };
+
       dockerls = {
         enable = true;
         cmd = mux "${dockerLsWrapped}/bin/docker-langserver";
       };
+
       earthlyls = {
         enable = true;
         cmd = mux "${pkgs.earthlyls}/bin/earthlyls";
       };
+
       emmet_ls = {
         enable = true;
         cmd = mux "${pkgs.emmet-ls}/bin/emmet-ls";
       };
+
       fortls = {
         enable = true;
         cmd = mux "${pkgs.fortls}/bin/fortls";
       };
+
       golangci_lint_ls = {
         enable = true;
         cmd = mux "${pkgs.golangci-lint-langserver}/bin/golangci-lint-langserver";
       };
+
       gopls = {
         enable = true;
         cmd = mux "${pkgs.gopls}/bin/gopls";
       };
+
       html = {
         enable = true;
         cmd = mux "${htmlLsWrapped}/bin/vscode-html-language-server";
       };
+
       jsonls = {
         enable = true;
         cmd = mux "${jsonLsWrapped}/bin/vscode-json-language-server";
       };
+
       lua_ls = {
         enable = true;
         cmd = mux "${pkgs.lua-language-server}/bin/lua-language-server";
       };
+
       nushell = {
         enable = true;
         cmd = mux "${nushellLsWrapped}/bin/nu-lsp";
       };
+
       pylsp = {
         enable = true;
         cmd = mux "${pkgs.python3Packages.python-lsp-server}/bin/pylsp";
       };
-      # qmlls.enable = true;
+
       superhtml = {
         enable = true;
         cmd = mux "${superHtmlLsWrapped}/bin/superhtml-lsp";
       };
+
       systemd_ls = {
         enable = true;
         cmd = mux "${pkgs.systemd-language-server}/bin/systemd-language-server";
       };
+
       tailwindcss = {
         enable = true;
         cmd = mux "${tailwindLsWrapped}/bin/tailwindcss-language-server";
       };
+
       taplo = {
         enable = true;
         cmd = mux "${taploLsWrapped}/bin/taplo-lsp";
       };
+
       terraformls = {
         enable = true;
-        # Not routed through lspmux: terraform-ls fails to attach when proxied
-        cmd = [ "${pkgs.terraform-ls}/bin/terraform-ls" "serve" ];
+        package = terraform-ls-rs;
+        cmd = [ "${terraform-ls-rs}/bin/tfls" ];
       };
+
       tflint = {
         enable = true;
         cmd = mux "${tflintLsWrapped}/bin/tflint-langserver";

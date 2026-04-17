@@ -8,6 +8,11 @@
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
+    # nixvim.url = "github:alisonjenkins/nixvim/fix/sidekick-nes-disabled";
+    terraform-ls-rs = {
+      url = "github:alisonjenkins/terraform-ls-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
@@ -990,7 +995,10 @@
             // (import ./plugin-config/indent-tools)
             // (import ./plugin-config/kulala { inherit pkgs; })
             // (import ./plugin-config/lazydev)
-            // (import ./plugin-config/lsp { inherit pkgs; })
+            // (import ./plugin-config/lsp {
+              inherit pkgs;
+              terraform-ls-rs = inputs.terraform-ls-rs.packages.${pkgs.system}.default;
+            })
             // (import ./plugin-config/lspkind)
             // (import ./plugin-config/lualine)
             // (import ./plugin-config/luasnip)
