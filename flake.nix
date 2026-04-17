@@ -259,6 +259,50 @@
               end,
             })
 
+            -- Point terraform-ls at the project's terraform binary via direnv.
+            -- Projects may use nix devshells (via direnv) to supply a specific terraform
+            -- version; direnv may not have activated in Neovim's PATH yet when before_init
+            -- runs, so use `direnv exec ROOT which terraform` with an explicit absolute path
+            -- (vim.fn.system inherits Neovim's CWD, not the buffer's directory, so `cd &&
+            -- direnv exec .` would target the wrong directory).
+            -- Falls back to exepath() when direnv is unavailable or produces no result.
+            -- vim.lsp.config merges on repeated calls, so this adds before_init on top of the
+            -- capabilities-only config emitted by NixVim's LSP module.
+            vim.lsp.config("terraformls", {
+              before_init = function(params, config)
+                local root = config.root_dir or vim.fn.getcwd()
+                local direnv_tf = vim.fn.system(
+                  "direnv exec " .. vim.fn.shellescape(root) .. " which terraform 2>/dev/null"
+                ):gsub("%s+$", "")
+                local terraform_path = (direnv_tf ~= "" and vim.fn.executable(direnv_tf) == 1)
+                  and direnv_tf
+                  or vim.fn.exepath("terraform")
+                if terraform_path ~= "" then
+                  params.initializationOptions = params.initializationOptions or {}
+                  params.initializationOptions.terraform = { path = terraform_path }
+                end
+              end,
+            })
+
+            -- Neovim 0.12 no longer calls vim.lsp.buf_attach_client through the auto-attach
+            -- path for direct (non-lspmux) servers, so terraformls starts for the right root
+            -- but never attaches to the buffer. tflint (via lspmux) does attach reliably, so
+            -- piggyback on its LspAttach to retrigger the FileType auto-attach, which is the
+            -- mechanism vim.lsp.config uses internally to attach servers to buffers.
+            vim.api.nvim_create_autocmd("LspAttach", {
+              callback = function(args)
+                local client = vim.lsp.get_client_by_id(args.data.client_id)
+                if not client or client.name ~= "tflint" then return end
+                local buf = args.buf
+                vim.defer_fn(function()
+                  if not vim.api.nvim_buf_is_valid(buf) then return end
+                  if #vim.lsp.get_clients({ name = "terraformls", bufnr = buf }) == 0 then
+                    vim.api.nvim_exec_autocmds("FileType", { buffer = buf, modeline = false })
+                  end
+                end, 1000)
+              end,
+            })
+
             -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
             -- This spreads file access over time instead of all at once
             local lsp_defer_time = 150  -- milliseconds
@@ -418,6 +462,9 @@
               require('jj').setup({})
               require('pipeline').setup({})
             end, 50)
+
+            -- Live-preview rename
+            require("inc_rename").setup()
 
             -- Performance annotation (perf/flamegraph overlay)
             require('perfanno').setup({})
@@ -598,6 +645,7 @@
             black
             cowsay
             curl
+            direnv
             fd
             fortune
             ghostscript
@@ -633,6 +681,7 @@
             blink-cmp-spell
             blink-emoji-nvim
             claudecode-nvim
+            inc-rename-nvim
             perfanno-nvim
             vim-dadbod
             vim-dadbod-completion
@@ -817,7 +866,7 @@
             committia.enable = true;
             direnv.enable = true;
             earthly.enable = true;
-            fidget.enable = false;
+            fidget.enable = true;
             friendly-snippets.enable = true;
             fugitive.enable = true;
             gitignore.enable = true;
@@ -828,7 +877,7 @@
             hmts.enable = true;
             lastplace.enable = true;
             lspkind.enable = true;
-            lspsaga.enable = true;
+            lspsaga.enable = false;
             markdown-preview.enable = false; # Disabled due to memory constraints during nix build on macOS
             molten.enable = false;
             navic.enable = true;

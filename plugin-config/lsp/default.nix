@@ -140,7 +140,8 @@ in
       };
       terraformls = {
         enable = true;
-        cmd = mux "${terraformLsWrapped}/bin/terraform-ls";
+        # Not routed through lspmux: terraform-ls fails to attach when proxied
+        cmd = [ "${pkgs.terraform-ls}/bin/terraform-ls" "serve" ];
       };
       tflint = {
         enable = true;
