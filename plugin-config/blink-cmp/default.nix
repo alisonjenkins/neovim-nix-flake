@@ -322,8 +322,13 @@
       signature = {
         enabled = true;
 
+        trigger = {
+          show_on_insert_on_trigger_character = true;
+        };
+
         window = {
           border = "rounded";
+          show_documentation = true;
         };
       };
     };
