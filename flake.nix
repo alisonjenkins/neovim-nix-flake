@@ -1190,6 +1190,9 @@
                   # 2. Skip pre-initialize notifications in the handshake.
                   #    lua-language-server sends `$/hello` and `window/logMessage`
                   #    before its initialize response.
+                  # 3. Forward error responses from the client back to the
+                  #    server. Taplo hangs indefinitely waiting for a response
+                  #    to workspace/configuration if the client returns an error.
                   patches = [ ./patches/lspmux-lsp-compat.patch ];
                   cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
                   meta.mainProgram = "lspmux";

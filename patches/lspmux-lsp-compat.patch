@@ -1,5 +1,5 @@
 --- a/src/lsp.rs	2006-07-24 02:21:28.000000000 +0100
-+++ b/src/lsp.rs	2026-04-18 08:46:00.023853916 +0100
++++ b/src/lsp.rs	2026-04-18 08:56:51.052670730 +0100
 @@ -28,7 +28,17 @@
  //! - Progress notifications - contains a `token` property which could be used to identify the
  //!   client but the specification also says it has nothing to do with the request IDs
@@ -33,7 +33,7 @@
  }
  
 --- a/src/instance.rs	2006-07-24 02:21:28.000000000 +0100
-+++ b/src/instance.rs	2026-04-18 08:46:00.025173238 +0100
++++ b/src/instance.rs	2026-04-18 08:56:51.053833268 +0100
 @@ -515,14 +515,23 @@
          .await
          .context("send initialize request")?;
@@ -66,3 +66,32 @@
      };
      let result = serde_json::from_value(res.result).context("parse initialize response result")?;
  
+--- a/src/client.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/client.rs	2026-04-18 08:56:51.054965129 +0100
+@@ -387,9 +387,23 @@
+                 }
+             },
+ 
+-            Message::ResponseError(res) => {
+-                warn!(?res, "client responded with error");
+-            }
++            Message::ResponseError(mut res) => match res.id.clone().untag() {
++                (Some(Tag::Forward), id) => {
++                    // Forward error response back to the server so it can handle
++                    // the failure (e.g. taplo waits indefinitely for
++                    // workspace/configuration responses if none arrives).
++                    res.id = id;
++                    if instance.send_message(res.into()).await.is_err() {
++                        break;
++                    }
++                }
++                (Some(Tag::Drop), _) => {
++                    // Drop the message
++                }
++                _ => {
++                    warn!(?res, "client responded with error");
++                }
++            },
+ 
+             Message::Notification(notif) if notif.method == "textDocument/didOpen" => {
+                 if let Err(err) = instance.open_file(client.id, notif.params).await {
