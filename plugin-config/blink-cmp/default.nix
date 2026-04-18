@@ -319,18 +319,8 @@
         '';
       };
 
-      signature = {
-        enabled = true;
-
-        trigger = {
-          show_on_insert_on_trigger_character = true;
-        };
-
-        window = {
-          border = "rounded";
-          show_documentation = true;
-        };
-      };
+      # Signature help is rendered by noice.nvim instead; see plugin-config/noice.
+      signature.enabled = false;
     };
   };
 }
