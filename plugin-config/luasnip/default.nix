@@ -2,10 +2,10 @@
   luasnip = {
     enable = true;
 
-    # Optimize snippet loading - only load specific snippet packs you need
+    # Load vscode-format snippet packs for most languages, but skip
+    # `terraform` — we rely on tfls's own snippet completions there.
     fromVscode = [
       {
-        # Only load essential snippet collections
         include = [
           "css"
           "go"
@@ -16,7 +16,6 @@
           "nix"
           "python"
           "rust"
-          "terraform"
           "typescript"
         ];
       }

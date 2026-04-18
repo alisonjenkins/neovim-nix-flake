@@ -119,6 +119,8 @@
           sh = [ "lsp" "path" "snippets" "env" "buffer" ];
           bash = [ "lsp" "path" "snippets" "env" "buffer" ];
           nix = [ "lsp" "path" "snippets" "env" "buffer" ];
+          # Terraform: rely on tfls LSP snippets only — skip the snippets source.
+          terraform = [ "lsp" "path" "lazydev" "dap" "buffer" ];
         };
 
         providers = {

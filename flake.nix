@@ -658,26 +658,6 @@
               async_git_command(args, "Git fetch")
             end, { nargs = "*" })
 
-            -- Load Terraform snippets from vscode-terraform-doc-snippets plugin
-            vim.schedule(function()
-              -- Check if luasnip is loaded
-              local ok, luasnip = pcall(require, "luasnip")
-              if not ok then return end
-
-              local luasnip_vscode = require("luasnip.loaders.from_vscode")
-
-              -- Find the vscode-terraform-doc-snippets plugin path
-              local terraform_snippets_path = vim.fn.glob(vim.fn.stdpath("data") .. "/nvim/site/pack/*/start/vscode-terraform-doc-snippets")
-
-              if terraform_snippets_path ~= "" then
-                -- Load the Terraform snippets from the plugin
-                luasnip_vscode.lazy_load({ paths = { terraform_snippets_path } })
-              end
-
-              -- Ensure terraform filetype uses terraform snippets
-              luasnip.filetype_extend("terraform", { "terraform" })
-            end)
-
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
 
