@@ -1143,7 +1143,14 @@
             # can share the same binaries if desired.
             pyright = mkLspWrapper "pyright-langserver"
               "${pkgs.pyright}/bin/pyright-langserver --stdio";
-            tfls = inputs.terraform-ls-rs.packages.${system}.default;
+            # tfls needs `tofu` (or `terraform`) on PATH to fetch provider
+            # schemas for attribute hover. Wrap so external consumers like
+            # Claude Code get a working schema fetch without relying on the
+            # parent process's environment.
+            tfls = pkgs.writeShellScriptBin "tfls" ''
+              export PATH="${pkgs.opentofu}/bin:$PATH"
+              exec ${inputs.terraform-ls-rs.packages.${system}.default}/bin/tfls "$@"
+            '';
             vtsls = mkLspWrapper "vtsls"
               "${pkgs.vtsls}/bin/vtsls --stdio";
           };
