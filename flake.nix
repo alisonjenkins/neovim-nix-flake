@@ -1182,6 +1182,10 @@
                     version = "0.3.0";
                     hash = "sha256-+hnYb/ue8DVPtoNkIawlrVI2og6Wym09fRagZOUkVgY=";
                   };
+                  # Accept `workspaceFolders: null` in LSP initialize requests
+                  # (per LSP spec). Claude Code sends null when no workspace is
+                  # set, causing lspmux to reject the connection otherwise.
+                  patches = [ ./patches/lspmux-accept-null-workspaceFolders.patch ];
                   cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
                   meta.mainProgram = "lspmux";
                 };

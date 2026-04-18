@@ -1,0 +1,34 @@
+--- a/src/lsp.rs	2026-04-18 08:34:05.620769334 +0100
++++ b/src/lsp.rs	2026-04-18 08:34:05.621795766 +0100
+@@ -28,7 +28,17 @@
+ //! - Progress notifications - contains a `token` property which could be used to identify the
+ //!   client but the specification also says it has nothing to do with the request IDs
+ 
+-use serde::{Deserialize, Serialize};
++use serde::{Deserialize, Deserializer, Serialize};
++
++/// Deserialize a field that may be `null`, an array, or missing into a `Vec`.
++/// Used for LSP fields like `workspaceFolders` which the spec allows to be `null`.
++fn null_to_empty_vec<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
++where
++    D: Deserializer<'de>,
++    T: Deserialize<'de>,
++{
++    Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
++}
+ 
+ macro_rules! impl_json_debug {
+     ( $($type:ty),* $(,)? ) => {
+@@ -75,7 +85,11 @@
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub trace: Option<TraceValue>,
+ 
+-    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
++    #[serde(
++        skip_serializing_if = "Vec::is_empty",
++        default = "Vec::new",
++        deserialize_with = "null_to_empty_vec"
++    )]
+     pub workspace_folders: Vec<WorkspaceFolder>,
+ }
+ 
