@@ -1141,7 +1141,8 @@
             # Faster alternatives exported for external consumers (e.g. Claude Code).
             # Not used by the nixvim config itself — kept here so both editors
             # can share the same binaries if desired.
-            pyright = pkgs.pyright;
+            pyright = mkLspWrapper "pyright-langserver"
+              "${pkgs.pyright}/bin/pyright-langserver --stdio";
             tfls = inputs.terraform-ls-rs.packages.${system}.default;
             vtsls = mkLspWrapper "vtsls"
               "${pkgs.vtsls}/bin/vtsls --stdio";
@@ -1182,10 +1183,14 @@
                     version = "0.3.0";
                     hash = "sha256-+hnYb/ue8DVPtoNkIawlrVI2og6Wym09fRagZOUkVgY=";
                   };
-                  # Accept `workspaceFolders: null` in LSP initialize requests
-                  # (per LSP spec). Claude Code sends null when no workspace is
-                  # set, causing lspmux to reject the connection otherwise.
-                  patches = [ ./patches/lspmux-accept-null-workspaceFolders.patch ];
+                  # LSP compatibility fixes:
+                  # 1. Accept `workspaceFolders: null` (per LSP spec). Claude
+                  #    Code sends null when no workspace is set, causing lspmux
+                  #    to reject the connection otherwise.
+                  # 2. Skip pre-initialize notifications in the handshake.
+                  #    lua-language-server sends `$/hello` and `window/logMessage`
+                  #    before its initialize response.
+                  patches = [ ./patches/lspmux-lsp-compat.patch ];
                   cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
                   meta.mainProgram = "lspmux";
                 };

@@ -1,0 +1,68 @@
+--- a/src/lsp.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/lsp.rs	2026-04-18 08:46:00.023853916 +0100
+@@ -28,7 +28,17 @@
+ //! - Progress notifications - contains a `token` property which could be used to identify the
+ //!   client but the specification also says it has nothing to do with the request IDs
+ 
+-use serde::{Deserialize, Serialize};
++use serde::{Deserialize, Deserializer, Serialize};
++
++/// Deserialize a field that may be `null`, an array, or missing into a `Vec`.
++/// Used for LSP fields like `workspaceFolders` which the spec allows to be `null`.
++fn null_to_empty_vec<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
++where
++    D: Deserializer<'de>,
++    T: Deserialize<'de>,
++{
++    Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
++}
+ 
+ macro_rules! impl_json_debug {
+     ( $($type:ty),* $(,)? ) => {
+@@ -75,7 +85,11 @@
+     #[serde(skip_serializing_if = "Option::is_none")]
+     pub trace: Option<TraceValue>,
+ 
+-    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
++    #[serde(
++        skip_serializing_if = "Vec::is_empty",
++        default = "Vec::new",
++        deserialize_with = "null_to_empty_vec"
++    )]
+     pub workspace_folders: Vec<WorkspaceFolder>,
+ }
+ 
+--- a/src/instance.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/instance.rs	2026-04-18 08:46:00.025173238 +0100
+@@ -515,14 +515,23 @@
+         .await
+         .context("send initialize request")?;
+ 
+-    let res = match reader
+-        .read_message()
+-        .await
+-        .context("receive initialize response")?
+-        .context("stream ended")?
+-    {
+-        Message::ResponseSuccess(res) if res.id == request_id => res,
+-        _ => bail!("first server message was not initialize response"),
++    // Some language servers (e.g. lua-language-server sends `$/hello`) emit
++    // notifications before the initialize response. Loop until we see the
++    // matching response, discarding everything else.
++    let res = loop {
++        match reader
++            .read_message()
++            .await
++            .context("receive initialize response")?
++            .context("stream ended")?
++        {
++            Message::ResponseSuccess(res) if res.id == request_id => break res,
++            Message::Notification(n) => {
++                tracing::debug!(method = %n.method, "discarding pre-initialize notification");
++                continue;
++            }
++            _ => bail!("first server response was not initialize response"),
++        }
+     };
+     let result = serde_json::from_value(res.result).context("parse initialize response result")?;
+ 
