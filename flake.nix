@@ -22,7 +22,7 @@
     , ...
     } @ inputs:
     let
-      config = { pkgs, ... }:
+      config = { pkgs, lspWrappers, ... }:
         {
           editorconfig.enable = true;
           enableMan = false;
@@ -996,7 +996,7 @@
             // (import ./plugin-config/kulala { inherit pkgs; })
             // (import ./plugin-config/lazydev)
             // (import ./plugin-config/lsp {
-              inherit pkgs;
+              inherit pkgs lspWrappers;
               terraform-ls-rs = inputs.terraform-ls-rs.packages.${pkgs.system}.default;
             })
             // (import ./plugin-config/lspkind)
@@ -1073,11 +1073,70 @@
           nvim = nixvim'.makeNixvimWithModule {
             inherit pkgs;
             module = config;
-            extraSpecialArgs = { };
+            extraSpecialArgs = { inherit lspWrappers; };
           };
           _module.args.pkgs = import self.inputs.nixpkgs {
             inherit system;
             config.allowUnfree = true;
+          };
+
+          # Shared LSP wrapper definitions — used by both nixvim config and
+          # exported for external consumers (Claude Code, etc.)
+          mkLspWrapper = scriptName: fullShellCmd:
+            pkgs.writeShellScriptBin scriptName "exec ${fullShellCmd}";
+
+          lspWrappers = {
+            # Servers needing subcommands or flags to start in LSP mode:
+            bash-language-server = mkLspWrapper "bash-language-server"
+              "${pkgs.master.bash-language-server}/bin/bash-language-server start";
+            vscode-css-language-server = mkLspWrapper "vscode-css-language-server"
+              "${pkgs.vscode-langservers-extracted}/bin/vscode-css-language-server --stdio";
+            docker-langserver = mkLspWrapper "docker-langserver"
+              "${pkgs.dockerfile-language-server}/bin/docker-langserver --stdio";
+            helm_ls = mkLspWrapper "helm_ls"
+              "${pkgs.helm-ls}/bin/helm_ls serve";
+            vscode-html-language-server = mkLspWrapper "vscode-html-language-server"
+              "${pkgs.vscode-langservers-extracted}/bin/vscode-html-language-server --stdio";
+            vscode-json-language-server = mkLspWrapper "vscode-json-language-server"
+              "${pkgs.vscode-langservers-extracted}/bin/vscode-json-language-server --stdio";
+            nu-lsp = mkLspWrapper "nu-lsp"
+              "${pkgs.nushell}/bin/nu --lsp";
+            superhtml-lsp = mkLspWrapper "superhtml-lsp"
+              "${pkgs.superhtml}/bin/superhtml lsp";
+            tailwindcss-language-server = mkLspWrapper "tailwindcss-language-server"
+              "${pkgs.tailwindcss-language-server}/bin/tailwindcss-language-server --stdio";
+            taplo-lsp = mkLspWrapper "taplo-lsp"
+              "${pkgs.taplo}/bin/taplo lsp stdio";
+            terraform-ls = mkLspWrapper "terraform-ls"
+              "${pkgs.terraform-ls}/bin/terraform-ls serve";
+            tflint-langserver = mkLspWrapper "tflint-langserver"
+              "${pkgs.tflint}/bin/tflint --langserver";
+            tilt-lsp = mkLspWrapper "tilt-lsp"
+              "${pkgs.tilt}/bin/tilt lsp server";
+            typescript-language-server = mkLspWrapper "typescript-language-server"
+              "${pkgs.typescript-language-server}/bin/typescript-language-server --stdio";
+            vacuum-lsp = mkLspWrapper "vacuum-lsp"
+              "${pkgs.vacuum-go}/bin/vacuum language-server";
+            veryl-lsp = mkLspWrapper "veryl-lsp"
+              "${pkgs.veryl}/bin/veryl lsp";
+            yaml-language-server = mkLspWrapper "yaml-language-server"
+              "${pkgs.yaml-language-server}/bin/yaml-language-server --stdio";
+            marksman = mkLspWrapper "marksman"
+              "${pkgs.stable.marksman}/bin/marksman server";
+
+            # Servers that don't need wrappers (no special args):
+            asm-lsp = pkgs.asm-lsp;
+            clangd = pkgs.clang-tools;
+            earthlyls = pkgs.earthlyls;
+            emmet-ls = pkgs.emmet-ls;
+            fortls = pkgs.fortls;
+            golangci-lint-langserver = pkgs.golangci-lint-langserver;
+            gopls = pkgs.gopls;
+            lua-language-server = pkgs.lua-language-server;
+            nixd = pkgs.nixd;
+            pylsp = pkgs.python3Packages.python-lsp-server;
+            rust-analyzer = pkgs.rust-analyzer;
+            systemd-language-server = pkgs.systemd-language-server;
           };
         in
         {
@@ -1212,7 +1271,11 @@ p.write_text(src.replace(old, '\n'.join(new_lines)))
           packages = {
             default = nvim;
             nvim = nvim;
+            lspmux = pkgs.lspmux;
           };
+
+          # Export LSP wrappers for external consumers (Claude Code, etc.)
+          legacyPackages.lspWrappers = lspWrappers;
 
           treefmt = {
             projectRootFile = "flake.nix";
