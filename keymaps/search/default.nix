@@ -95,7 +95,6 @@
             end,
           },
           confirm = function(picker, item)
-            vim.notify('zoxide confirm fired: ' .. vim.inspect(item and item.file))
             if not item then return end
             picker:close()
             vim.schedule(function()
@@ -164,7 +163,6 @@
             end,
           },
           confirm = function(picker, item)
-            vim.notify('zoxide confirm fired: ' .. vim.inspect(item and item.file))
             if not item then return end
             picker:close()
             vim.schedule(function()
