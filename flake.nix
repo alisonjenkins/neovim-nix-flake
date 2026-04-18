@@ -1191,8 +1191,13 @@
                   #    lua-language-server sends `$/hello` and `window/logMessage`
                   #    before its initialize response.
                   # 3. Forward error responses from the client back to the
-                  #    server. Taplo hangs indefinitely waiting for a response
-                  #    to workspace/configuration if the client returns an error.
+                  #    server. Some clients return an error for methods they
+                  #    don't support, and the server needs to see that.
+                  # 4. Auto-respond to `workspace/configuration` requests with
+                  #    null values. Many clients (e.g. Claude Code) don't
+                  #    implement this server→client request at all, causing
+                  #    servers like taplo to hang indefinitely. Responding
+                  #    with null is spec-compliant and unblocks the server.
                   patches = [ ./patches/lspmux-lsp-compat.patch ];
                   cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
                   meta.mainProgram = "lspmux";

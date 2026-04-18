@@ -1,5 +1,5 @@
 --- a/src/lsp.rs	2006-07-24 02:21:28.000000000 +0100
-+++ b/src/lsp.rs	2026-04-18 08:56:51.052670730 +0100
++++ b/src/lsp.rs	2026-04-18 09:05:11.082115458 +0100
 @@ -28,7 +28,17 @@
  //! - Progress notifications - contains a `token` property which could be used to identify the
  //!   client but the specification also says it has nothing to do with the request IDs
@@ -33,7 +33,7 @@
  }
  
 --- a/src/instance.rs	2006-07-24 02:21:28.000000000 +0100
-+++ b/src/instance.rs	2026-04-18 08:56:51.053833268 +0100
++++ b/src/instance.rs	2026-04-18 09:05:11.083110565 +0100
 @@ -515,14 +515,23 @@
          .await
          .context("send initialize request")?;
@@ -66,8 +66,53 @@
      };
      let result = serde_json::from_value(res.result).context("parse initialize response result")?;
  
+@@ -725,19 +734,31 @@
+                     .await;
+             }
+ 
+-            Message::Request(mut req) if req.method == "workspace/configuration" => {
+-                // Response to `workspace/configuration` should be the same from
+-                // any client. So we'll just pick the first and let it answer.
+-                debug!(?req, "server request workspace/configuration");
+-
+-                req.id = req.id.tag(Tag::Forward);
+-
+-                if let Some(client) = clients.values().next() {
+-                    let _ = client.send_message(req.into()).await;
+-                } else {
+-                    // If there is no client connected at this moment we'll
+-                    // ignore the request.
+-                }
++            Message::Request(req) if req.method == "workspace/configuration" => {
++                // Auto-respond with null for each requested config item. Many
++                // clients (e.g. Claude Code) don't implement
++                // workspace/configuration, causing servers like taplo to hang
++                // indefinitely waiting for a response. Per the LSP spec, null
++                // is a valid value for config items the client doesn't know
++                // about, so this reply is always safe. Clients that do have
++                // config can still push updates via
++                // workspace/didChangeConfiguration.
++                debug!(?req, "auto-responding to workspace/configuration");
++
++                let num_items = req
++                    .params
++                    .get("items")
++                    .and_then(|v| v.as_array())
++                    .map(|v| v.len())
++                    .unwrap_or(0);
++                let nulls: Vec<serde_json::Value> =
++                    (0..num_items).map(|_| serde_json::Value::Null).collect();
++                let response = ResponseSuccess {
++                    jsonrpc: Version,
++                    id: req.id,
++                    result: serde_json::Value::Array(nulls),
++                };
++                let _ = instance.send_message(response.into()).await;
+             }
+ 
+             Message::Request(mut req) if req.method == "client/registerCapability" => {
 --- a/src/client.rs	2006-07-24 02:21:28.000000000 +0100
-+++ b/src/client.rs	2026-04-18 08:56:51.054965129 +0100
++++ b/src/client.rs	2026-04-18 09:05:11.084181224 +0100
 @@ -387,9 +387,23 @@
                  }
              },
