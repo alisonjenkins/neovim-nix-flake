@@ -1137,6 +1137,14 @@
             pylsp = pkgs.python3Packages.python-lsp-server;
             rust-analyzer = pkgs.rust-analyzer;
             systemd-language-server = pkgs.systemd-language-server;
+
+            # Faster alternatives exported for external consumers (e.g. Claude Code).
+            # Not used by the nixvim config itself — kept here so both editors
+            # can share the same binaries if desired.
+            pyright = pkgs.pyright;
+            tfls = inputs.terraform-ls-rs.packages.${system}.default;
+            vtsls = mkLspWrapper "vtsls"
+              "${pkgs.vtsls}/bin/vtsls --stdio";
           };
         in
         {
