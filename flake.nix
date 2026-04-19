@@ -660,6 +660,7 @@
 
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
+            require("terraform-search").setup()
 
             -- Peek.nvim setup
             require("peek").setup({})
@@ -669,6 +670,7 @@
 
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
+            "lua/terraform-search.lua".source = ./lua/terraform-search.lua;
             "lua/terraform-tools.lua".source = ./lua/terraform-tools.lua;
             # Patched Python highlights query without "except*" keyword
             # TODO: Remove once nvim-treesitter fixes the query upstream

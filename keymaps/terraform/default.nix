@@ -35,4 +35,13 @@
       silent = true;
     };
   }
+  {
+    mode = "n";
+    key = "<leader>sTs";
+    action = "<cmd>TerraformSearch<CR>";
+    options = {
+      desc = "Terraform docs (search by intent)";
+      silent = true;
+    };
+  }
 ]
