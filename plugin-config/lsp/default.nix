@@ -36,6 +36,11 @@ in
         enable = true;
       };
 
+      csharp_ls = {
+        enable = true;
+        cmd = mux "${lspWrappers.csharp-ls}/bin/csharp-ls";
+      };
+
       clangd = {
         enable = true;
         cmd = mux "${lspWrappers.clangd}/bin/clangd";

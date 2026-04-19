@@ -1125,6 +1125,7 @@
 
             # Servers that don't need wrappers (no special args):
             asm-lsp = pkgs.asm-lsp;
+            csharp-ls = pkgs.csharp-ls;
             clangd = pkgs.clang-tools;
             earthlyls = pkgs.earthlyls;
             emmet-ls = pkgs.emmet-ls;
