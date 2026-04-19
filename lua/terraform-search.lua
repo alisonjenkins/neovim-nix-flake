@@ -519,7 +519,9 @@ function M.setup()
 
   -- Buffer-local `gs` → :TerraformSearch in terraform / tofu buffers,
   -- so we override Vim's rarely-used `gs` (sleep) only where it's
-  -- actually useful.
+  -- actually useful. Also turn on inlay hints so the server's
+  -- version-freshness annotations (crates.nvim-style virtual text
+  -- next to `version = "…"`) show up by default.
   vim.api.nvim_create_autocmd("FileType", {
     pattern = { "terraform", "terraform-vars" },
     callback = function(ev)
@@ -528,6 +530,11 @@ function M.setup()
         silent = true,
         desc = "Terraform docs (search by intent)",
       })
+      -- Enabled per-buffer. Available since Neovim 0.10; guarded in
+      -- case of an older runtime.
+      if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
+        vim.lsp.inlay_hint.enable(true, { bufnr = ev.buf })
+      end
     end,
   })
 end
