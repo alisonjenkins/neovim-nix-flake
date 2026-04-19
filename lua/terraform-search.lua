@@ -482,6 +482,30 @@ function M.setup()
   vim.api.nvim_create_user_command("TerraformSearch", function(opts)
     M.run(opts.args ~= "" and opts.args or nil)
   end, { nargs = "?" })
+
+  -- OpenTofu uses `.tofu` / `.tofuvars` file extensions that Neovim
+  -- doesn't recognise by default. Register them so they pick up the
+  -- terraform filetype (and thus terraform-ls-rs, the ftplugin, etc.).
+  vim.filetype.add({
+    extension = {
+      tofu = "terraform",
+      tofuvars = "terraform-vars",
+    },
+  })
+
+  -- Buffer-local `gs` → :TerraformSearch in terraform / tofu buffers,
+  -- so we override Vim's rarely-used `gs` (sleep) only where it's
+  -- actually useful.
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "terraform", "terraform-vars" },
+    callback = function(ev)
+      vim.keymap.set("n", "gs", "<cmd>TerraformSearch<CR>", {
+        buffer = ev.buf,
+        silent = true,
+        desc = "Terraform docs (search by intent)",
+      })
+    end,
+  })
 end
 
 return M
