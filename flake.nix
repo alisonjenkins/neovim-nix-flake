@@ -340,25 +340,6 @@
               end,
             })
 
-            -- Neovim 0.12 no longer calls vim.lsp.buf_attach_client through the auto-attach
-            -- path for direct (non-lspmux) servers, so terraformls starts for the right root
-            -- but never attaches to the buffer. tflint (via lspmux) does attach reliably, so
-            -- piggyback on its LspAttach to retrigger the FileType auto-attach, which is the
-            -- mechanism vim.lsp.config uses internally to attach servers to buffers.
-            vim.api.nvim_create_autocmd("LspAttach", {
-              callback = function(args)
-                local client = vim.lsp.get_client_by_id(args.data.client_id)
-                if not client or client.name ~= "tflint" then return end
-                local buf = args.buf
-                vim.defer_fn(function()
-                  if not vim.api.nvim_buf_is_valid(buf) then return end
-                  if #vim.lsp.get_clients({ name = "terraformls", bufnr = buf }) == 0 then
-                    vim.api.nvim_exec_autocmds("FileType", { buffer = buf, modeline = false })
-                  end
-                end, 1000)
-              end,
-            })
-
             -- Defer LSP attachment to reduce startup I/O (helps with AV scanning)
             -- This spreads file access over time instead of all at once
             local lsp_defer_time = 150  -- milliseconds
@@ -979,7 +960,7 @@
             // (import ./plugin-config/lazydev)
             // (import ./plugin-config/lsp {
               inherit pkgs lspWrappers;
-              terraform-ls-rs = inputs.terraform-ls-rs.packages.${pkgs.system}.default;
+              terraform-ls-rs = inputs.terraform-ls-rs.packages.${pkgs.stdenv.hostPlatform.system}.default;
             })
             // (import ./plugin-config/lspkind)
             // (import ./plugin-config/lualine)
@@ -1108,8 +1089,6 @@
               "${pkgs.taplo}/bin/taplo lsp stdio";
             terraform-ls = mkLspWrapper "terraform-ls"
               "${pkgs.terraform-ls}/bin/terraform-ls serve";
-            tflint-langserver = mkLspWrapper "tflint-langserver"
-              "${pkgs.tflint}/bin/tflint --langserver";
             tilt-lsp = mkLspWrapper "tilt-lsp"
               "${pkgs.tilt}/bin/tilt lsp server";
             typescript-language-server = mkLspWrapper "typescript-language-server"

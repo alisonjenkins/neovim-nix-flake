@@ -135,13 +135,13 @@ in
       terraformls = {
         enable = true;
         package = terraform-ls-rs;
-        cmd = [ "${terraform-ls-rs}/bin/tfls" ];
+        # Route through lspmux like the other servers so the LSP client
+        # auto-attaches reliably on FileType events under Neovim 0.12+.
+        # (Direct-cmd servers sometimes start for the right root but
+        # never attach to the buffer.)
+        cmd = mux "${terraform-ls-rs}/bin/tfls";
       };
 
-      tflint = {
-        enable = true;
-        cmd = mux "${lspWrappers.tflint-langserver}/bin/tflint-langserver";
-      };
       tilt_ls = {
         enable = true;
         cmd = mux "${lspWrappers.tilt-lsp}/bin/tilt-lsp";
