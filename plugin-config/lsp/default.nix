@@ -96,6 +96,12 @@ in
         cmd = mux "${lspWrappers.nu-lsp}/bin/nu-lsp";
       };
 
+      powershell_es = {
+        enable = true;
+        package = pkgs.powershell-editor-services;
+        cmd = mux "${lspWrappers.powershell-editor-services}/bin/powershell-editor-services";
+      };
+
       pylsp = {
         enable = true;
         cmd = mux "${lspWrappers.pylsp}/bin/pylsp";

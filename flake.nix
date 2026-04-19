@@ -1083,6 +1083,23 @@
               "${pkgs.vscode-langservers-extracted}/bin/vscode-json-language-server --stdio";
             nu-lsp = mkLspWrapper "nu-lsp"
               "${pkgs.nushell}/bin/nu --lsp";
+            powershell-editor-services = pkgs.writeShellScriptBin "powershell-editor-services" ''
+              CACHE_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/nvim"
+              mkdir -p "$CACHE_DIR"
+              BUNDLE="${pkgs.powershell-editor-services}/lib/powershell-editor-services"
+              exec ${pkgs.powershell}/bin/pwsh -NoLogo -NoProfile -Command \
+                "& '$BUNDLE/PowerShellEditorServices/Start-EditorServices.ps1' \
+                  -BundledModulesPath '$BUNDLE' \
+                  -LogPath '$CACHE_DIR/powershell_es.log' \
+                  -SessionDetailsPath '$CACHE_DIR/powershell_es.session.json' \
+                  -FeatureFlags @() \
+                  -AdditionalModules @() \
+                  -HostName nvim \
+                  -HostProfileId 0 \
+                  -HostVersion 1.0.0 \
+                  -Stdio \
+                  -LogLevel Normal"
+            '';
             superhtml-lsp = mkLspWrapper "superhtml-lsp"
               "${pkgs.superhtml}/bin/superhtml lsp";
             tailwindcss-language-server = mkLspWrapper "tailwindcss-language-server"
