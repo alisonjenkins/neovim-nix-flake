@@ -194,25 +194,49 @@ local function smart_insert(win, client, item, direction)
   local cursor = vim.api.nvim_win_get_cursor(win)
   local insert_row, relocated = find_safe_insert_row(buf, cursor[1], direction)
 
-  -- When relocated out of an enclosing block, pad with two blank lines so
-  -- the new block is visually separated from the adjacent one. Where the
-  -- snippet lands depends on direction:
-  --   below → snippet on the SECOND blank (first becomes the gap above it)
-  --   above → snippet on the FIRST blank (second becomes the gap below it)
-  -- When inserting at the cursor (no relocation) a single blank suffices.
-  local pad_lines = relocated and { "", "" } or { "" }
-  local cursor_offset
-  if not relocated then
-    cursor_offset = 1
-  elseif direction == "above" then
-    cursor_offset = 1
+  -- Pick the 0-based row where the snippet will expand. Optional set_lines
+  -- calls pad with blank lines as needed; we compute `snippet_row` so the
+  -- later cursor positioning is unambiguous.
+  local snippet_row
+
+  if relocated and direction == "below" then
+    -- Place the snippet after the block's closing brace. If the user
+    -- already has a blank line there, reuse it as the separator instead
+    -- of stacking a second blank on top of it.
+    local existing = vim.api.nvim_buf_get_lines(buf, insert_row, insert_row + 1, false)
+    local next_is_blank = existing[1] and existing[1]:match("^%s*$")
+    if next_is_blank then
+      vim.api.nvim_buf_set_lines(buf, insert_row + 1, insert_row + 1, false, { "" })
+      snippet_row = insert_row + 1
+    else
+      vim.api.nvim_buf_set_lines(buf, insert_row, insert_row, false, { "", "" })
+      snippet_row = insert_row + 1
+    end
+  elseif relocated and direction == "above" then
+    -- Place the snippet at the block's start row with a trailing blank
+    -- to separate it from the block that follows.
+    vim.api.nvim_buf_set_lines(buf, insert_row, insert_row, false, { "", "" })
+    snippet_row = insert_row
   else
-    cursor_offset = 2
+    -- Cursor is at top level (no enclosing block). If the user is
+    -- already sitting on a blank line, expand the snippet right there
+    -- rather than manufacturing another blank. Otherwise insert a
+    -- single blank in the requested direction and land on it.
+    local cursor_line = vim.api.nvim_buf_get_lines(buf, cursor[1] - 1, cursor[1], false)[1] or ""
+    local on_blank = cursor_line:match("^%s*$") ~= nil
+    if on_blank then
+      snippet_row = cursor[1] - 1
+    elseif direction == "above" then
+      vim.api.nvim_buf_set_lines(buf, cursor[1] - 1, cursor[1] - 1, false, { "" })
+      snippet_row = cursor[1] - 1
+    else
+      vim.api.nvim_buf_set_lines(buf, cursor[1], cursor[1], false, { "" })
+      snippet_row = cursor[1]
+    end
   end
 
-  vim.api.nvim_buf_set_lines(buf, insert_row, insert_row, false, pad_lines)
   vim.api.nvim_set_current_win(win)
-  vim.api.nvim_win_set_cursor(win, { insert_row + cursor_offset, 0 })
+  vim.api.nvim_win_set_cursor(win, { snippet_row + 1, 0 })
 
   local expand = function(snippet)
     local ok_ls, luasnip = pcall(require, "luasnip")
@@ -222,8 +246,8 @@ local function smart_insert(win, client, item, direction)
     end
     -- Last-ditch fallback: paste the literal snippet text without tabstops.
     local lines = vim.split(snippet, "\n", {})
-    vim.api.nvim_buf_set_lines(buf, insert_row, insert_row + 1, false, lines)
-    vim.api.nvim_win_set_cursor(win, { insert_row + 1, 0 })
+    vim.api.nvim_buf_set_lines(buf, snippet_row, snippet_row + 1, false, lines)
+    vim.api.nvim_win_set_cursor(win, { snippet_row + 1, 0 })
   end
 
   M.get_snippet(client, item.name, item.kind, function(snippet)
