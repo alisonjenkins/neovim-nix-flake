@@ -1062,8 +1062,8 @@
               "${pkgs.vscode-langservers-extracted}/bin/vscode-html-language-server --stdio";
             vscode-json-language-server = mkLspWrapper "vscode-json-language-server"
               "${pkgs.vscode-langservers-extracted}/bin/vscode-json-language-server --stdio";
-            nu-lsp = mkLspWrapper "nu-lsp"
-              "${pkgs.nushell}/bin/nu --lsp";
+            omnisharp-roslyn = mkLspWrapper "omnisharp"
+              "${pkgs.omnisharp-roslyn}/bin/OmniSharp --languageserver";
             powershell-editor-services = pkgs.writeShellScriptBin "powershell-editor-services" ''
               CACHE_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/nvim"
               mkdir -p "$CACHE_DIR"
@@ -1104,7 +1104,6 @@
 
             # Servers that don't need wrappers (no special args):
             asm-lsp = pkgs.asm-lsp;
-            csharp-ls = pkgs.csharp-ls;
             clangd = pkgs.clang-tools;
             earthlyls = pkgs.earthlyls;
             emmet-ls = pkgs.emmet-ls;
@@ -1132,6 +1131,11 @@
             '';
             vtsls = mkLspWrapper "vtsls"
               "${pkgs.vtsls}/bin/vtsls --stdio";
+          } // pkgs.lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isDarwin) {
+            # nushell fails to compile on macOS (sandbox test failures), so
+            # exclude nu-lsp from the wrapper set entirely on Darwin.
+            nu-lsp = mkLspWrapper "nu-lsp"
+              "${pkgs.nushell}/bin/nu --lsp";
           };
         in
         {

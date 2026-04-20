@@ -36,11 +36,6 @@ in
         enable = true;
       };
 
-      csharp_ls = {
-        enable = true;
-        cmd = mux "${lspWrappers.csharp-ls}/bin/csharp-ls";
-      };
-
       clangd = {
         enable = true;
         cmd = mux "${lspWrappers.clangd}/bin/clangd";
@@ -97,8 +92,13 @@ in
       };
 
       nushell = {
+        enable = !pkgs.stdenv.hostPlatform.isDarwin;
+        cmd = if pkgs.stdenv.hostPlatform.isDarwin then [] else mux "${lspWrappers.nu-lsp}/bin/nu-lsp";
+      };
+
+      omnisharp = {
         enable = true;
-        cmd = mux "${lspWrappers.nu-lsp}/bin/nu-lsp";
+        cmd = mux "${lspWrappers.omnisharp-roslyn}/bin/omnisharp";
       };
 
       powershell_es = {
