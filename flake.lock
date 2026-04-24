@@ -276,11 +276,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777066354,
-        "narHash": "sha256-tOzWjmvKtvUYx9c5BBzIQG5QaUNJ6GJ6QAIG26Q3sPQ=",
+        "lastModified": 1777067372,
+        "narHash": "sha256-opfinO0m9qHsqhiT9W2E4ag/m7LLnl8eM3WoW0tWY50=",
         "owner": "alisonjenkins",
         "repo": "terraform-ls-rs",
-        "rev": "a710b7a27980fb9b7259ce6fe55721fb0b6c373b",
+        "rev": "ea63ecf338d1cdcfaa3219b4523776343f2024d4",
         "type": "github"
       },
       "original": {
