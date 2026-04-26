@@ -1152,7 +1152,18 @@
                   #    implement this server→client request at all, causing
                   #    servers like taplo to hang indefinitely. Responding
                   #    with null is spec-compliant and unblocks the server.
-                  patches = [ ./patches/lspmux-lsp-compat.patch ];
+                  patches = [
+                    ./patches/lspmux-lsp-compat.patch
+                    # 5. Cache `textDocument/publishDiagnostics`
+                    #    notifications per URI and replay them to
+                    #    every newly-attaching client. Without this,
+                    #    a second nvim instance attaching to a
+                    #    long-lived server only ever sees diagnostics
+                    #    for files it explicitly re-opens — every
+                    #    other URI's diagnostics were broadcast
+                    #    before the new client existed.
+                    ./patches/lspmux-cache-diagnostics.patch
+                  ];
                   cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
                   meta.mainProgram = "lspmux";
                 };

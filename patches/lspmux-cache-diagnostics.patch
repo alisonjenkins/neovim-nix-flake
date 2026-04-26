@@ -1,0 +1,87 @@
+--- a/src/instance.rs	2026-04-26 07:48:49.775377227 +0100
++++ b/src/instance.rs	2026-04-26 07:50:04.639930167 +0100
+@@ -55,6 +55,12 @@
+     /// Dynamic capabilities registered by the server
+     dynamic_capabilities: Mutex<HashMap<String, lsp::Registration>>,
+ 
++    /// Cache of the most recent `textDocument/publishDiagnostics`
++    /// notification params per URI, replayed to newly-attaching
++    /// clients so workspace-scoped diagnostics survive client
++    /// reconnects against a long-lived server instance.
++    diagnostics_cache: Mutex<HashMap<String, serde_json::Value>>,
++
+     /// Wakes up `wait_task` and asks it to send SIGKILL to the instance.
+     close: Notify,
+ 
+@@ -120,7 +126,10 @@
+ 
+     /// Add client to the instance so it can receive traffic from it
+     ///
+-    /// It replays all registered dynamic capabilities to it.
++    /// It replays all registered dynamic capabilities AND all
++    /// cached `textDocument/publishDiagnostics` notifications so a
++    /// newly-attaching client picks up the existing workspace
++    /// diagnostic state.
+     pub async fn add_client(&self, client: Client) {
+         let mut clients = self.clients.lock().await;
+         let dyn_capabilities = self.dynamic_capabilities.lock().await;
+@@ -143,6 +152,24 @@
+             let _ = client.send_message(req.into()).await;
+         }
+ 
++        // Replay every cached publishDiagnostics notification so the
++        // new client's workspace view is in sync with the server's.
++        let diagnostics_cache = self.diagnostics_cache.lock().await;
++        if !diagnostics_cache.is_empty() {
++            debug!(
++                count = diagnostics_cache.len(),
++                "replaying cached publishDiagnostics to new client",
++            );
++            for params in diagnostics_cache.values() {
++                let notif = Notification {
++                    jsonrpc: Version,
++                    method: "textDocument/publishDiagnostics".into(),
++                    params: params.clone(),
++                };
++                let _ = client.send_message(notif.into()).await;
++            }
++        }
++
+         let client = ClientData {
+             client,
+             files: HashSet::new(),
+@@ -480,6 +507,7 @@
+         server: message_writer,
+         clients: Mutex::default(),
+         dynamic_capabilities: Mutex::default(),
++        diagnostics_cache: Mutex::default(),
+         close: Notify::new(),
+         last_used: AtomicI64::new(utc_now()),
+     });
+@@ -798,6 +826,26 @@
+             }
+ 
+             Message::Notification(notif) => {
++                // Cache the latest `textDocument/publishDiagnostics` per
++                // URI so newly-attaching clients receive the workspace-
++                // scoped diagnostics the server already published. Without
++                // this, a second nvim instance attaching to a long-lived
++                // server only ever sees diagnostics for files it
++                // explicitly re-opens — every other URI's diagnostics
++                // were broadcast before the new client existed.
++                if notif.method == "textDocument/publishDiagnostics" {
++                    if let Some(uri) = notif
++                        .params
++                        .get("uri")
++                        .and_then(serde_json::Value::as_str)
++                    {
++                        instance
++                            .diagnostics_cache
++                            .lock()
++                            .await
++                            .insert(uri.to_owned(), notif.params.clone());
++                    }
++                }
+                 // Server notifications don't expect a response. We can forward
+                 // them to all clients.
+                 for client in clients.values() {
