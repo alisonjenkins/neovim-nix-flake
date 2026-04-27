@@ -24,6 +24,10 @@
     let
       config = { pkgs, lspWrappers, ... }:
         {
+          imports = [
+            ./modules/plugins/schema-companion.nix
+          ];
+
           editorconfig.enable = true;
           enableMan = false;
           luaLoader.enable = true;
@@ -681,7 +685,8 @@
             vim-table-mode
 
             (pkgs.vimUtils.buildVimPlugin {
-              name = "blink-cmp-dap";
+              pname = "blink-cmp-dap";
+              version = "0-unstable-2024-12-31";
               doCheck = false;
               src = pkgs.fetchFromGitHub {
                 owner = "mayromr";
@@ -692,7 +697,8 @@
             })
 
             (pkgs.vimUtils.buildVimPlugin {
-              name = "blink-cmp-tmux";
+              pname = "blink-cmp-tmux";
+              version = "0-unstable-2024-12-31";
               src = pkgs.fetchFromGitHub {
                 owner = "mgalliou";
                 repo = "blink-cmp-tmux";
@@ -702,7 +708,8 @@
             })
 
             (pkgs.vimUtils.buildVimPlugin {
-              name = "jj-nvim";
+              pname = "jj-nvim";
+              version = "0-unstable-2024-12-31";
               src = pkgs.fetchFromGitHub {
                 owner = "NicolasGB";
                 repo = "jj.nvim";
@@ -712,7 +719,8 @@
             })
 
             (pkgs.vimUtils.buildVimPlugin {
-              name = "pipeline-nvim";
+              pname = "pipeline-nvim";
+              version = "0-unstable-2024-12-31";
               src = pkgs.fetchFromGitHub {
                 owner = "topaxi";
                 repo = "pipeline.nvim";
@@ -722,7 +730,8 @@
             })
 
             (pkgs.vimUtils.buildVimPlugin {
-              name = "vscode-terraform-doc-snippets";
+              pname = "vscode-terraform-doc-snippets";
+              version = "0-unstable-2024-12-31";
               src = pkgs.fetchFromGitHub {
                 owner = "run-at-scale";
                 repo = "vscode-terraform-doc-snippets";
@@ -948,6 +957,7 @@
             // (import ./plugin-config/remote-nvim { inherit pkgs; })
             // (import ./plugin-config/render-markdown)
             // (import ./plugin-config/rustaceanvim { inherit pkgs; })
+            // (import ./plugin-config/schema-companion)
             // (import ./plugin-config/schemastore)
             // (import ./plugin-config/sidekick)
             // (import ./plugin-config/smartcolumn)
@@ -1062,7 +1072,7 @@
             veryl-lsp = mkLspWrapper "veryl-lsp"
               "${pkgs.veryl}/bin/veryl lsp";
             yaml-language-server = mkLspWrapper "yaml-language-server"
-              "${pkgs.yaml-language-server}/bin/yaml-language-server --stdio";
+              "${pkgs.master.yaml-language-server}/bin/yaml-language-server --stdio";
             marksman = mkLspWrapper "marksman"
               "${pkgs.stable.marksman}/bin/marksman server";
 

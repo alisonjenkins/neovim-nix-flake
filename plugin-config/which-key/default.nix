@@ -183,6 +183,10 @@
           desc = "Trouble";
         }
         {
+          __unkeyed-1 = "<leader>y";
+          desc = "YAML schemas";
+        }
+        {
           __unkeyed-1 = "<leader>z";
           desc = "Zettelkasten";
         }

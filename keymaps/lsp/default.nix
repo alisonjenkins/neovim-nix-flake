@@ -312,4 +312,80 @@
       silent = true;
     };
   }
+
+  # schema-companion (yaml/helm schema selection)
+  {
+    mode = "n";
+    key = "<leader>ys";
+    action.__raw = ''function() require("schema-companion").select_schema() end'';
+    options = {
+      desc = "Select YAML schema";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>ym";
+    action.__raw = ''function() require("schema-companion").select_matching_schema() end'';
+    options = {
+      desc = "Select matching YAML schema";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>yi";
+    action.__raw = ''
+      function()
+        local current = require("schema-companion").get_current_schemas()
+        if not current then
+          vim.notify("schema-companion: no schema for buffer", vim.log.levels.INFO)
+          return
+        end
+        vim.notify(current, vim.log.levels.INFO, { title = "schema-companion" })
+      end
+    '';
+    options = {
+      desc = "Show current YAML schema";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>yr";
+    action.__raw = ''function() require("schema-companion").match() end'';
+    options = {
+      desc = "Re-match YAML schema";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
+    key = "<leader>yI";
+    action.__raw = ''
+      function()
+        local matched = require("schema-companion.schema").match(0)
+        if not matched or #matched == 0 then
+          vim.notify("schema-companion: no schema matched", vim.log.levels.WARN)
+          return
+        end
+        local uri = matched[1].uri
+        if not uri then
+          vim.notify("schema-companion: matched schema has no URI", vim.log.levels.WARN)
+          return
+        end
+        local first = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] or ""
+        if first:match("^#%s*yaml%-language%-server:") then
+          vim.api.nvim_buf_set_lines(0, 0, 1, false, { "# yaml-language-server: $schema=" .. uri })
+        else
+          vim.api.nvim_buf_set_lines(0, 0, 0, false, { "# yaml-language-server: $schema=" .. uri })
+        end
+        vim.notify("inserted modeline: " .. uri, vim.log.levels.INFO, { title = "schema-companion" })
+      end
+    '';
+    options = {
+      desc = "Insert YAML schema modeline";
+      silent = true;
+    };
+  }
 ]

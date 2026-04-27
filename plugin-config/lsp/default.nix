@@ -185,6 +185,12 @@ in
         enable = true;
         filetypes = [ "yaml" ];
         cmd = mux "${lspWrappers.yaml-language-server}/bin/yaml-language-server";
+        # NixVim auto-wraps yamlls settings under `yaml.` namespace.
+        settings = {
+          kubernetesCRDStore = {
+            enable = true;
+          };
+        };
       };
     };
   };

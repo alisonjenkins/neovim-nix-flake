@@ -17,8 +17,13 @@
       };
     };
 
+    # yaml.schemas is now resolved per-buffer via yamlls's
+    # custom/schema/request flow (see modules/plugins/schema-companion.nix).
+    # The schemastore.nvim catalog conflicts with that flow because its huge
+    # yaml.schemas list short-circuits resolveSchema before customSchemaProvider
+    # in some cases and blocks dynamic CRD detection.
     yaml = {
-      enable = true;
+      enable = false;
     };
   };
 }
