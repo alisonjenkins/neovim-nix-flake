@@ -145,6 +145,27 @@
           ];
 
           extraConfigLua = ''
+            -- `:Format` — global Ex command that runs conform's
+            -- formatter on the current buffer (with LSP fallback,
+            -- so language servers without a conform formatter still
+            -- format via their textDocument/formatting handler).
+            -- Range form `:1,20Format` formats just the line range.
+            vim.api.nvim_create_user_command("Format", function(opts)
+              local conform = require("conform")
+              if opts.range > 0 then
+                conform.format({
+                  async = false,
+                  lsp_fallback = true,
+                  range = {
+                    ["start"] = { opts.line1, 0 },
+                    ["end"]   = { opts.line2, 0 },
+                  },
+                })
+              else
+                conform.format({ async = true, lsp_fallback = true })
+              end
+            end, { range = true, desc = "Format buffer (or range) via conform / LSP" })
+
             -- Neovim 0.12 compatibility: wrap add_predicate/add_directive so third-party
             -- plugin handlers automatically receive single TSNode instead of TSNode[] lists.
             -- This runs before plugins load, so all subsequent handler registrations are wrapped.

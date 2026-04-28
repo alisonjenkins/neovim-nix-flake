@@ -93,8 +93,13 @@
     };
   }
   {
+    # NOTE: lowercase `<leader>lf` is the "LSP Finder" group
+    # (lff / lfi / lfI / lfo). The earlier Format Buffer binding
+    # under that prefix was shadowed by which-key opening the
+    # group menu — moved to capital `<leader>lF` so it actually
+    # fires.
     mode = "n";
-    key = "<leader>lf";
+    key = "<leader>lF";
     action.__raw = ''
       function() require("conform").format({ async = true, lsp_fallback = true }) end
     '';
