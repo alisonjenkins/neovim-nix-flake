@@ -17,7 +17,13 @@
         python = [ "isort" "black" ];
         rust = [ "rustfmt" ];
         sh = [ "shfmt" ];
-        terraform = [ "terraform_fmt" ];
+        # NOTE: terraform deliberately NOT listed here. We want conform
+        # to fall through to the LSP (`tfls`) so the runtime-toggleable
+        # formatStyle (minimal vs opinionated) takes effect. Listing
+        # `terraform_fmt` would shell out to the terraform CLI and
+        # bypass tfls entirely — block reorders / hoisting would then
+        # never appear. `lsp_fallback = true` on every conform call
+        # site (already set) routes terraform through tfls.
       };
 
       format_on_save = ''
