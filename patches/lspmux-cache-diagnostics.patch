@@ -1,5 +1,5 @@
---- a/src/instance.rs	2026-04-26 07:48:49.775377227 +0100
-+++ b/src/instance.rs	2026-04-26 07:50:04.639930167 +0100
+--- a/src/instance.rs
++++ b/src/instance.rs
 @@ -55,6 +55,12 @@
      /// Dynamic capabilities registered by the server
      dynamic_capabilities: Mutex<HashMap<String, lsp::Registration>>,
@@ -50,7 +50,36 @@
          let client = ClientData {
              client,
              files: HashSet::new(),
-@@ -480,6 +507,7 @@
+@@ -276,18 +303,16 @@
+                 }
+             }
+ 
+-            if send_notification {
+-                let params = lsp::DidCloseTextDocumentParams {
+-                    text_document: lsp::TextDocumentIdentifier { uri },
+-                };
+-                let notif = Notification {
+-                    jsonrpc: Version,
+-                    method: "textDocument/didClose".into(),
+-                    params: serde_json::to_value(params).unwrap(),
+-                };
+-                debug!(?notif, "last client closed file");
+-                let _ = self.send_message(notif.into()).await;
+-            }
++            // We deliberately DO NOT forward `textDocument/didClose`
++            // to the language server. Forwarding causes servers
++            // like tfls to drop their per-document state (rope, AST,
++            // symbol table) AND publish an empty
++            // publishDiagnostics for the URI as part of cleanup.
++            // Letting the server keep the state warm means a client
++            // re-attaching after a reopen sees full diagnostics +
++            // working request handlers (codeAction, hover, …)
++            // immediately, without a re-index round-trip.
++            let _ = (send_notification, uri);
+         }
+ 
+         Ok(())
+@@ -480,6 +505,7 @@
          server: message_writer,
          clients: Mutex::default(),
          dynamic_capabilities: Mutex::default(),
@@ -58,7 +87,7 @@
          close: Notify::new(),
          last_used: AtomicI64::new(utc_now()),
      });
-@@ -798,6 +826,26 @@
+@@ -798,6 +824,39 @@
              }
  
              Message::Notification(notif) => {
@@ -69,17 +98,30 @@
 +                // server only ever sees diagnostics for files it
 +                // explicitly re-opens — every other URI's diagnostics
 +                // were broadcast before the new client existed.
++                //
++                // Empty `diagnostics` arrays are the server's "all
++                // clear" / cleanup signal. REMOVE the URI from the
++                // cache rather than caching the empty payload — that
++                // way a stray cleanup publish doesn't obliterate a
++                // previously-cached real diagnostic set.
 +                if notif.method == "textDocument/publishDiagnostics" {
 +                    if let Some(uri) = notif
 +                        .params
 +                        .get("uri")
 +                        .and_then(serde_json::Value::as_str)
 +                    {
-+                        instance
-+                            .diagnostics_cache
-+                            .lock()
-+                            .await
-+                            .insert(uri.to_owned(), notif.params.clone());
++                        let diags_empty = notif
++                            .params
++                            .get("diagnostics")
++                            .and_then(serde_json::Value::as_array)
++                            .is_some_and(|a| a.is_empty());
++                        let mut cache =
++                            instance.diagnostics_cache.lock().await;
++                        if diags_empty {
++                            cache.remove(uri);
++                        } else {
++                            cache.insert(uri.to_owned(), notif.params.clone());
++                        }
 +                    }
 +                }
                  // Server notifications don't expect a response. We can forward
