@@ -65,6 +65,83 @@
                 end
               '';
             }
+            # Terraform format-style toggle. Buffer-local keymaps so
+            # the bindings only conflict with other servers' keys
+            # when a `.tf` / `.tfvars` / `.hcl` / `.tofu` buffer is
+            # active. tfls reads `formatStyle` from a live config
+            # cell, so the change takes effect on the very next
+            # save / `:Format` — no restart needed.
+            {
+              event = "FileType";
+              pattern = "terraform";
+              callback.__raw = ''
+                function(args)
+                  local bufnr = args.buf
+                  -- Track the per-session style on a global so the
+                  -- "toggle" mapping can flip it without re-querying
+                  -- the server. Defaults to the init_options value.
+                  if vim.g.tfls_format_style == nil then
+                    vim.g.tfls_format_style = "minimal"
+                  end
+
+                  local function notify_style(style)
+                    vim.g.tfls_format_style = style
+                    -- Reach the tfls client (id-agnostic) and push the
+                    -- new style via `workspace/didChangeConfiguration`.
+                    -- Fan out to every attached client whose name
+                    -- looks like the terraform LSP — covers both the
+                    -- nixvim default `terraformls` ID and any custom
+                    -- name the user might pick.
+                    local sent = false
+                    for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+                      local name = client.name or ""
+                      if name:match("terraform") or name:match("tfls") then
+                        client:notify("workspace/didChangeConfiguration", {
+                          settings = {
+                            ["terraform-ls-rs"] = { formatStyle = style },
+                          },
+                        })
+                        sent = true
+                      end
+                    end
+                    if sent then
+                      vim.notify("tfls formatStyle = " .. style, vim.log.levels.INFO)
+                    else
+                      vim.notify(
+                        "tfls not attached — formatStyle update queued via vim.g.tfls_format_style",
+                        vim.log.levels.WARN
+                      )
+                    end
+                  end
+
+                  -- `<leader>F` (capital F = Format) is free in this
+                  -- config; the lowercase `<leader>t` prefix is taken
+                  -- by Testing. Buffer-local registration ensures the
+                  -- keys are inert outside terraform buffers.
+                  vim.keymap.set("n", "<leader>Fm", function()
+                    notify_style("minimal")
+                  end, { buffer = bufnr, desc = "tfls: formatStyle = minimal (terraform fmt)" })
+
+                  vim.keymap.set("n", "<leader>Fo", function()
+                    notify_style("opinionated")
+                  end, { buffer = bufnr, desc = "tfls: formatStyle = opinionated (alphabetise + hoist)" })
+
+                  vim.keymap.set("n", "<leader>Ft", function()
+                    local next_style = vim.g.tfls_format_style == "opinionated"
+                      and "minimal"
+                      or "opinionated"
+                    notify_style(next_style)
+                  end, { buffer = bufnr, desc = "tfls: toggle formatStyle (minimal <-> opinionated)" })
+
+                  vim.keymap.set("n", "<leader>F?", function()
+                    vim.notify(
+                      "tfls formatStyle = " .. (vim.g.tfls_format_style or "minimal"),
+                      vim.log.levels.INFO
+                    )
+                  end, { buffer = bufnr, desc = "tfls: show current formatStyle" })
+                end
+              '';
+            }
           ];
 
           extraConfigLua = ''

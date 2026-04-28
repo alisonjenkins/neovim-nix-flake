@@ -140,6 +140,20 @@ in
         # (Direct-cmd servers sometimes start for the right root but
         # never attach to the buffer.)
         cmd = mux "${terraform-ls-rs}/bin/tfls";
+
+        # tfls-side default. Live-toggleable via the
+        # <leader>F{m,o,t,?} keymaps registered on FileType=terraform
+        # (see the autocmd in flake.nix). Acceptable values:
+        # "minimal" (terraform fmt parity, the safe default) or
+        # "opinionated" (full alphabetise / hoist / expand).
+        # nixvim doesn't expose `init_options` on the typed schema for
+        # this server, so route through `extraOptions` which merges
+        # straight into the underlying lspconfig.setup() call.
+        extraOptions = {
+          init_options = {
+            formatStyle = "minimal";
+          };
+        };
       };
 
       tilt_ls = {
