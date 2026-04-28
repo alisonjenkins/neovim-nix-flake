@@ -101,7 +101,7 @@
     mode = "n";
     key = "<leader>lF";
     action.__raw = ''
-      function() require("conform").format({ async = true, lsp_fallback = true }) end
+      function() require("conform").format({ async = true, lsp_format = "fallback" }) end
     '';
     options = {
       desc = "Format Buffer";

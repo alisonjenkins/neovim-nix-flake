@@ -155,14 +155,14 @@
               if opts.range > 0 then
                 conform.format({
                   async = false,
-                  lsp_fallback = true,
+                  lsp_format = "fallback",
                   range = {
                     ["start"] = { opts.line1, 0 },
                     ["end"]   = { opts.line2, 0 },
                   },
                 })
               else
-                conform.format({ async = true, lsp_fallback = true })
+                conform.format({ async = true, lsp_format = "fallback" })
               end
             end, { range = true, desc = "Format buffer (or range) via conform / LSP" })
 
