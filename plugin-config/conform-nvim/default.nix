@@ -17,13 +17,17 @@
         python = [ "isort" "black" ];
         rust = [ "rustfmt" ];
         sh = [ "shfmt" ];
-        # Empty list (NOT omission!) — without this, the `_`
-        # fallback above (`trim_whitespace`) catches terraform and
-        # conform never reaches its LSP-fallback branch. With an
-        # explicit empty list and `lsp_format = "fallback"` on
-        # every call site, conform routes terraform through tfls,
-        # honouring the runtime-toggleable formatStyle.
-        terraform = [ ];
+        # Force a literal empty Lua table via `__raw`. Plain
+        # `terraform = [ ];` would be optimised away by nixvim's
+        # code-gen (empty lists collapse to nothing in the
+        # generated init.lua), and we'd be back to the `_`
+        # fallback (`trim_whitespace`) catching terraform and
+        # conform never hitting its LSP-fallback branch.
+        # An explicit empty table tells conform "no formatters
+        # for terraform" — combined with `lsp_format = "fallback"`
+        # on every call site, that routes formatting requests to
+        # tfls and honours the runtime-toggleable formatStyle.
+        terraform.__raw = "{}";
       };
 
       format_on_save = ''
