@@ -148,21 +148,53 @@
             -- `:Format` — routes through conform with
             -- `lsp_format = "fallback"`, which uses LSP when the
             -- buffer's filetype has no conform formatters.
-            -- Range form: `:1,20Format`.
+            -- Range form: `:1,20Format`. Logs decision points to
+            -- /tmp/format-trace.log so we can see WHICH branch
+            -- conform took.
             vim.api.nvim_create_user_command("Format", function(opts)
               local conform = require("conform")
+              local lsp_fmt = require("conform.lsp_format")
+              local bufnr = vim.api.nvim_get_current_buf()
+              local trace = io.open("/tmp/format-trace.log", "a")
+              local function T(m)
+                if trace then
+                  trace:write(os.date("%H:%M:%S") .. " " .. m .. "\n")
+                  trace:flush()
+                end
+              end
+              T("=== :Format invoked range=" .. tostring(opts.range))
+              T("buf: " .. vim.api.nvim_buf_get_name(bufnr))
+              T("ft: " .. vim.bo[bufnr].filetype)
+              local fmt_clients = lsp_fmt.get_format_clients({ bufnr = bufnr })
+              T("conform get_format_clients: " .. tostring(#fmt_clients))
+              for _, c in ipairs(fmt_clients) do T("  " .. c.name) end
+              local list = conform.list_formatters_to_run(bufnr)
+              T("planned formatters: " ..
+                vim.inspect(vim.tbl_map(function(f) return f.name end, list)))
               if opts.range > 0 then
-                conform.format({
+                T("calling conform.format SYNC range")
+                local ok, err = pcall(conform.format, {
+                  bufnr = bufnr,
                   async = false,
+                  timeout_ms = 5000,
                   lsp_format = "fallback",
                   range = {
                     ["start"] = { opts.line1, 0 },
                     ["end"]   = { opts.line2, 0 },
                   },
                 })
+                T("range result ok=" .. tostring(ok) .. " err=" .. tostring(err))
               else
-                conform.format({ async = true, lsp_format = "fallback" })
+                T("calling conform.format SYNC whole-buffer")
+                local ok, err = pcall(conform.format, {
+                  bufnr = bufnr,
+                  async = false,
+                  timeout_ms = 5000,
+                  lsp_format = "fallback",
+                })
+                T("result ok=" .. tostring(ok) .. " err=" .. tostring(err))
               end
+              if trace then trace:close() end
             end, { range = true, desc = "Format buffer (or range) via conform / LSP" })
 
             -- `:FormatProbe` — diagnostic dump for the
