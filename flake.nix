@@ -812,7 +812,7 @@
             black
             cowsay
             curl
-            deno
+            stable.deno
             direnv
             fd
             fortune
@@ -851,7 +851,7 @@
             blink-emoji-nvim
             claudecode-nvim
             inc-rename-nvim
-            peek-nvim
+            pkgs.stable.vimPlugins.peek-nvim
             perfanno-nvim
             vim-dadbod
             vim-dadbod-completion
