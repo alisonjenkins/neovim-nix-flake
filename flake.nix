@@ -177,7 +177,7 @@
                   bufnr = bufnr,
                   async = false,
                   timeout_ms = 5000,
-                  lsp_format = "fallback",
+                  lsp_format = "prefer",
                   range = {
                     ["start"] = { opts.line1, 0 },
                     ["end"]   = { opts.line2, 0 },
@@ -190,7 +190,7 @@
                   bufnr = bufnr,
                   async = false,
                   timeout_ms = 5000,
-                  lsp_format = "fallback",
+                  lsp_format = "prefer",
                 })
                 T("result ok=" .. tostring(ok) .. " err=" .. tostring(err))
               end

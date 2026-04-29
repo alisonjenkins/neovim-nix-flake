@@ -24,7 +24,7 @@
         # fallback (`trim_whitespace`) catching terraform and
         # conform never hitting its LSP-fallback branch.
         # An explicit empty table tells conform "no formatters
-        # for terraform" — combined with `lsp_format = "fallback"`
+        # for terraform" — combined with `lsp_format = "prefer"`
         # on every call site, that routes formatting requests to
         # tfls and honours the runtime-toggleable formatStyle.
         terraform.__raw = "{}";
@@ -47,7 +47,7 @@
         if bufname:match("/node_modules/") then
         return
         end
-        return { timeout_ms = 1000, lsp_format = "fallback" }
+        return { timeout_ms = 1000, lsp_format = "prefer" }
         end
       '';
     };
