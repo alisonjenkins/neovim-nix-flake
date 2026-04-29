@@ -147,6 +147,10 @@
           desc = "Load Profile";
         }
         {
+          __unkeyed-1 = "<leader>r";
+          desc = "Refactor";
+        }
+        {
           __unkeyed-1 = "<leader>o";
           desc = "Obsidian";
         }

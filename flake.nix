@@ -1004,6 +1004,7 @@
           ++ import ./keymaps/notifications
           ++ import ./keymaps/obsidian
           ++ import ./keymaps/profiling
+          ++ import ./keymaps/refactor
           ++ import ./keymaps/rust-lsp
           ++ import ./keymaps/search
           ++ import ./keymaps/tabs
@@ -1136,6 +1137,7 @@
 
             // (import ./plugin-config/otter)
             // (import ./plugin-config/parinfer-rust)
+            // (import ./plugin-config/refactoring)
             // (import ./plugin-config/remote-nvim { inherit pkgs; })
             // (import ./plugin-config/render-markdown)
             // (import ./plugin-config/rustaceanvim { inherit pkgs; })
