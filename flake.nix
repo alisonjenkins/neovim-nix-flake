@@ -31,6 +31,7 @@
         {
           imports = [
             ./modules/plugins/schema-companion.nix
+            ./modules/plugins/yeet.nix
           ];
 
           editorconfig.enable = true;
@@ -1010,6 +1011,7 @@
           ++ import ./keymaps/terminal
           ++ import ./keymaps/testing
           ++ import ./keymaps/toggles
+          ++ import ./keymaps/yeet
           ++ import ./keymaps/zk;
 
           performance = {
@@ -1079,6 +1081,7 @@
             web-devicons.enable = true;
             wilder.enable = false; # Conflicts with Noice
             wrapping.enable = true;
+            yeet.enable = true;
             zig.enable = true;
           }
           // (
