@@ -145,25 +145,11 @@
           ];
 
           extraConfigLua = ''
-            -- `:Format` — runs the LSP formatter directly for
-            -- terraform buffers (bypassing conform, which silently
-            -- swallowed the request even with an explicit empty
-            -- formatters_by_ft entry); falls back to conform for
-            -- every other filetype.
+            -- `:Format` — routes through conform with
+            -- `lsp_format = "fallback"`, which uses LSP when the
+            -- buffer's filetype has no conform formatters.
+            -- Range form: `:1,20Format`.
             vim.api.nvim_create_user_command("Format", function(opts)
-              local bufnr = vim.api.nvim_get_current_buf()
-              local ft = vim.bo[bufnr].filetype
-              if ft == "terraform" then
-                local fmt_opts = { async = false, timeout_ms = 5000, bufnr = bufnr }
-                if opts.range > 0 then
-                  fmt_opts.range = {
-                    ["start"] = { opts.line1, 0 },
-                    ["end"]   = { opts.line2, 0 },
-                  }
-                end
-                vim.lsp.buf.format(fmt_opts)
-                return
-              end
               local conform = require("conform")
               if opts.range > 0 then
                 conform.format({
@@ -177,7 +163,53 @@
               else
                 conform.format({ async = true, lsp_format = "fallback" })
               end
-            end, { range = true, desc = "Format buffer (or range) via LSP / conform" })
+            end, { range = true, desc = "Format buffer (or range) via conform / LSP" })
+
+            -- `:FormatProbe` — diagnostic dump for the
+            -- conform → LSP routing. Prints which clients are
+            -- attached, which conform considers eligible for
+            -- format, and which formatters conform plans to run.
+            -- Output goes to /tmp/conform-probe.log (and :messages).
+            vim.api.nvim_create_user_command("FormatProbe", function()
+              local lines = {}
+              local function L(msg) table.insert(lines, msg) end
+              local bufnr = vim.api.nvim_get_current_buf()
+              L("buffer: " .. vim.api.nvim_buf_get_name(bufnr))
+              L("filetype: " .. vim.bo[bufnr].filetype)
+              L("--- vim.lsp.get_clients(bufnr) ---")
+              for _, c in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+                local fmt = c.server_capabilities
+                  and c.server_capabilities.documentFormattingProvider
+                L(string.format(
+                  "  %s id=%d formatProvider=%s supports_method=%s",
+                  c.name,
+                  c.id,
+                  vim.inspect(fmt),
+                  tostring(c:supports_method("textDocument/formatting", { bufnr = bufnr }))
+                ))
+              end
+              local lsp_fmt = require("conform.lsp_format")
+              local fmt_clients = lsp_fmt.get_format_clients({ bufnr = bufnr })
+              L("--- conform.lsp_format.get_format_clients ---")
+              L("count: " .. tostring(#fmt_clients))
+              for _, c in ipairs(fmt_clients) do
+                L("  " .. c.name .. " id=" .. c.id)
+              end
+              local conform = require("conform")
+              L("--- formatters_by_ft ---")
+              L("[terraform] = " .. vim.inspect(conform.formatters_by_ft.terraform))
+              L("[_]         = " .. vim.inspect(conform.formatters_by_ft._))
+              local list = conform.list_formatters_to_run(bufnr)
+              L("--- list_formatters_to_run ---")
+              L(vim.inspect(vim.tbl_map(function(f) return f.name end, list)))
+              local out = table.concat(lines, "\n")
+              local fh = io.open("/tmp/conform-probe.log", "w")
+              if fh then fh:write(out); fh:close() end
+              vim.api.nvim_echo(
+                vim.tbl_map(function(l) return { l, "Normal" } end,
+                  vim.split(out, "\n", { plain = true })),
+                false, {})
+            end, { desc = "Dump conform/LSP routing state for the current buffer" })
 
             -- Neovim 0.12 compatibility: wrap add_predicate/add_directive so third-party
             -- plugin handlers automatically receive single TSNode instead of TSNode[] lists.
