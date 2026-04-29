@@ -1,9 +1,14 @@
 {
   description = "Alison Jenkins's Neovim Flake";
 
+  nixConfig = {
+    extra-substituters = [ "https://nix-community.cachix.org" ];
+    extra-trusted-public-keys = [ "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" ];
+  };
+
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    # neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     nixpkgs-master.url = "github:nixos/nixpkgs";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -31,8 +36,7 @@
           editorconfig.enable = true;
           enableMan = false;
           luaLoader.enable = true;
-          # package =
-          #   inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
+          package = pkgs.neovim-unwrapped;
 
           autoCmd = [
             {
@@ -1296,6 +1300,7 @@
             };
 
             overlays = [
+              inputs.neovim-nightly-overlay.overlays.default
               (final: _prev: {
                 master = import inputs.nixpkgs-master {
                   system = final.stdenv.hostPlatform.system;
