@@ -1154,7 +1154,7 @@
             // (import ./plugin-config/zen-mode)
             // (import ./plugin-config/zk)
           );
-        } // (
+        } //
           # (import ./colorschemes/ayu)
           # (import ./colorschemes/catppuccin)
           # (import ./colorschemes/everforest)
@@ -1169,8 +1169,7 @@
           # (import ./colorschemes/vscode)
           # (import ./colorschemes/poimandres)
           # (import ./colorschemes/onedark)
-          (import ./colorschemes/bamboo)
-        );
+          import ./colorschemes/bamboo;
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
@@ -1180,7 +1179,6 @@
       perSystem =
         { pkgs
         , system
-        , self
         , ...
         }:
         let
@@ -1191,11 +1189,6 @@
             module = config;
             extraSpecialArgs = { inherit lspWrappers; };
           };
-          _module.args.pkgs = import self.inputs.nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
-
           # Shared LSP wrapper definitions — used by both nixvim config and
           # exported for external consumers (Claude Code, etc.)
           mkLspWrapper = scriptName: fullShellCmd:
@@ -1422,7 +1415,7 @@ p.write_text(src.replace(old, '\n'.join(new_lines)))
                     };
                   };
                   # Override bamboo to fetch directly from GitHub, avoiding lualine dependency issues
-                  bamboo-nvim = final.vimUtils.buildVimPlugin rec {
+                  bamboo-nvim = final.vimUtils.buildVimPlugin {
                     pname = "bamboo.nvim";
                     version = "2024-11-25";
                     src = final.fetchFromGitHub {
