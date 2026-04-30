@@ -70,6 +70,19 @@
                 end
               '';
             }
+            # Defensive nvim-ufo detach for nui/noice popups. The provider_selector
+            # in nvim-ufo settings is the primary guard; this covers the rare case
+            # where a popup briefly has a real buftype before nui sets `nofile`.
+            {
+              event = [ "BufWinEnter" "FileType" ];
+              pattern = [ "noice" "notify" "NoicePopup*" "lazy" "mason" "TelescopePrompt" ];
+              callback.__raw = ''
+                function(args)
+                  pcall(function() vim.b[args.buf].ufo_foldingRange = {} end)
+                  pcall(vim.cmd, "UfoDetach")
+                end
+              '';
+            }
             # Terraform format-style toggle. Buffer-local keymaps so
             # the bindings only conflict with other servers' keys
             # when a `.tf` / `.tfvars` / `.hcl` / `.tofu` buffer is
@@ -148,6 +161,27 @@
               '';
             }
           ];
+
+          extraConfigLuaPre = ''
+            -- Resolve `require('async')` collision: both `promise-async` and
+            -- `async.nvim` ship `lua/async.lua`. nvim-ufo expects the
+            -- promise-async one (a callable table with `__call` metamethod);
+            -- async.nvim returns a plain table and crashes ufo with
+            -- "attempt to call upvalue 'async' (a table value)". Pre-cache
+            -- the promise-async module so any subsequent `require('async')`
+            -- hits our seeded entry instead of racing the rtp. Must run
+            -- before ufo.setup() — hence extraConfigLuaPre, not extraConfigLua.
+            do
+              local files = vim.api.nvim_get_runtime_file("lua/async.lua", true)
+              for _, p in ipairs(files) do
+                if p:match("promise%-async") then
+                  local chunk, _ = loadfile(p)
+                  if chunk then package.loaded["async"] = chunk() end
+                  break
+                end
+              end
+            end
+          '';
 
           extraConfigLua = ''
             -- `:Format` — routes through conform with
@@ -1020,6 +1054,13 @@
               enable = true;
               nvimRuntime = true;
               plugins = true;
+              # promise-async injects `await` into async coroutine bodies via
+              # `compat.setfenv`, which uses `debug.getupvalue` to find the
+              # `_ENV` upvalue by name. Byte compilation strips upvalue names,
+              # so the injection silently no-ops and ufo's coroutines crash
+              # with "attempt to call upvalue '' (a table value)" on every
+              # popup / fold attach. Exclude both from bytecompile.
+              excludedPlugins = [ "nvim-ufo" "promise-async" ];
             };
 
             combinePlugins = {
@@ -1065,7 +1106,43 @@
             navic.enable = true;
             nix.enable = true;
             numbertoggle.enable = true;
-            nvim-ufo.enable = true;
+            nvim-ufo = {
+              enable = true;
+              settings = {
+                open_fold_hl_timeout = 0;
+                provider_selector.__raw = ''
+                  function(bufnr, filetype, buftype)
+                    if buftype == "nofile" or buftype == "prompt" or buftype == "popup" then
+                      return ""
+                    end
+                    local ft_block = {
+                      noice = true, notify = true, NoiceCmdline = true,
+                      NoicePopup = true, NoicePopupmenu = true, NoiceConfirm = true,
+                      lazy = true, mason = true, TelescopePrompt = true,
+                      snacks_picker_input = true,
+                    }
+                    if ft_block[filetype] then return "" end
+                    -- ufo caps return at {main, fallback}. Pick per-buffer:
+                    -- prefer treesitter only when both a parser AND a folds
+                    -- query exist for the language — ufo's treesitter
+                    -- provider raises UfoFallbackException not just for
+                    -- missing parsers but also when no `folds.scm` query is
+                    -- registered (many parsers ship without one). With no
+                    -- third fallback slot, that exception propagates and
+                    -- crashes fold attach. `indent` always works.
+                    local lang = vim.treesitter.language.get_lang(filetype)
+                    if lang then
+                      local has_parser = pcall(vim.treesitter.get_parser, bufnr, lang, { error = false })
+                      local has_folds = vim.treesitter.query.get(lang, "folds") ~= nil
+                      if has_parser and has_folds then
+                        return { "lsp", "treesitter" }
+                      end
+                    end
+                    return { "lsp", "indent" }
+                  end
+                '';
+              };
+            };
             rainbow-delimiters.enable = true;
             rhubarb.enable = true;
             roslyn.enable = false;
