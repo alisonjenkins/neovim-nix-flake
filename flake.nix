@@ -1552,14 +1552,16 @@ p.write_text(src.replace(old, '\n'.join(new_lines)))
           };
 
           devShells = {
-            default = pkgs.mkShell {
-              buildInputs = with pkgs; [
-                just
-                nix-fast-build
+            default = pkgs.mkShellNoCC {
+              packages = [
+                pkgs.just
+                # Lazy shim: defers fetching nix-fast-build's ~1.5 GB closure
+                # until first invocation. Adds ~250 ms of nix-run eval per
+                # call but keeps the direnv-cached profile small.
+                (pkgs.writeShellScriptBin "nix-fast-build" ''
+                  exec nix run nixpkgs#nix-fast-build -- "$@"
+                '')
               ];
-
-              shellHook = ''
-              '';
             };
           };
         };
