@@ -829,6 +829,26 @@
             require("peek").setup({})
             vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
             vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
+
+            -- Treesitter highlight: stop on big buffers / non-source filetypes.
+            -- Replaces the deprecated `plugins.treesitter.settings.highlight.disable`
+            -- option (legacy nvim-treesitter API).
+            vim.api.nvim_create_autocmd({ "BufReadPost", "FileType" }, {
+              callback = function(args)
+                local bufnr = args.buf
+                if vim.api.nvim_buf_line_count(bufnr) > 10000 then
+                  pcall(vim.treesitter.stop, bufnr); return
+                end
+                local name = vim.api.nvim_buf_get_name(bufnr)
+                if name ~= "" and vim.fn.getfsize(name) > 1024 * 1024 then
+                  pcall(vim.treesitter.stop, bufnr); return
+                end
+                local ft = vim.bo[bufnr].filetype
+                if ft == "help" or ft == "man" then
+                  pcall(vim.treesitter.stop, bufnr)
+                end
+              end,
+            })
           '';
 
           extraFiles = {

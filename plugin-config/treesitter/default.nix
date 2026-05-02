@@ -401,29 +401,11 @@ in
         highlight = {
           enable = true;
 
-          # Optimize highlighting performance
-          disable = ''
-            function(lang, bufnr)
-              local line_count = vim.api.nvim_buf_line_count(bufnr)
-              -- Disable for very large files (by line count)
-              if line_count > 10000 then
-                return true
-              end
-              -- Disable for large files regardless of line count (e.g. minified files, single-line logs)
-              local name = vim.api.nvim_buf_get_name(bufnr)
-              if name ~= "" and vim.fn.getfsize(name) > 1024 * 1024 then
-                return true
-              end
-              -- Disable for certain filetypes that don't need highlighting
-              local ft = vim.bo[bufnr].filetype
-              if ft == "help" or ft == "man" then
-                return true
-              end
-              return false
-            end
-          '';
-
-          # Reduce highlighting update frequency for performance
+          # Reduce highlighting update frequency for performance.
+          # The conditional-disable logic that used to live here (large
+          # files, help/man buffers) moved to extraConfigLua in flake.nix
+          # — `highlight.disable` was deprecated as upstream-legacy
+          # nvim-treesitter and triggered a Nixvim eval warning.
           additional_vim_regex_highlighting = false;
         };
 
