@@ -1376,6 +1376,20 @@
 
             overlays = [
               inputs.neovim-nightly-overlay.overlays.default
+              # Disable direnv tests on Darwin: the make test-fish target
+              # gets SIGKILL'd in the Nix sandbox and make test-zsh hangs
+              # at 0% CPU indefinitely. direnv runs its shell tests in
+              # installCheckPhase, so doCheck alone isn't enough — also
+              # disable installCheck.
+              (_final: prev: {
+                direnv = if prev.stdenv.hostPlatform.isDarwin
+                  then prev.direnv.overrideAttrs (_: {
+                    doCheck = false;
+                    doInstallCheck = false;
+                    installCheckPhase = "true";
+                  })
+                  else prev.direnv;
+              })
               (final: _prev: {
                 master = import inputs.nixpkgs-master {
                   system = final.stdenv.hostPlatform.system;
