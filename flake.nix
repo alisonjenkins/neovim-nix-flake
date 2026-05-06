@@ -825,6 +825,14 @@
             require("terraform-tools").setup()
             require("terraform-search").setup()
 
+            -- lspmux daemon controls: :LspmuxInfo + :LspmuxRestart.
+            -- The plugin registers commands automatically on load
+            -- (plugin/lspmux.lua); setup() only pins the binary path
+            -- so we don't depend on $PATH lookup, which can drift if
+            -- nvim is launched from a shell that hasn't picked up
+            -- a home-manager relink yet.
+            require("lspmux").setup({ binary = "${pkgs.lspmux}/bin/lspmux" })
+
             -- Peek.nvim setup
             require("peek").setup({})
             vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
@@ -972,6 +980,18 @@
                 rev = "6ab3e44b566e660f38922cf908e6e547eaa5d4b4";
                 hash = "sha256-v392tyzXV+zyBNt5OCB2NBCK7JcByrTa5Ne/nFtSCJI=";
               };
+            })
+
+            # Local Lua plugin: :LspmuxInfo + :LspmuxRestart commands
+            # for managing the lspmux daemon. Source lives in
+            # `nvim-plugins/lspmux-nvim/` in this repo. Built as a
+            # proper Vim plugin so its `plugin/lspmux.lua` autoloads
+            # and the user commands register without manual wiring.
+            (pkgs.vimUtils.buildVimPlugin {
+              pname = "lspmux-nvim";
+              version = "0.1.0";
+              doCheck = false;
+              src = ./nvim-plugins/lspmux-nvim;
             })
           ];
 
