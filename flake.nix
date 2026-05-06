@@ -1472,16 +1472,13 @@
                   # Pin nvim-treesitter from master for Neovim 0.12 ABI 15 compatible queries
                   inherit (final.master.vimPlugins) nvim-treesitter;
 
-                  # Patch cybu.nvim for Neovim 0.12 deprecated vim.validate API
-                  cybu-nvim = prev.vimPlugins.cybu-nvim.overrideAttrs (_: {
-                    postPatch = ''
-                      substituteInPlace lua/cybu/init.lua \
-                        --replace-fail 'vim.validate({ user_config = { user_config, "table", true } })' \
-                          'vim.validate("user_config", user_config, "table", true)' \
-                        --replace-fail 'vim.validate({ direction = { direction, "string", false } })' \
-                          'vim.validate("direction", direction, "string", false)'
-                    '';
-                  });
+                  # cybu.nvim Neovim 0.12 vim.validate override removed:
+                  # upstream rev 2dff010 (2026-05-03) migrated lua/cybu/init.lua
+                  # to the positional `vim.validate(name, val, type, optional)`
+                  # API itself, so the `--replace-fail` patch errors on
+                  # "pattern doesn't match anything in file". Re-add only if a
+                  # future cybu source ever regresses to the old table form.
+
                   # Patch git-conflict.nvim for Neovim 0.12 deprecated API fixes
                   git-conflict-nvim = prev.vimPlugins.git-conflict-nvim.overrideAttrs (_: {
                     postPatch = ''
