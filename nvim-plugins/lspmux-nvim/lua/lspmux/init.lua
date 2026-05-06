@@ -243,8 +243,51 @@ function M.info()
   vim.bo.readonly = true
 end
 
+--- True when the daemon's status RPC is responding — the canonical
+--- "server is ready to accept clients" signal. Returns false on any
+--- error (binary missing, exit non-zero, JSON unparseable).
+local function daemon_ready()
+  local bin = lspmux_bin()
+  if bin == "" then
+    return false
+  end
+  local out = vim.fn.system({ bin, "status", "--json" })
+  if vim.v.shell_error ~= 0 then
+    return false
+  end
+  local brace = out:find("{")
+  if not brace then
+    return false
+  end
+  local ok = pcall(vim.json.decode, out:sub(brace))
+  return ok
+end
+
+--- Re-fire `FileType` autocmds across every loaded buffer so the
+--- config's LSP attach hooks (lspconfig, `vim.lsp.config`, etc.)
+--- create a fresh client connected to the just-started daemon.
+--- Cleaner than `:edit` — no disk re-read, doesn't fight modeline
+--- state, doesn't fire BufWritePre / BufLeave noise.
+local function reattach_buffers()
+  local count = 0
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" then
+      local ft = vim.bo[buf].filetype
+      if ft and ft ~= "" then
+        pcall(vim.api.nvim_exec_autocmds, "FileType", {
+          buffer = buf,
+          modeline = false,
+        })
+        count = count + 1
+      end
+    end
+  end
+  return count
+end
+
 --- :LspmuxRestart — stop nvim's LSP clients, kill the daemon, start
---- a fresh one, then re-trigger LSP attach on every buffer.
+--- a fresh one, poll for it to be ready, then re-trigger LSP attach
+--- on every buffer.
 function M.restart()
   local bin = lspmux_bin()
   if bin == "" then
@@ -263,23 +306,18 @@ function M.restart()
   -- 2. Kill any lingering `lspmux client` subprocesses started by
   --    nvim — vim.lsp.stop_client takes care of these, but a
   --    misbehaving / orphaned client wouldn't be stopped above.
-  local client_pids = pgrep_pids("lspmux client")
-  for _, pid in ipairs(client_pids) do
-    vim.uv.kill(pid, "sigterm")
+  for _, pid in ipairs(pgrep_pids("lspmux client")) do
+    pcall(vim.uv.kill, pid, "sigterm")
   end
 
-  -- 3. Kill the server. SIGTERM first (graceful), then SIGKILL on a
-  --    short delay if anything remains.
-  local pids = server_pids()
-  for _, pid in ipairs(pids) do
-    vim.uv.kill(pid, "sigterm")
+  -- 3. Kill the server. SIGTERM first (graceful), then SIGKILL via
+  --    the deferred straggler sweep below.
+  for _, pid in ipairs(server_pids()) do
+    pcall(vim.uv.kill, pid, "sigterm")
   end
 
-  -- 4. After a brief settling period, force-kill anything stragglers
-  --    and start a fresh server, then re-attach LSPs by reloading
-  --    every loaded buffer's filetype (which retriggers nvim's
-  --    `FileType` autocmds — the standard LSP attach hook).
   vim.defer_fn(function()
+    -- 4. Force-kill any stragglers from steps 1–3.
     for _, pid in ipairs(server_pids()) do
       pcall(vim.uv.kill, pid, "sigkill")
     end
@@ -287,28 +325,36 @@ function M.restart()
       pcall(vim.uv.kill, pid, "sigkill")
     end
 
-    -- Spawn the new server detached so it survives if nvim exits.
+    -- 5. Spawn the new server detached so it survives if nvim exits.
     vim.fn.jobstart({ bin, "server" }, { detach = true })
 
-    -- Give it a moment to bind before reattaching clients.
-    vim.defer_fn(function()
-      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.api.nvim_buf_is_loaded(buf) then
-          local ft = vim.bo[buf].filetype
-          if ft and ft ~= "" then
-            -- Triggering BufRead via `:edit` re-fires FileType,
-            -- which is where lspconfig (or whatever attach
-            -- mechanism this config uses) wires the LSP back up.
-            pcall(function()
-              vim.api.nvim_buf_call(buf, function()
-                vim.cmd("silent! edit")
-              end)
-            end)
-          end
-        end
+    -- 6. Poll for the daemon to bind its socket. Up to ~3s
+    --    (30 × 100ms). Without polling, an empty workspace's
+    --    daemon-cold-start (~150-300ms typical) raced past our
+    --    fixed delay and the FileType retrigger fired before any
+    --    `lspmux client` could connect — so LSPs failed to
+    --    attach silently and the user saw nothing happen.
+    local function poll(attempts_left)
+      if daemon_ready() then
+        local n = reattach_buffers()
+        vim.notify(
+          string.format("lspmux restarted — %d buffer(s) reattached", n),
+          vim.log.levels.INFO
+        )
+        return
       end
-      vim.notify("lspmux restarted", vim.log.levels.INFO)
-    end, 300)
+      if attempts_left <= 0 then
+        vim.notify(
+          "lspmux restart: daemon didn't come up — check :LspmuxInfo",
+          vim.log.levels.ERROR
+        )
+        return
+      end
+      vim.defer_fn(function()
+        poll(attempts_left - 1)
+      end, 100)
+    end
+    poll(30)
   end, 200)
 end
 
