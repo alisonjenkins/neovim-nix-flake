@@ -1419,10 +1419,16 @@
               # python-lsp-server 1.14.0 declares `jedi<0.20.0` in pyproject.toml,
               # but nixpkgs ships jedi 0.20.0 as of 2026-05-23 →
               # pythonRuntimeDepsCheckHook fails. pylsp works fine at runtime
-              # with jedi 0.20 (no API breakage), the upper bound is just an
-              # outdated pin. Relax across all python variants via
-              # pythonPackagesExtensions. Drop once nixpkgs bumps pylsp to
-              # >=1.14.1 with the relaxed constraint.
+              # with jedi 0.20, the upper bound is just an outdated pin. Two
+              # patches needed:
+              #
+              # 1. Relax the jedi version pin in pyproject.toml.
+              # 2. Skip test_snippets_completion which asserts the legacy
+              #    `defaultdict($0)` completion string; jedi 0.20 emits
+              #    `defaultdict()` (cosmetic change, completion still works).
+              #
+              # Drop both once nixpkgs ships pylsp >=1.14.1 with jedi 0.20
+              # compatibility.
               (_final: prev: {
                 pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
                   (_pyfinal: pyprev: {
@@ -1431,6 +1437,9 @@
                         substituteInPlace pyproject.toml \
                           --replace-fail 'jedi>=0.17.2,<0.20.0' 'jedi>=0.17.2,<0.21.0'
                       '';
+                      disabledTests = (old.disabledTests or []) ++ [
+                        "test_snippets_completion"
+                      ];
                     });
                   })
                 ];
