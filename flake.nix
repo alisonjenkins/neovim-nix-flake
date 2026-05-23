@@ -1416,6 +1416,25 @@
 
             overlays = [
               inputs.neovim-nightly-overlay.overlays.default
+              # python-lsp-server 1.14.0 declares `jedi<0.20.0` in pyproject.toml,
+              # but nixpkgs ships jedi 0.20.0 as of 2026-05-23 →
+              # pythonRuntimeDepsCheckHook fails. pylsp works fine at runtime
+              # with jedi 0.20 (no API breakage), the upper bound is just an
+              # outdated pin. Relax across all python variants via
+              # pythonPackagesExtensions. Drop once nixpkgs bumps pylsp to
+              # >=1.14.1 with the relaxed constraint.
+              (_final: prev: {
+                pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+                  (_pyfinal: pyprev: {
+                    python-lsp-server = pyprev.python-lsp-server.overridePythonAttrs (old: {
+                      postPatch = (old.postPatch or "") + ''
+                        substituteInPlace pyproject.toml \
+                          --replace-fail 'jedi>=0.17.2,<0.20.0' 'jedi>=0.17.2,<0.21.0'
+                      '';
+                    });
+                  })
+                ];
+              })
               # Disable direnv tests on Darwin: the make test-fish target
               # gets SIGKILL'd in the Nix sandbox and make test-zsh hangs
               # at 0% CPU indefinitely. direnv runs its shell tests in
