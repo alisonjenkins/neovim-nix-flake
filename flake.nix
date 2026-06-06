@@ -13,6 +13,11 @@
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
+    # Pin nixvim's eval-nixpkgs to the same `nixpkgs` we feed `makeNixvimWithModule`
+    # (via `inherit pkgs`). nixvim ships its own nixpkgs lock; if the two locks
+    # straddle a release boundary, makeNixvim emits "Nixvim version X / Nixpkgs
+    # version Y". Following keeps them on one nixpkgs so the mismatch is impossible.
+    nixvim.inputs.nixpkgs.follows = "nixpkgs";
     # nixvim.url = "github:alisonjenkins/nixvim/fix/sidekick-nes-disabled";
     terraform-ls-rs = {
       url = "github:alisonjenkins/terraform-ls-rs";
