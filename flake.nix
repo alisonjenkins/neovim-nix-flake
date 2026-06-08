@@ -20,7 +20,7 @@
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
     # nixvim.url = "github:alisonjenkins/nixvim/fix/sidekick-nes-disabled";
     terraform-ls-rs = {
-      url = "github:alisonjenkins/terraform-ls-rs/v0.7.1";
+      url = "github:alisonjenkins/terraform-ls-rs/v0.8.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix.url = "github:numtide/treefmt-nix";
