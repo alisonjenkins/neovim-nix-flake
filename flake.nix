@@ -1597,6 +1597,22 @@ p.write_text(src.replace(old, '\n'.join(new_lines)))
                   };
                 };
               })
+              # nixpkgs (pinned rev, 2026-06-06) ships kulala-core 0.13.0 with a
+              # stale node_modules `outputHash` — its `bun install` FOD produces
+              # a different tree than the recorded hash, so the build fails:
+              #   specified: sha256-NjHm6KU6Cd0ZyL1c+bmNbEHb5E83/xjQ5UGRjY1hzgQ=
+              #   got:       sha256-XQlBawD3vt8pVc7Gy9XeiGie89HWbljNJt7kUEDaDKk=
+              # kulala-core is a dependency of vimPlugins.kulala-nvim, so this
+              # breaks `nix build .#default`. Pin the node_modules hash to what
+              # this nixpkgs' bun actually produces. Drop once nixpkgs corrects
+              # it (https://github.com/NixOS/nixpkgs by-name/ku/kulala-core).
+              (_final: prev: {
+                kulala-core = prev.kulala-core.overrideAttrs (old: {
+                  node_modules = old.node_modules.overrideAttrs (_: {
+                    outputHash = "sha256-XQlBawD3vt8pVc7Gy9XeiGie89HWbljNJt7kUEDaDKk=";
+                  });
+                });
+              })
             ];
           };
 
