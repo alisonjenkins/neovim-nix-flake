@@ -6,10 +6,8 @@ in
     enable = true;
 
     settings = {
-      opts = {
-        nes = {
-          enabled = config.nesEnabled;
-        };
+      nes = {
+        enabled = config.nesEnabled;
       };
 
       keys = { };
