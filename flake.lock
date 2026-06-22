@@ -122,11 +122,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1781827491,
-        "narHash": "sha256-bhHqbSo2Zew3PzVgOAxK6M7BEvlC2WjVbXmKBXZOJ10=",
+        "lastModified": 1782086674,
+        "narHash": "sha256-GuN06EDWFefs6MJnGTKsjd1GRWy3r5xYzDIQs4+aqZ0=",
         "owner": "nix-community",
         "repo": "neovim-nightly-overlay",
-        "rev": "f70c69e316e0aa26e1a4b38168622ba9646fa412",
+        "rev": "80fa93450cf3f0062cae52f107e66b1a7db2e8f1",
         "type": "github"
       },
       "original": {
@@ -138,11 +138,11 @@
     "neovim-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1781827151,
-        "narHash": "sha256-K4KSdDxGZ86DNwF4cL9xxoDo9eFPrIjQr0Kc3Y7C7to=",
+        "lastModified": 1782084642,
+        "narHash": "sha256-vqBemsQl1c6Bp0+zsti/wgGZDBFWGmbNF3LP2j2FY/U=",
         "owner": "neovim",
         "repo": "neovim",
-        "rev": "cd72e1308fb43bcfae0b5d156e84059ab2820cde",
+        "rev": "2dd5e3eb4fdf2d7711778246617a2435b131cb09",
         "type": "github"
       },
       "original": {
@@ -184,11 +184,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1782005647,
-        "narHash": "sha256-8cGs9bdso05zPc9+Q+oRF6VEIyQgRftboWTGJln41Kw=",
+        "lastModified": 1782092459,
+        "narHash": "sha256-zzrdR8Nu2uD/atvvKrK9VYHjga4PFNXOTBiA9TVS9tc=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "6d647950e50e3ea0702048d039e0446cba52fe34",
+        "rev": "21eb6ce8994ced877e5a6ac31d539f0860f09300",
         "type": "github"
       },
       "original": {
@@ -254,11 +254,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1781963068,
-        "narHash": "sha256-YCJa5mDql4sUw3wbMJfID+7mtgxjsVyUl+ff1Io2S/M=",
+        "lastModified": 1782062554,
+        "narHash": "sha256-v2J6/S33H2ms6jz3qr6in0UUlGFqUW46+iB3hMJDuD4=",
         "owner": "nix-community",
         "repo": "nixvim",
-        "rev": "2eebc0dd48c62bd3b3dbcfff1e864119ecad3238",
+        "rev": "b3e7b2d2e568f29becae04217242ed18a90febc4",
         "type": "github"
       },
       "original": {
