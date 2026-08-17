@@ -236,7 +236,7 @@
   {
     mode = "n";
     key = "<leader>gy";
-    action = "<cmd>lua require('snacks').get_url()<CR>";
+    action = "<cmd>lua Snacks.gitbrowse({ open = function(url) vim.fn.setreg('+', url) vim.notify('Yanked url: ' .. url) end, notify = false })<CR>";
     options = {
       desc = "Copy link to current line";
       silent = true;
