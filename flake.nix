@@ -1606,13 +1606,6 @@ p.write_text(src.replace(old, '\n'.join(new_lines)))
               # breaks `nix build .#default`. Pin the node_modules hash to what
               # this nixpkgs' bun actually produces. Drop once nixpkgs corrects
               # it (https://github.com/NixOS/nixpkgs by-name/ku/kulala-core).
-              (_final: prev: {
-                kulala-core = prev.kulala-core.overrideAttrs (old: {
-                  node_modules = old.node_modules.overrideAttrs (_: {
-                    outputHash = "sha256-XQlBawD3vt8pVc7Gy9XeiGie89HWbljNJt7kUEDaDKk=";
-                  });
-                });
-              })
             ];
           };
 
