@@ -13,7 +13,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: nixbuild/nix-quick-install-action@v35
       - uses: DeterminateSystems/flake-checker-action@main
       - name: Setup git
         run: |
