@@ -73,7 +73,13 @@ in
 
       gopls = {
         enable = true;
-        cmd = mux "${lspWrappers.gopls}/bin/gopls";
+        # Not muxed: lspmux only forwards the FIRST client's InitializeParams
+        # to the shared server and never syncs workspace folders afterward
+        # (unimplemented workspace/workspaceFolders, src/instance.rs:795 in
+        # lspmux 0.3.0). gopls is unusually sensitive to stale workspace-folder
+        # state, so sharing it this way causes "no views" errors once a
+        # second client/window touches the same instance.
+        cmd = [ "${lspWrappers.gopls}/bin/gopls" ];
       };
 
       html = {
