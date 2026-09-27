@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Stands in for git: network and history-rewriting commands are recorded and faked.
+# They block until $FAKE_GIT_STATE/release exists, so a test can tell whether the
+# editor waited for them; everything else runs the real git.
+set -euo pipefail
+state=${FAKE_GIT_STATE:?}
+
+for arg in "$@"; do
+  case "$arg" in
+    pull | push | fetch | rebase)
+      printf '%s prompt=%s editor=%s\n' "$*" "${GIT_TERMINAL_PROMPT-unset}" "${GIT_EDITOR-unset}" >>"$state/calls"
+      # Bounded so a blocking implementation fails the test instead of hanging it
+      for _ in $(seq 1 100); do
+        [[ -e "$state/release" ]] && break
+        sleep 0.1
+      done
+      if [[ " $* " == *" --fail-test "* ]]; then
+        echo "fatal: simulated failure" >&2
+        exit 1
+      fi
+      case "$arg" in
+        pull) printf 'Updating 1111111..2222222\nFast-forward\n file.txt | 1 +\n' ;;
+        push) for i in $(seq 1 15); do echo "remote: line $i" >&2; done ;;
+      esac
+      exit 0
+      ;;
+  esac
+done
+
+exec "${REAL_GIT:?}" "$@"

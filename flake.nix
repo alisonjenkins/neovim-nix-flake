@@ -1774,11 +1774,21 @@
           };
 
           checks =
+            let
+              nvimTest = name: pkgs.runCommand "nvim-test-${name}"
+                {
+                  nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.git ];
+                } ''
+                bash ${./tests/nvim}/run.sh ${nvim}/bin/nvim ${./tests/nvim}/${name}.lua
+                touch $out
+              '';
+            in
             {
               default = nixvimLib.check.mkTestDerivationFromNvim {
                 inherit nvim;
                 name = "A nixvim configuration";
               };
+              git-async = nvimTest "git-async";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
                   nativeBuildInputs = [ pkgs.luajit ];
