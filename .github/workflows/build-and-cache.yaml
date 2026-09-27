@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -25,15 +28,22 @@ jobs:
         with:
           name: ajenkins-public
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          # Only merged builds belong in the public cache
+          skipPush: ${{ github.event_name != 'push' }}
       - uses: DeterminateSystems/flake-checker-action@main
       - uses: docker/setup-qemu-action@v4
       - name: Run `nix flake check`
         run: nix flake check
       - name: Run `nix build`
+        if: github.event_name == 'push'
         env:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
         run: nix develop --command bash -c "nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
+      - name: Run `nix build` (no cache push)
+        if: github.event_name != 'push'
+        run: nix develop --command bash -c "nix-fast-build --skip-cached --no-nom --flake '.#packages'"
       - name: Test Neovim starts
         run: nix run . -- --headless +q
       - name: Push to cache
+        if: github.event_name == 'push'
         run: cachix push ajenkins-public $(nix path-info --all)
