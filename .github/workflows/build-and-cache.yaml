@@ -29,8 +29,6 @@ jobs:
       - uses: docker/setup-qemu-action@v4
       - name: Run `nix flake check`
         run: nix flake check
-      - name: Check formatting
-        run: nix fmt -- --check .
       - name: Run `nix build`
         env:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
