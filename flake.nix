@@ -673,6 +673,7 @@
 
             -- Claude Code integration (WebSocket MCP protocol)
             require('claudecode').setup({
+              log_level = "warn",
               terminal = {
                 provider = "external",
                 provider_opts = {
