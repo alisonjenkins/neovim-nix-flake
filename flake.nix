@@ -876,6 +876,48 @@
               end)
             end, {})
 
+            -- Fugitive only echoes hook output (prek, pre-commit, commitlint), which scrolls away.
+            local git_hook_commands = {
+              am = true, ["cherry-pick"] = true, commit = true, merge = true,
+              pull = true, push = true, rebase = true, revert = true,
+            }
+            local git_hooks_group = vim.api.nvim_create_augroup("GitHookFailures", { clear = true })
+
+            local function git_subcommand(args)
+              local i = 1
+              while i <= #args do
+                local a = args[i]
+                if a == "-c" or a == "-C" then
+                  i = i + 2
+                elseif a:sub(1, 1) == "-" then
+                  i = i + 1
+                else
+                  return a
+                end
+              end
+            end
+
+            vim.api.nvim_create_autocmd("User", {
+              group = git_hooks_group,
+              pattern = "FugitiveChanged",
+              callback = function()
+                local result = vim.fn.FugitiveResult()
+                if type(result) ~= "table" or result.exit_status == nil or type(result.args) ~= "table" then return end
+                local sub = git_subcommand(result.args)
+                if not git_hook_commands[sub] or result.exit_status == 0 then return end
+
+                local lines = vim.fn.filereadable(result.file or "") == 1 and vim.fn.readfile(result.file) or {}
+                lines = vim.tbl_map(function(line)
+                  return (line:gsub("\27%[[%d;?]*%a", ""):gsub("\r", ""))
+                end, lines)
+                lines = vim.tbl_filter(function(line) return line ~= "" end, lines)
+                last_git_output = { desc = "Git " .. sub, lines = lines }
+                if #lines > 0 then show_git_output(lines) end
+
+                vim.notify("Git " .. sub .. " failed (exit code: " .. result.exit_status .. ")", vim.log.levels.ERROR)
+              end,
+            })
+
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
             require("terraform-search").setup()
