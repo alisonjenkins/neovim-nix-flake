@@ -198,7 +198,7 @@
   {
     mode = "n";
     key = "<leader>gpF";
-    action = "<cmd>Git push --force<CR>";
+    action = "<cmd>GitPushForceSilent<CR>";
     options = {
       desc = "Git Push --force";
       silent = true;
@@ -207,7 +207,7 @@
   {
     mode = "n";
     key = "<leader>gu";
-    action = "<cmd>Git pull<CR>";
+    action = "<cmd>GitPullSilent<CR>";
     options = {
       desc = "Git pull";
       silent = true;

@@ -854,6 +854,14 @@
               async_git_command(args, "Git fetch")
             end, { nargs = "*" })
 
+            vim.api.nvim_create_user_command("GitPullSilent", function()
+              async_git_command({"pull", "--no-edit"}, "Git pull")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitPushForceSilent", function()
+              async_git_command({"push", "--force"}, "Git push --force")
+            end, {})
+
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
             require("terraform-search").setup()
