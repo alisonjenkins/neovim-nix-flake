@@ -876,12 +876,33 @@
               end)
             end, {})
 
-            -- Fugitive only echoes hook output (prek, pre-commit, commitlint), which scrolls away.
+            -- Fugitive only echoes hook output (prek, pre-commit, commitlint), which scrolls away,
+            -- and git overwrites COMMIT_EDITMSG on the next attempt, losing the message.
             local git_hook_commands = {
               am = true, ["cherry-pick"] = true, commit = true, merge = true,
               pull = true, push = true, rebase = true, revert = true,
             }
             local git_hooks_group = vim.api.nvim_create_augroup("GitHookFailures", { clear = true })
+
+            local function commit_backup_path(git_dir)
+              return git_dir .. "/COMMIT_EDITMSG.nvim-backup"
+            end
+
+            local function git_head(git_dir)
+              local r = vim.system({ "git", "--git-dir", git_dir, "rev-parse", "--verify", "-q", "HEAD" }, { text = true }):wait()
+              return vim.trim(r.stdout or "")
+            end
+
+            local function commit_message(lines)
+              local msg = {}
+              for _, line in ipairs(lines) do
+                if line:match("^# %-+ >8 %-+$") then break end
+                if not line:match("^#") then table.insert(msg, line) end
+              end
+              while #msg > 0 and vim.trim(msg[#msg]) == "" do table.remove(msg) end
+              while #msg > 0 and vim.trim(msg[1]) == "" do table.remove(msg, 1) end
+              return msg
+            end
 
             local function git_subcommand(args)
               local i = 1
@@ -897,6 +918,42 @@
               end
             end
 
+            vim.api.nvim_create_autocmd("BufWritePost", {
+              group = git_hooks_group,
+              pattern = "COMMIT_EDITMSG",
+              callback = function(ev)
+                local msg = commit_message(vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false))
+                local git_dir = vim.fn.fnamemodify(ev.file, ":p:h")
+                -- An emptied message is a deliberate abort: forget the saved one too
+                if #msg == 0 then
+                  vim.fn.delete(commit_backup_path(git_dir))
+                  return
+                end
+                vim.fn.writefile({ vim.json.encode({ head = git_head(git_dir), lines = msg }) }, commit_backup_path(git_dir))
+              end,
+            })
+
+            vim.api.nvim_create_autocmd("FileType", {
+              group = git_hooks_group,
+              pattern = "gitcommit",
+              callback = function(ev)
+                if vim.fn.fnamemodify(ev.file, ":t") ~= "COMMIT_EDITMSG" then return end
+                local git_dir = vim.fn.fnamemodify(ev.file, ":p:h")
+                local path = commit_backup_path(git_dir)
+                if vim.fn.filereadable(path) == 0 then return end
+                local ok, backup = pcall(vim.json.decode, table.concat(vim.fn.readfile(path), "\n"))
+                -- HEAD moved: that message was committed some other way
+                if not ok or backup.head ~= git_head(git_dir) then
+                  vim.fn.delete(path)
+                  return
+                end
+                -- --amend or a template already supplied a message; don't clobber it
+                if #commit_message(vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false)) > 0 then return end
+                vim.api.nvim_buf_set_lines(ev.buf, 0, 0, false, backup.lines)
+                vim.notify("Restored commit message from the last failed commit", vim.log.levels.INFO)
+              end,
+            })
+
             vim.api.nvim_create_autocmd("User", {
               group = git_hooks_group,
               pattern = "FugitiveChanged",
@@ -904,7 +961,13 @@
                 local result = vim.fn.FugitiveResult()
                 if type(result) ~= "table" or result.exit_status == nil or type(result.args) ~= "table" then return end
                 local sub = git_subcommand(result.args)
-                if not git_hook_commands[sub] or result.exit_status == 0 then return end
+                if not git_hook_commands[sub] then return end
+                local git_dir = vim.g.fugitive_event
+
+                if result.exit_status == 0 then
+                  if sub == "commit" and git_dir then vim.fn.delete(commit_backup_path(git_dir)) end
+                  return
+                end
 
                 local lines = vim.fn.filereadable(result.file or "") == 1 and vim.fn.readfile(result.file) or {}
                 lines = vim.tbl_map(function(line)
@@ -914,7 +977,11 @@
                 last_git_output = { desc = "Git " .. sub, lines = lines }
                 if #lines > 0 then show_git_output(lines) end
 
-                vim.notify("Git " .. sub .. " failed (exit code: " .. result.exit_status .. ")", vim.log.levels.ERROR)
+                local msg = "Git " .. sub .. " failed (exit code: " .. result.exit_status .. ")"
+                if sub == "commit" and git_dir and vim.fn.filereadable(commit_backup_path(git_dir)) == 1 then
+                  msg = msg .. "; message saved and restored on the next commit"
+                end
+                vim.notify(msg, vim.log.levels.ERROR)
               end,
             })
 
