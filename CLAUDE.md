@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `just list` - Show all available just commands
 
 ### GitHub Actions & CI/CD
-- **build-and-cache.yaml**: Builds the Nix flake and caches to Cachix on push to main
+- **build-and-cache.yaml**: Runs `nix flake check` and builds on pull requests and pushes to main; only pushes to main upload to Cachix
 - **update.yaml**: Updates flake lock file on schedule or manual trigger
 - **trigger-nix-config-update.yaml**: Triggers updates on `alisonjenkins/nix-config` repository when changes merge to main
   - Requires `NIX_CONFIG_TRIGGER_TOKEN` secret (GitHub PAT with repo or Actions permissions)
@@ -84,7 +84,13 @@ keymaps = [ ]
 
 ### Testing Environment
 
-The `tests/` directory contains example projects for testing language-specific features:
+Automated tests run as flake checks (`nix flake check`, and in CI):
+- `checks.default` - nixvim startup check; fails on any startup error or evaluation warning
+- `checks.treefmt` - formatting (`nix fmt` fixes it)
+- `checks.terraform-tools` - `tests/lua/test_terraform_tools.lua` under luajit
+- `checks.git-async`, `checks.git-hooks` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them
+
+The `tests/` directory also contains example projects for trying language-specific features by hand:
 - `tests/python/` - Python project with nox testing setup
 - `tests/rest/` - HTTP testing files
 
