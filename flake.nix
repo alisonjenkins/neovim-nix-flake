@@ -763,9 +763,10 @@
             local function async_git_command(args, desc)
               local output = {}
               local stderr = {}
+              local worktree = vim.fn.FugitiveWorkTree()
 
               vim.fn.jobstart(vim.list_extend({"git"}, args), {
-                cwd = vim.fn.FugitiveGitDir() and vim.fn.FugitiveWorkTree() or vim.fn.getcwd(),
+                cwd = worktree ~= "" and worktree or vim.fn.getcwd(),
                 stdout_buffered = true,
                 stderr_buffered = true,
                 on_stdout = function(_, data)
