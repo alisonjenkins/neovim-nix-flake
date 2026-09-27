@@ -10,6 +10,15 @@
   }
   {
     mode = "n";
+    key = "<leader>gB";
+    action = "<cmd>Gitsigns blame<CR>";
+    options = {
+      desc = "Git Blame (async)";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>gco";
     action = "<cmd>GitConflictChooseOurs<CR>";
     options = {
