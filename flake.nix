@@ -1443,21 +1443,21 @@
             // (import ./plugin-config/zk)
           );
         } //
-          # (import ./colorschemes/ayu)
-          # (import ./colorschemes/catppuccin)
-          # (import ./colorschemes/everforest)
-          # (import ./colorschemes/gruvbox)
-          # (import ./colorschemes/kanagawa-paper)
-          # (import ./colorschemes/melange)
-          # (import ./colorschemes/modus)
-          # (import ./colorschemes/monokai-pro)
-          # (import ./colorschemes/nightfox)
-          # (import ./colorschemes/rose-pine)
-          # (import ./colorschemes/tokyonight)
-          # (import ./colorschemes/vscode)
-          # (import ./colorschemes/poimandres)
-          # (import ./colorschemes/onedark)
-          import ./colorschemes/bamboo;
+        # (import ./colorschemes/ayu)
+        # (import ./colorschemes/catppuccin)
+        # (import ./colorschemes/everforest)
+        # (import ./colorschemes/gruvbox)
+        # (import ./colorschemes/kanagawa-paper)
+        # (import ./colorschemes/melange)
+        # (import ./colorschemes/modus)
+        # (import ./colorschemes/monokai-pro)
+        # (import ./colorschemes/nightfox)
+        # (import ./colorschemes/rose-pine)
+        # (import ./colorschemes/tokyonight)
+        # (import ./colorschemes/vscode)
+        # (import ./colorschemes/poimandres)
+        # (import ./colorschemes/onedark)
+        import ./colorschemes/bamboo;
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
@@ -1603,7 +1603,7 @@
                         substituteInPlace pyproject.toml \
                           --replace-fail 'jedi>=0.17.2,<0.20.0' 'jedi>=0.17.2,<0.21.0'
                       '';
-                      disabledTests = (old.disabledTests or []) ++ [
+                      disabledTests = (old.disabledTests or [ ]) ++ [
                         "test_snippets_completion"
                       ];
                     });
@@ -1616,12 +1616,15 @@
               # installCheckPhase, so doCheck alone isn't enough — also
               # disable installCheck.
               (_final: prev: {
-                direnv = if prev.stdenv.hostPlatform.isDarwin
-                  then prev.direnv.overrideAttrs (_: {
-                    doCheck = false;
-                    doInstallCheck = false;
-                    installCheckPhase = "true";
-                  })
+                direnv =
+                  if prev.stdenv.hostPlatform.isDarwin
+                  then
+                    prev.direnv.overrideAttrs
+                      (_: {
+                        doCheck = false;
+                        doInstallCheck = false;
+                        installCheckPhase = "true";
+                      })
                   else prev.direnv;
               })
               (final: _prev: {
@@ -1706,19 +1709,19 @@
                   # Patch wrapping.nvim for Neovim 0.12 deprecated vim.validate API
                   wrapping-nvim = prev.vimPlugins.wrapping-nvim.overrideAttrs (_: {
                     postPatch = ''
-                      ${final.python3}/bin/python3 -c "
-import re, pathlib
-p = pathlib.Path('lua/wrapping/init.lua')
-src = p.read_text()
-# Replace old-style vim.validate({...}) with individual vim.validate() calls
-old = re.search(r'vim\.validate\(\{.*?\}\)', src, re.DOTALL).group(0)
-# Extract field entries from the old validate call
-entries = re.findall(r'(\w+)\s*=\s*\{\s*opts\.(\w+),\s*\"(\w+)\"\s*\}', old)
-new_lines = []
-for name, field, typ in entries:
-    new_lines.append(f'    vim.validate(\"{name}\", opts.{field}, \"{typ}\")')
-p.write_text(src.replace(old, '\n'.join(new_lines)))
-"
+                                            ${final.python3}/bin/python3 -c "
+                      import re, pathlib
+                      p = pathlib.Path('lua/wrapping/init.lua')
+                      src = p.read_text()
+                      # Replace old-style vim.validate({...}) with individual vim.validate() calls
+                      old = re.search(r'vim\.validate\(\{.*?\}\)', src, re.DOTALL).group(0)
+                      # Extract field entries from the old validate call
+                      entries = re.findall(r'(\w+)\s*=\s*\{\s*opts\.(\w+),\s*\"(\w+)\"\s*\}', old)
+                      new_lines = []
+                      for name, field, typ in entries:
+                          new_lines.append(f'    vim.validate(\"{name}\", opts.{field}, \"{typ}\")')
+                      p.write_text(src.replace(old, '\n'.join(new_lines)))
+                      "
                     '';
                   });
 

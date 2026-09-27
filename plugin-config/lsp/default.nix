@@ -99,7 +99,7 @@ in
 
       nushell = {
         enable = !pkgs.stdenv.hostPlatform.isDarwin;
-        cmd = if pkgs.stdenv.hostPlatform.isDarwin then [] else mux "${lspWrappers.nu-lsp}/bin/nu-lsp";
+        cmd = if pkgs.stdenv.hostPlatform.isDarwin then [ ] else mux "${lspWrappers.nu-lsp}/bin/nu-lsp";
       };
 
       omnisharp = {
