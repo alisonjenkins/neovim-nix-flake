@@ -1014,6 +1014,7 @@
             localleader = ",";
             mapleader = " ";
             markdown_folding = true;
+            sleuth_fugitiveblame_heuristics = 0; # Blame buffers are read-only; indent guessing only costs time
           };
 
           opts = {
