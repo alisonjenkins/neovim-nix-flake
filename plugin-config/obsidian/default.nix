@@ -12,10 +12,7 @@
       legacy_commands = false;
       new_notes_location = "current_dir";
 
-      completion = {
-        blink = true;
-        min_chars = 2;
-      };
+      completion.min_chars = 2;
 
       frontmatter.func.__raw = ''
         function (note)
