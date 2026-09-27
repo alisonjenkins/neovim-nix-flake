@@ -758,8 +758,29 @@
               end,
             })
 
-            -- Custom async git commands that only show output on error
-            -- This replaces Git! push, fetch, etc. with silent versions
+            -- Custom async git commands: output in the notification on success, in a split on error
+            -- This replaces Git! push, fetch, etc. with non-blocking versions
+            local git_notify_max_lines = 10 -- push/pull summaries are 2-6 lines; :GitLastOutput has the rest
+            local last_git_output = nil
+
+            local function show_git_output(lines)
+              local buf = vim.api.nvim_create_buf(false, true)
+              vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+              vim.bo[buf].filetype = "git"
+
+              vim.cmd("botright split")
+              vim.api.nvim_win_set_buf(0, buf)
+              vim.cmd("wincmd p")
+            end
+
+            vim.api.nvim_create_user_command("GitLastOutput", function()
+              if not last_git_output then
+                vim.notify("No async git command has run yet", vim.log.levels.INFO)
+                return
+              end
+              show_git_output(vim.list_extend({ "# " .. last_git_output.desc }, last_git_output.lines))
+            end, {})
+
             local function async_git_command(args, desc)
               local output = {}
               local stderr = {}
@@ -784,22 +805,24 @@
                 on_exit = function(_, exit_code)
                   vim.cmd("checktime")
                   vim.fn.FugitiveDidChange()
+
+                  local all_output = vim.list_extend(vim.list_extend({}, output), stderr)
+                  all_output = vim.tbl_filter(function(line) return line ~= "" end, all_output)
+                  last_git_output = { desc = desc, lines = all_output }
+
                   if exit_code == 0 then
-                    vim.notify(desc .. " completed successfully", vim.log.levels.INFO)
-                  else
-                    -- Show error in a split
-                    local all_output = vim.list_extend(vim.list_extend({}, output), stderr)
-                    -- Filter out empty lines
-                    all_output = vim.tbl_filter(function(line) return line ~= "" end, all_output)
-
+                    local msg = desc .. " completed successfully"
                     if #all_output > 0 then
-                      local buf = vim.api.nvim_create_buf(false, true)
-                      vim.api.nvim_buf_set_lines(buf, 0, -1, false, all_output)
-                      vim.bo[buf].filetype = "git"
-
-                      vim.cmd("botright split")
-                      vim.api.nvim_win_set_buf(0, buf)
-                      vim.cmd("wincmd p")
+                      local shown = vim.list_slice(all_output, 1, git_notify_max_lines)
+                      if #all_output > git_notify_max_lines then
+                        table.insert(shown, "… " .. (#all_output - git_notify_max_lines) .. " more lines (:GitLastOutput)")
+                      end
+                      msg = msg .. "\n" .. table.concat(shown, "\n")
+                    end
+                    vim.notify(msg, vim.log.levels.INFO)
+                  else
+                    if #all_output > 0 then
+                      show_git_output(all_output)
                     end
 
                     vim.notify(desc .. " failed (exit code: " .. exit_code .. ")", vim.log.levels.ERROR)
