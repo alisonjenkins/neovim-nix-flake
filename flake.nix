@@ -782,6 +782,8 @@
                   end
                 end,
                 on_exit = function(_, exit_code)
+                  vim.cmd("checktime")
+                  vim.fn.FugitiveDidChange()
                   if exit_code == 0 then
                     vim.notify(desc .. " completed successfully", vim.log.levels.INFO)
                   else
