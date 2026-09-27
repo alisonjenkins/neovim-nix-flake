@@ -1773,12 +1773,20 @@
             ];
           };
 
-          checks = {
-            default = nixvimLib.check.mkTestDerivationFromNvim {
-              inherit nvim;
-              name = "A nixvim configuration";
+          checks =
+            {
+              default = nixvimLib.check.mkTestDerivationFromNvim {
+                inherit nvim;
+                name = "A nixvim configuration";
+              };
+              terraform-tools = pkgs.runCommand "terraform-tools-test"
+                {
+                  nativeBuildInputs = [ pkgs.luajit ];
+                } ''
+                luajit ${./.}/tests/lua/test_terraform_tools.lua
+                touch $out
+              '';
             };
-          };
 
           packages = {
             default = nvim;
