@@ -18,7 +18,7 @@ jobs:
       # fzf-lua's server socket in perfanno.nvim's require check).
       - name: Allow unprivileged user namespaces for the Nix sandbox
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: nixbuild/nix-quick-install-action@v35
         with:
           nix_conf: |
             sandbox = true
