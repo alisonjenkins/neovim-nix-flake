@@ -781,7 +781,7 @@
               show_git_output(vim.list_extend({ "# " .. last_git_output.desc }, last_git_output.lines))
             end, {})
 
-            local function async_git_command(args, desc)
+            local function async_git_command(args, desc, on_success)
               local output = {}
               local stderr = {}
               local worktree = vim.fn.FugitiveWorkTree()
@@ -820,6 +820,7 @@
                       msg = msg .. "\n" .. table.concat(shown, "\n")
                     end
                     vim.notify(msg, vim.log.levels.INFO)
+                    if on_success then on_success() end
                   else
                     if #all_output > 0 then
                       show_git_output(all_output)
@@ -860,6 +861,19 @@
 
             vim.api.nvim_create_user_command("GitPushForceSilent", function()
               async_git_command({"push", "--force"}, "Git push --force")
+            end, {})
+
+            vim.api.nvim_create_user_command("GitRebaseDefaultSilent", function()
+              local branch = vim.trim(vim.fn.system("git rev-parse --abbrev-ref origin/HEAD 2>/dev/null"))
+              if vim.v.shell_error ~= 0 or branch == "" then
+                branch = "main"
+              end
+              branch = branch:gsub("^origin/", "")
+
+              vim.notify("Fetching and rebasing against " .. branch .. "...", vim.log.levels.INFO)
+              async_git_command({"fetch", "origin", branch .. ":" .. branch}, "Git fetch " .. branch, function()
+                async_git_command({"rebase", "--autostash", branch}, "Git rebase against " .. branch)
+              end)
             end, {})
 
             -- Terraform/OpenTofu tools: docs lookup and security scanning
