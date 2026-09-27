@@ -1468,7 +1468,7 @@
         { pkgs
         , system
         , ...
-        }:
+        }@perSystemArgs:
         let
           nixvimLib = nixvim.lib.${system};
           nixvim' = nixvim.legacyPackages.${system};
@@ -1775,6 +1775,8 @@
 
           checks =
             let
+              # perSystemArgs.config, not `config`: that name is the nixvim module in this file
+              treefmtCfg = perSystemArgs.config.treefmt;
               nvimTest = name: pkgs.runCommand "nvim-test-${name}"
                 {
                   nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.git ];
@@ -1787,6 +1789,14 @@
               default = nixvimLib.check.mkTestDerivationFromNvim {
                 inherit nvim;
                 name = "A nixvim configuration";
+              };
+              # treefmt-nix's check commits a copy of the tree with git, and git >= 2.55's
+              # commit starts a detached `maintenance run --auto` that repacks and deletes
+              # .git/objects/?? while Nix cleans up the build dir, failing CI at random.
+              treefmt = (treefmtCfg.build.check treefmtCfg.projectRoot).overrideAttrs {
+                GIT_CONFIG_COUNT = "1";
+                GIT_CONFIG_KEY_0 = "maintenance.auto";
+                GIT_CONFIG_VALUE_0 = "false";
               };
               git-async = nvimTest "git-async";
               git-hooks = nvimTest "git-hooks";
@@ -1809,6 +1819,7 @@
           legacyPackages.lspWrappers = lspWrappers;
 
           treefmt = {
+            flakeCheck = false; # replaced by checks.treefmt above
             projectRootFile = "flake.nix";
             programs.nixpkgs-fmt.enable = true;
           };
