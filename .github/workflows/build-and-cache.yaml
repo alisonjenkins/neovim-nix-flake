@@ -33,7 +33,8 @@ jobs:
       - uses: DeterminateSystems/flake-checker-action@main
       - uses: docker/setup-qemu-action@v4
       - name: Run `nix flake check`
-        run: nix flake check
+        # Full logs of failed builds; the default 25 lines usually cut off the error
+        run: nix flake check --log-lines 500
       - name: Run `nix build`
         if: github.event_name == 'push'
         env:
