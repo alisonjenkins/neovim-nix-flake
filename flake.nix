@@ -1789,6 +1789,7 @@
                 name = "A nixvim configuration";
               };
               git-async = nvimTest "git-async";
+              git-hooks = nvimTest "git-hooks";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
                   nativeBuildInputs = [ pkgs.luajit ];
