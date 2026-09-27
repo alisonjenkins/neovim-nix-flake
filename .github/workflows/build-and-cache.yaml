@@ -13,7 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # Ubuntu 24.04 blocks unprivileged user namespaces via AppArmor, so single-user
+      # Nix silently fell back to unsandboxed builds (long /tmp build paths broke
+      # fzf-lua's server socket in perfanno.nvim's require check).
+      - name: Allow unprivileged user namespaces for the Nix sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - uses: nixbuild/nix-quick-install-action@v34
+        with:
+          nix_conf: |
+            sandbox = true
+            sandbox-fallback = false
       - name: Restore and cache Nix store
         uses: nix-community/cache-nix-action@v7
         with:
