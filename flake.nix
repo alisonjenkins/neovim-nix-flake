@@ -767,6 +767,8 @@
 
               vim.fn.jobstart(vim.list_extend({"git"}, args), {
                 cwd = worktree ~= "" and worktree or vim.fn.getcwd(),
+                -- No terminal to answer prompts: fail instead of hanging forever
+                env = { GIT_TERMINAL_PROMPT = "0", GIT_EDITOR = "true" },
                 stdout_buffered = true,
                 stderr_buffered = true,
                 on_stdout = function(_, data)
