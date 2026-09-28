@@ -46,13 +46,9 @@ jobs:
       - name: Run `nix flake check`
         # Full logs of failed builds; the default 25 lines usually cut off the error
         run: nix flake check --log-lines 500
+      # No --cachix-cache: its Cachix daemon hung on "waiting for exclusive access to
+      # the Nix store" until the 6h job limit. cachix-action and "Push to cache" upload.
       - name: Run `nix build`
-        if: github.event_name == 'push'
-        env:
-          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
-        run: nix develop --command bash -c "nix-fast-build --cachix-cache ajenkins-public --skip-cached --no-nom --flake '.#packages'"
-      - name: Run `nix build` (no cache push)
-        if: github.event_name != 'push'
         run: nix develop --command bash -c "nix-fast-build --skip-cached --no-nom --flake '.#packages'"
       - name: Test Neovim starts
         run: nix run . -- --headless +q
