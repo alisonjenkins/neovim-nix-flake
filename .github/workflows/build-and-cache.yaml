@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Normal runs take ~20 min; fail a hang early instead of at GitHub's 6h limit
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       # Ubuntu 24.04 blocks unprivileged user namespaces via AppArmor, so single-user
