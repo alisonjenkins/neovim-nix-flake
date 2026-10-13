@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # Ubuntu 24.04 blocks unprivileged user namespaces via AppArmor, so single-user
       # Nix silently fell back to unsandboxed builds (long /tmp build paths broke
       # fzf-lua's server socket in perfanno.nvim's require check).
