@@ -620,6 +620,11 @@
                   vim.b[ev.buf].bigfile = true
                   -- vim-sleuth regex-scans the text for indentation: ~1.8 s on a 10 MB line
                   vim.b[ev.buf].sleuth_automatic = 0
+                  -- sleuth parses modelines before it looks at sleuth_automatic, with a
+                  -- regex over the first and last line: 7.3 s on a 100 MB single line.
+                  -- It returns early when the buffer's 'modeline' is off, which also
+                  -- skips Neovim's own modeline scan.
+                  vim.bo[ev.buf].modeline = false
                 end
 
                 -- 10 MB+: disable disk-heavy features
