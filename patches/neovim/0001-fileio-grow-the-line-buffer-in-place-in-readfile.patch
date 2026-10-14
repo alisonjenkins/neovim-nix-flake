@@ -1,0 +1,54 @@
+--- a/src/nvim/fileio.c
++++ b/src/nvim/fileio.c
+@@ -928,20 +928,40 @@
+         *ptr = NL;  // split line by inserting a NL
+         size = 1;
+       } else if (!skip_read) {
+-        for (; size >= 10; size /= 2) {
+-          new_buffer = verbose_try_malloc((size_t)size + (size_t)linerest + 1);
+-          if (new_buffer) {
++        if (linerest > 0 && ptr - linerest == buffer) {
++          // The unfinished line fills the whole buffer, so grow the buffer in
++          // place.  Allocating a new one and copying the line each time makes
++          // reading a line of N bytes cost O(N^2): minutes for a 1 GB line.
++          // realloc() moves large blocks without copying them.
++          new_buffer = NULL;
++          for (; size >= 10; size /= 2) {
++            new_buffer = realloc(buffer, (size_t)size + (size_t)linerest + 1);
++            if (new_buffer) {
++              break;
++            }
++          }
++          if (new_buffer == NULL) {
++            // Keep "buffer" (still owned) and fall through to the error exit.
++            emsg(_(e_outofmem));
++            error = true;
+             break;
+           }
++        } else {
++          for (; size >= 10; size /= 2) {
++            new_buffer = verbose_try_malloc((size_t)size + (size_t)linerest + 1);
++            if (new_buffer) {
++              break;
++            }
++          }
++          if (new_buffer == NULL) {
++            error = true;
++            break;
++          }
++          if (linerest) {         // copy characters from the previous buffer
++            memmove(new_buffer, ptr - linerest, (size_t)linerest);
++          }
++          xfree(buffer);
+         }
+-        if (new_buffer == NULL) {
+-          error = true;
+-          break;
+-        }
+-        if (linerest) {         // copy characters from the previous buffer
+-          memmove(new_buffer, ptr - linerest, (size_t)linerest);
+-        }
+-        xfree(buffer);
+         buffer = new_buffer;
+         ptr = buffer + linerest;
+         line_start = buffer;

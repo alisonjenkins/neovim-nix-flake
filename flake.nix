@@ -1659,6 +1659,16 @@
 
             overlays = [
               inputs.neovim-nightly-overlay.overlays.default
+              # Fixes for editing files with very long lines (minified JSON, one-line
+              # logs). Each patch is independent and touches one function; if one stops
+              # applying after a nightly update, drop it and check upstream first.
+              (_final: prev: {
+                neovim-unwrapped = prev.neovim-unwrapped.overrideAttrs (old: {
+                  patches = (old.patches or [ ]) ++ [
+                    ./patches/neovim/0001-fileio-grow-the-line-buffer-in-place-in-readfile.patch
+                  ];
+                });
+              })
               # python-lsp-server 1.14.0 declares `jedi<0.20.0` in pyproject.toml,
               # but nixpkgs ships jedi 0.20.0 as of 2026-05-23 →
               # pythonRuntimeDepsCheckHook fails. pylsp works fine at runtime
