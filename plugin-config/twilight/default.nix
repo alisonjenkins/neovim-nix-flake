@@ -2,6 +2,8 @@
   twilight = {
     enable = true;
 
+    lazyLoad.settings.event = [ "DeferredUIEnter" ];
+
     settings = {
       context = 20;
       treesitter = true;

@@ -1,6 +1,8 @@
 {
   tv = {
     enable = true;
+
+    lazyLoad.settings.event = [ "DeferredUIEnter" ];
     settings = {
       window = {
         width = 1;

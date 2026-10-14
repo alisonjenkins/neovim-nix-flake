@@ -697,19 +697,19 @@
               end,
             })
 
-            -- Claude Code integration (WebSocket MCP protocol)
-            require('claudecode').setup({
-              log_level = "warn",
-              terminal = {
-                provider = "external",
-                provider_opts = {
-                  external_terminal_cmd = "tmux split-window -h -l 40%% '%s'",
-                },
-              },
-            })
-
             -- Defer non-critical plugin setups to speed up startup
             vim.defer_fn(function()
+              -- Claude Code integration (WebSocket MCP protocol)
+              require('claudecode').setup({
+                log_level = "warn",
+                terminal = {
+                  provider = "external",
+                  provider_opts = {
+                    external_terminal_cmd = "tmux split-window -h -l 40%% '%s'",
+                  },
+                },
+              })
+
               require('jj').setup({})
               require('pipeline').setup({})
             end, 50)
@@ -1324,14 +1324,20 @@
           };
 
           plugins = {
-            bacon.enable = true;
+            bacon = {
+              enable = true;
+              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+            };
             cmp-dap.enable = true;
             comfy-line-numbers.enable = true;
             comment.enable = true;
             committia.enable = true;
             direnv.enable = true;
             earthly.enable = true;
-            fidget.enable = true;
+            fidget = {
+              enable = true;
+              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+            };
             friendly-snippets.enable = true;
             fugitive.enable = true;
             gitignore.enable = true;
@@ -1389,18 +1395,30 @@
             rhubarb.enable = true;
             roslyn.enable = false;
             sleuth.enable = true;
-            smear-cursor.enable = true;
+            smear-cursor = {
+              enable = true;
+              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+            };
             specs.enable = false;
             startify.enable = false;
             tmux-navigator.enable = true;
             treesitter-textobjects.enable = true;
-            ts-autotag.enable = true;
-            ts-context-commentstring.enable = true;
+            ts-autotag = {
+              enable = true;
+              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+            };
+            ts-context-commentstring = {
+              enable = true;
+              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+            };
             typst-vim.enable = true;
             vim-css-color.enable = true;
             web-devicons.enable = true;
             wilder.enable = false; # Conflicts with Noice
-            wrapping.enable = true;
+            wrapping = {
+              enable = true;
+              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+            };
             yeet.enable = true;
             zig.enable = true;
           }
