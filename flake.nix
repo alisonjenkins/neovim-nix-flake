@@ -1392,6 +1392,8 @@
                     if buftype == "nofile" or buftype == "prompt" or buftype == "popup" then
                       return ""
                     end
+                    -- folds are not worth recomputing over millions of lines on each change
+                    if vim.b[bufnr].bigfile then return "" end
                     local ft_block = {
                       noice = true, notify = true, NoiceCmdline = true,
                       NoicePopup = true, NoicePopupmenu = true, NoiceConfirm = true,
