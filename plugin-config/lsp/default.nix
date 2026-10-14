@@ -4,13 +4,17 @@ let
 
   # Build an lspmux-client cmd for a given server binary path
   mux = bin: [ lspmuxBin "client" "--server-path" bin ];
+
+  # A server with an explicit cmd is run by store path, so its package does not
+  # need a PATH entry. The wrapper adds a de-duplication block per entry, ~0.3 ms each.
+  withoutPathPackage = _: server: if server ? cmd then server // { package = null; } else server;
 in
 {
   lsp = {
     enable = true;
     inlayHints = true;
 
-    servers = {
+    servers = pkgs.lib.mapAttrs withoutPathPackage {
       # gh_actions_ls.enable = true;
       # java_language_server.enable = false;
       # jdtls.enable = false;
