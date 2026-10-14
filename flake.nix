@@ -1063,42 +1063,51 @@
             "queries/php_only/highlights.scm".source = ./queries/php_only/highlights.scm;
           };
 
-          extraPackages = with pkgs; [
-            # alejandra
-            # lldb
-            (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
-            black
-            cowsay
-            curl
-            stable.deno
-            direnv
-            fd
-            fortune
-            ghostscript
-            gofumpt
-            golangci-lint
-            golines
-            grpcurl
-            imagemagick
-            isort
-            jq
-            jujutsu
-            lspmux
-            lsof
-            nixpkgs-fmt
-            openssl
-            prettier
-            prettierd
-            ripgrep
-            shfmt
-            sqlite
-            stable.tectonic
-            stylua
-            terraform
-            tfsec
-            trivy
-            websocat
-            wordnet
+          # One buildEnv instead of a package list: the wrapper emits a PATH
+          # de-duplication block per entry, which cost ~17 ms of bash on every start.
+          extraPackages = [
+            (pkgs.buildEnv {
+              name = "nvim-extra-packages";
+              pathsToLink = [ "/bin" ];
+              ignoreCollisions = true;
+              paths = with pkgs; [
+                # alejandra
+                # lldb
+                (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
+                black
+                cowsay
+                curl
+                stable.deno
+                direnv
+                fd
+                fortune
+                ghostscript
+                gofumpt
+                golangci-lint
+                golines
+                grpcurl
+                imagemagick
+                isort
+                jq
+                jujutsu
+                lspmux
+                lsof
+                nixpkgs-fmt
+                openssl
+                prettier
+                prettierd
+                ripgrep
+                shfmt
+                sqlite
+                stable.tectonic
+                stylua
+                terraform
+                tfsec
+                trivy
+                websocat
+                wordnet
+              ];
+            })
           ];
 
           extraPlugins = with pkgs.vimPlugins; [
