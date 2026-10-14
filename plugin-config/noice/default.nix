@@ -3,6 +3,8 @@
     enable = true;
     package = pkgs.master.vimPlugins.noice-nvim;
 
+    lazyLoad.settings.event = [ "DeferredUIEnter" ];
+
     settings = {
       lsp = {
         # Let fidget.nvim handle LSP progress display; noice's progress handler

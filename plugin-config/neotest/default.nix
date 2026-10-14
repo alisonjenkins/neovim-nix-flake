@@ -2,6 +2,8 @@
   neotest = {
     enable = true;
 
+    lazyLoad.settings.event = [ "DeferredUIEnter" ];
+
     adapters = {
       bash.enable = true;
       go.enable = true;
