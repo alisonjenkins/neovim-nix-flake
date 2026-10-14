@@ -1086,6 +1086,7 @@
             inc-rename-nvim
             pkgs.stable.vimPlugins.peek-nvim
             perfanno-nvim
+            SchemaStore-nvim
             vim-dadbod
             vim-dadbod-completion
             vim-dadbod-ui
@@ -1426,7 +1427,6 @@
             // (import ./plugin-config/render-markdown)
             // (import ./plugin-config/rustaceanvim { inherit pkgs; })
             // (import ./plugin-config/schema-companion)
-            // (import ./plugin-config/schemastore)
             // (import ./plugin-config/sidekick)
             // (import ./plugin-config/smartcolumn)
             // (import ./plugin-config/snacks)

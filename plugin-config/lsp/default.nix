@@ -90,6 +90,28 @@ in
       jsonls = {
         enable = true;
         cmd = mux "${lspWrappers.vscode-json-language-server}/bin/vscode-json-language-server";
+        # Applied on client init: building the schemastore catalog at startup costs ~6 ms.
+        # yaml.schemas stays unset; yamlls resolves schemas per buffer (modules/plugins/schema-companion.nix).
+        extraOptions.on_init.__raw = ''
+          function(client)
+            client.settings = vim.tbl_deep_extend("force", client.settings or {}, {
+              json = {
+                schemas = require("schemastore").json.schemas({
+                  extra = {
+                    {
+                      description = "Flux2 schemas for when working with Flux Gitops resources.",
+                      fileMatch = "*.yaml",
+                      name = "flux2",
+                      url = "https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/refs/heads/main/all.json",
+                    },
+                  },
+                }),
+                validate = { enable = true },
+              },
+            })
+            client:notify("workspace/didChangeConfiguration", { settings = client.settings })
+          end
+        '';
       };
 
       lua_ls = {
