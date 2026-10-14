@@ -43,6 +43,10 @@
           enableMan = false;
           luaLoader.enable = true;
           package = pkgs.neovim-unwrapped;
+          withNodeJs = false;
+          withPerl = false;
+          withPython3 = false;
+          withRuby = false;
 
           autoCmd = [
             {
@@ -461,9 +465,6 @@
             end
 
             -- Performance optimizations
-            vim.g.loaded_node_provider = 0  -- Disable Node.js provider
-            vim.g.loaded_perl_provider = 0  -- Disable Perl provider
-            vim.g.loaded_ruby_provider = 0  -- Disable Ruby provider
             vim.opt.redrawtime = 1500        -- Faster redraw timeout
 
             -- Disable LSP logging entirely: server stderr (nixd IPC traces,
