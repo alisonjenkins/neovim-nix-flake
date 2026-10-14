@@ -589,6 +589,22 @@
               end,
             })
 
+            -- smartcolumn (scope = "file") reads every line of the buffer on each
+            -- cursor move; skip it on buffers marked vim.b.bigfile.
+            for _, au in ipairs(vim.api.nvim_get_autocmds({ group = "SmartColumn" })) do
+              local cb = au.callback
+              if cb then
+                vim.api.nvim_del_autocmd(au.id)
+                vim.api.nvim_create_autocmd(au.event, {
+                  group = "SmartColumn",
+                  callback = function(args)
+                    if vim.b[args.buf].bigfile then return end
+                    return cb(args)
+                  end,
+                })
+              end
+            end
+
             -- Large file handling: disable expensive options before file is read.
             -- Uses vim.uv.fs_stat (reliable for files of any size, no -2 edge case).
             vim.api.nvim_create_autocmd("BufReadPre", {
@@ -597,6 +613,14 @@
                 local stat = vim.uv.fs_stat(file)
                 if not stat or stat.type ~= "file" then return end
                 local size = stat.size
+
+                -- 1 MB+: mark the buffer so per-buffer scanners can skip it
+                -- (snacks bigfile also sets this for long-line files, after the read)
+                if size > 1024 * 1024 then
+                  vim.b[ev.buf].bigfile = true
+                  -- vim-sleuth regex-scans the text for indentation: ~1.8 s on a 10 MB line
+                  vim.b[ev.buf].sleuth_automatic = 0
+                end
 
                 -- 10 MB+: disable disk-heavy features
                 if size > 10 * 1024 * 1024 then
