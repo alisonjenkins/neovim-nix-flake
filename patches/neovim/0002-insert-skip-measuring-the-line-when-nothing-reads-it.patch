@@ -1,0 +1,50 @@
+--- a/src/nvim/insert.c
++++ b/src/nvim/insert.c
+@@ -153,6 +153,20 @@
+     } \
+   } while (0)
+ 
++/// Width of the cursor line, for Ins.start_textlen.
++///
++/// Ins.start_textlen is only read by internal formatting with 'textwidth' and
++/// the "l" flag of 'formatoptions'.  Measuring the line costs O(line length)
++/// and happens every time Insert mode is entered, which is about 150 ms on a
++/// 100 MB line, so skip it when nothing can read the value.
++static colnr_T insert_line_width(void)
++{
++  if ((curbuf->b_p_tw <= 0 && curbuf->b_p_wm == 0) || !has_format_option(kFoInsLong)) {
++    return 0;
++  }
++  return linetabsize_str(get_cursor_line_ptr());
++}
++
+ static void insert_enter(InsertState *s)
+ {
+   s->did_backspace = true;
+@@ -213,7 +227,7 @@
+     }
+   }
+ 
+-  Ins.start_textlen = linetabsize_str(get_cursor_line_ptr());
++  Ins.start_textlen = insert_line_width();
+   Ins.start_blank_vcol = MAXCOL;
+ 
+   if (!Ins.did_ai) {
+@@ -2229,7 +2243,7 @@
+       // right, except when nothing was inserted yet.
+       Ins.update_start_orig = false;
+     }
+-    Ins.start_textlen = linetabsize_str(get_cursor_line_ptr());
++    Ins.start_textlen = insert_line_width();
+ 
+     const bool jumped = Ins.moved == kInsJump;
+     if (u_save_cursor() == OK) {
+@@ -2263,7 +2277,7 @@
+       // register paste.
+       if (lt(curwin->w_cursor, Ins.start)) {
+         Ins.start = curwin->w_cursor;
+-        Ins.start_textlen = (colnr_T)linetabsize_str(get_cursor_line_ptr());
++        Ins.start_textlen = insert_line_width();
+       }
+       Ins.need_undo = false;
+     }

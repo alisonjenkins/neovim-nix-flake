@@ -1666,6 +1666,7 @@
                 neovim-unwrapped = prev.neovim-unwrapped.overrideAttrs (old: {
                   patches = (old.patches or [ ]) ++ [
                     ./patches/neovim/0001-fileio-grow-the-line-buffer-in-place-in-readfile.patch
+                    ./patches/neovim/0002-insert-skip-measuring-the-line-when-nothing-reads-it.patch
                   ];
                 });
               })
