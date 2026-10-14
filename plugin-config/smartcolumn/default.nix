@@ -6,14 +6,16 @@
       colorcolumn = "80";
       scope = "file";
 
-      disable_filetypes = [
+      disabled_filetypes = [
         "NvimTree"
         "Trouble"
         "checkhealth"
         "help"
         "lazy"
         "lspinfo"
+        "markdown"
         "noice"
+        "text"
       ];
     };
   };
