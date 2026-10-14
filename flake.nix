@@ -190,6 +190,31 @@
                 end
               end
             end
+
+            -- Each vim.lsp.enable() resolves its config by scanning the runtimepath
+            -- (~0.3 ms x 36 servers). Queue the calls and run them once after the
+            -- UI is up. enable() does not attach to buffers whose FileType already
+            -- fired, so replay it for those through enable's own augroup.
+            do
+              local enable = vim.lsp.enable
+              local queued = {}
+              vim.lsp.enable = function(names)
+                vim.list_extend(queued, type(names) == "table" and names or { names })
+              end
+              vim.api.nvim_create_autocmd("User", {
+                pattern = "DeferredUIEnter",
+                once = true,
+                callback = function()
+                  vim.lsp.enable = enable
+                  enable(queued)
+                  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+                    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= "" then
+                      vim.api.nvim_exec_autocmds("FileType", { group = "nvim.lsp.enable", buffer = buf })
+                    end
+                  end
+                end,
+              })
+            end
           '';
 
           extraConfigLua = ''
