@@ -1145,8 +1145,8 @@
               src = pkgs.fetchFromGitHub {
                 owner = "mgalliou";
                 repo = "blink-cmp-tmux";
-                rev = "4586c705b6f80b536c34a61ed0d3cd4d7f08322d";
-                hash = "sha256-99wmBgU7Yt6eIAXppJUOYQVuiFcX8q8pmk6rKv/d87Q=";
+                rev = "112ddbf2e09d9cb4736de70dd01eb9654cf01d70";
+                hash = "sha256-7Wj7bIg7vAOz0OygISORRphsEV6RcsR6m/S2tRyzEpU=";
               };
             })
 
@@ -1156,8 +1156,8 @@
               src = pkgs.fetchFromGitHub {
                 owner = "NicolasGB";
                 repo = "jj.nvim";
-                rev = "d8280091989d10fd95f1109194846b613d5c4bd0";
-                hash = "sha256-7taOkKswx5LdAi3Gx8jKHNskR/bshhc8wc1KrC1DK8Y=";
+                rev = "64605c84f4e7774ff510d614204625ced87ffb48";
+                hash = "sha256-oObHuirHZxIZFbPsEFh7ei8dP+Yt8QZa+9ZhPvaEMOQ=";
               };
             })
 
@@ -1167,8 +1167,8 @@
               src = pkgs.fetchFromGitHub {
                 owner = "topaxi";
                 repo = "pipeline.nvim";
-                rev = "d14a27ba7f25ecb72e28bb9844672de99b151eaa";
-                hash = "sha256-Pl1HkXpnyAIVct3BjGtGTQf2M270Gq5wSh+KUKnL1Tk=";
+                rev = "a20d84a1476b3d25990e81f9e27d2d4182d3ddab";
+                hash = "sha256-VPV3wbuJN/PgZVZYmKzR+oPQoE6NtK2IS4KKY5sesXk=";
               };
             })
 
@@ -1793,8 +1793,8 @@
                     src = final.fetchFromGitHub {
                       owner = "nvim-lualine";
                       repo = "lualine.nvim";
-                      rev = "0a5a66803c7407767b799067986b4dc3036e1983";
-                      hash = "sha256-WcH2dWdRDgMkwBQhcgT+Z/ArMdm+VbRhmQftx4t2kNI=";
+                      rev = "221ce6b2d999187044529f49da6554a92f740a96";
+                      hash = "sha256-6PjGu30Ed4/e/HQ3mIFQuUOxcCiti/71jjlMsjN7EoA=";
                     };
                   };
                   # Override bamboo to fetch directly from GitHub, avoiding lualine dependency issues
