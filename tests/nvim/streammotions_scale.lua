@@ -102,6 +102,9 @@ local function reg_len(want)
 end
 
 -- id, keys (one string per key press), check(result, probe context), seconds {64 MB, big}
+-- What was typed in the window is in the file's text once the window is drawn again
+local SIZE_AFTER_RENDER = "local sv = require('streamview') local S = sv.state() sv.render(S) return S.r.size"
+
 local function many_ops(f)
   local n = f.n
   local k = BIG and 150000000 or 5000000
@@ -131,7 +134,7 @@ local function many_ops(f)
     { "scale.yank", { "y100000j" }, reg_len(L.seq_off(100002)), { 3, 10 }, { regs = { '"' } } },
     {
       "scale.edit", { k .. "G", "ihi<Esc>" },
-      function(_, c) return c.exec("return require('streamview').state().r.size") == f.size + 2, "edit not applied" end,
+      function(_, c) return c.exec(SIZE_AFTER_RENDER) == f.size + 2, "edit not applied" end,
       { 3, 10 },
     },
   }
@@ -156,7 +159,7 @@ local function one_ops(f)
     { "scale1.gg_G", { K .. "l", "G" }, pos_is(0), { 1, 3 } },
     {
       "scale1.xdel", { K .. "l", "x" },
-      function(_, c) return c.exec("return require('streamview').state().r.size") == f.size - 1, "x did not delete one byte" end,
+      function(_, c) return c.exec(SIZE_AFTER_RENDER) == f.size - 1, "x did not delete one byte" end,
       { 2, 6 },
     },
   }
