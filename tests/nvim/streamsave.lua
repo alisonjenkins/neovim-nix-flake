@@ -210,6 +210,20 @@ local steps = {
     refused(function() sv.redo(S) end, "redo")
     refused(function() sv.search(S, "line 3", true) end, "a search")
     h.check(not pcall(vim.api.nvim_buf_set_lines, 0, 0, 1, false, { "typed" }), "typing in the window is refused while saving")
+    -- the user's commands and keys say so, instead of raising the error table
+    h.capture_notify()
+    h.notes = {}
+    local cmd_ok, cmd_err = pcall(vim.cmd, "StreamGoto 50%")
+    h.check(cmd_ok, ":StreamGoto during a save raises nothing", tostring(cmd_err))
+    h.check(#h.notes_matching("a save is running") > 0, "it tells the user a save is running", vim.inspect(h.notes))
+    for _, c in ipairs({ "StreamLine 5", "StreamCol 3", "StreamYank 0 5" }) do
+      h.notes = {}
+      cmd_ok, cmd_err = pcall(vim.cmd, c)
+      h.check(cmd_ok and #h.notes_matching("a save is running") > 0, ":" .. c .. " during a save only gives a message", tostring(cmd_err) .. vim.inspect(h.notes))
+    end
+    h.notes = {}
+    vim.fn.maparg("G", "n", false, true).callback()
+    h.check(#h.notes_matching("a save is running") > 0, "the G key says the same", vim.inspect(h.notes))
     vim.wait(60000, function() return res ~= nil end, 5)
     restore()
     h.check(res and res.ok, "the save finishes", vim.inspect(res))
@@ -694,6 +708,41 @@ local steps = {
     eq(read(path), content, "and the file is untouched")
     vim.cmd("bwipeout!")
     os.remove(save_mod.journal_path(path))
+
+    -- :StreamRecover finishes a journal that was left: it is a redo log, so it never rolls back
+    path = write("crash-recover.bin", content)
+    child, marker = spawn(path, "committed")
+    kill(child, marker, "recover")
+    save_mod.opts.recover = "leave"
+    S = open(path)
+    vim.wait(500)
+    save_mod.opts.recover = nil
+    h.check(save_mod.journal_state(path) ~= nil, ":StreamRecover: the journal is still there")
+    h.capture_notify()
+    h.notes = {}
+    vim.cmd("StreamRecover")
+    eq(read(path), model, ":StreamRecover finishes the interrupted save, byte for byte")
+    eq(save_mod.journal_state(path), nil, "and removes the journal")
+    h.check(#h.notes_matching("finished the interrupted save") > 0, "and says so", vim.inspect(h.notes))
+    eq(S.r.size, #model, "the window shows the finished file")
+    h.notes = {}
+    vim.cmd("StreamRecover")
+    h.check(#h.notes_matching("no interrupted save") > 0, "with nothing left it says so", vim.inspect(h.notes))
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "A NEW EDIT" })
+    res = save(S, { strategy = "atomic" })
+    h.check(res.ok, "and a save works again", vim.inspect(res))
+    vim.cmd("bwipeout!")
+    -- a journal that was never completed is dropped, the file was never touched
+    path = write("crash-recover2.bin", content)
+    child, marker = spawn(path, "journal_written")
+    kill(child, marker, "recover (early)")
+    S = open(path)
+    vim.wait(300)
+    h.notes = {}
+    vim.cmd("StreamRecover")
+    eq(read(path), content, ":StreamRecover leaves the file as it was when the journal was not complete")
+    eq(save_mod.journal_state(path), nil, "and the journal is gone")
+    vim.cmd("bwipeout!")
 
     -- killed at random moments, the file is the old text or the new, never something between
     math.randomseed(11)

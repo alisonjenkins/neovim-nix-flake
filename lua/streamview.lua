@@ -651,6 +651,17 @@ local function refuse_while_saving(S)
   end
 end
 
+-- Wraps an entry point of the user (a key, a command): a refusal to act during a save becomes a
+-- message, any other error is raised as it is.
+local function guarded(fn)
+  return function(...)
+    local ok, err = pcall(fn, ...)
+    if ok then return end
+    if type(err) ~= "table" or not err.blocked then error(err, 0) end
+    vim.notify(err.blocked, vim.log.levels.WARN)
+  end
+end
+
 function M.render(S)
   if S.saving then return end
   apply_pending(S)
@@ -1786,13 +1797,7 @@ end
 
 local function keymaps(S)
   local function map(lhs, fn, desc)
-    local function guarded()
-      local ok, err = pcall(fn)
-      if ok then return end
-      if type(err) ~= "table" or not err.blocked then error(err, 0) end
-      vim.notify(err.blocked, vim.log.levels.WARN)
-    end
-    vim.keymap.set("n", lhs, guarded, { buffer = S.buf, nowait = true, silent = true, desc = "Stream view: " .. desc })
+    vim.keymap.set("n", lhs, guarded(fn), { buffer = S.buf, nowait = true, silent = true, desc = "Stream view: " .. desc })
   end
   map("j", function() M.move(S, vim.v.count1) end, "down")
   map("<Down>", function() M.move(S, vim.v.count1) end, "down")
@@ -2148,6 +2153,7 @@ local function current_state()
 end
 
 function M.setup()
+  local function command(name, fn, opts) vim.api.nvim_create_user_command(name, guarded(fn), opts) end
   local group = vim.api.nvim_create_augroup("streamview", { clear = true })
   vim.api.nvim_create_autocmd("BufNew", {
     group = group,
@@ -2161,39 +2167,39 @@ function M.setup()
     end
   end
 
-  vim.api.nvim_create_user_command("StreamView", open_command, {
+  command("StreamView", open_command, {
     nargs = "?",
     bang = true,
     complete = "file",
     desc = "Open a file in the stream viewer (the current file by default); ! abandons a modified buffer",
   })
-  vim.api.nvim_create_user_command("StreamGoto", function(o)
+  command("StreamGoto", function(o)
     local S = current_state()
     if not S then return end
     local _, err = M.goto_offset(S, o.args)
     if err then vim.notify("StreamGoto: " .. err, vim.log.levels.ERROR) end
   end, { nargs = 1, desc = "Stream view: jump to a byte offset or a percentage (60%)" })
 
-  vim.api.nvim_create_user_command("StreamSearchAll", function(o)
+  command("StreamSearchAll", function(o)
     local S = current_state()
     if not S then return end
     local pat, n = o.args:match("^(.-)%s+(%d+)$")
     M.search_all(S, pat or o.args, tonumber(n))
   end, { nargs = "+", desc = "Stream view: list the first matches of a pattern from the cursor (N at the end: how many)" })
-  vim.api.nvim_create_user_command("StreamLine", function(o)
+  command("StreamLine", function(o)
     local S = current_state()
     if S then M.goto_line(S, math.max(tonumber(o.args) or 1, 1)) end
   end, { nargs = 1, desc = "Stream view: go to line N of the file" })
-  vim.api.nvim_create_user_command("StreamIndex", function()
+  command("StreamIndex", function()
     local S = current_state()
     if not S then return end
     M.build_index(S, function(n) vim.notify(string.format("Stream view: %s lines", Nav.grouped and Nav.grouped(n) or n)) end)
   end, { desc = "Stream view: count the lines of the file (a job), so that line numbers are exact" })
-  vim.api.nvim_create_user_command("StreamCol", function(o)
+  command("StreamCol", function(o)
     local S = current_state()
     if S then M.goto_col(S, vim.trim(o.args)) end
   end, { nargs = 1, desc = "Stream view: to byte N of the line, P% along it, or +N / -N bytes from the cursor" })
-  vim.api.nvim_create_user_command("StreamYank", function(o)
+  command("StreamYank", function(o)
     local S = current_state()
     if not S then return end
     local a, b, file = o.args:match("^(%S+)%s+(%S+)%s*(.*)$")
@@ -2205,7 +2211,7 @@ function M.setup()
     complete = function(lead) return vim.fn.getcompletion(lead, "file") end,
     desc = "Stream view: yank the bytes [from, to) into the register, or stream them into a file",
   })
-  vim.api.nvim_create_user_command("StreamWrite", function(o)
+  command("StreamWrite", function(o)
     local S = current_state()
     if S then write_command(S, o) end
   end, {
@@ -2214,7 +2220,11 @@ function M.setup()
     complete = "file",
     desc = "Stream view: save the edits (to [path]); ! overwrites a file changed on disk or an existing path",
   })
-  vim.api.nvim_create_user_command("StreamFollow", function()
+  command("StreamRecover", function()
+    local S = current_state()
+    if S then save.recover_viewer(S) end
+  end, { desc = "Stream view: finish a save that was interrupted (its journal is replayed, never rolled back)" })
+  command("StreamFollow", function()
     local S = current_state()
     if S then M.toggle_follow(S) end
   end, { desc = "Stream view: toggle following the end of the file (tail -f)" })

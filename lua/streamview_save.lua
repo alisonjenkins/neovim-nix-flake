@@ -926,12 +926,31 @@ function M.check_journal(S, how)
     vim.notify("Stream view: " .. tostring(what), vim.log.levels.ERROR)
     return false
   end
+  if what == "discarded" then
+    vim.notify("Stream view: dropped an unfinished save journal of " .. dest .. "; the file was not touched", vim.log.levels.INFO)
+  end
   if what == "finished" then
     vim.notify("Stream view: finished the interrupted save of " .. dest, vim.log.levels.WARN)
     local reopened, err = reopen(S)
     if not reopened then vim.notify("Stream view: cannot reopen " .. S.path .. ": " .. tostring(err), vim.log.levels.ERROR) end
   end
   return true
+end
+
+-- :StreamRecover. The journal is a redo log: once it is complete the save always goes forward and is
+-- never rolled back, so this finishes the interrupted save without asking; a journal that was not
+-- completed is dropped, the file was never touched. Returns true when nothing is left to do.
+function M.recover_viewer(S)
+  if S.saving or S.job then
+    vim.notify("Stream view: a save or a scan is running; try again when it has finished", vim.log.levels.WARN)
+    return false
+  end
+  local dest = uv.fs_realpath(S.path) or S.path
+  if not M.journal_state(dest) then
+    vim.notify("Stream view: no interrupted save of " .. dest, vim.log.levels.INFO)
+    return true
+  end
+  return M.check_journal(S, "finish")
 end
 
 -- :wq and friends write through BufWriteCmd and then quit only if the buffer is unmodified, which a
