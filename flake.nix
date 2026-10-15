@@ -1916,6 +1916,7 @@
                 GIT_CONFIG_KEY_0 = "maintenance.auto";
                 GIT_CONFIG_VALUE_0 = "false";
               };
+              bigfile = nvimTest "bigfile";
               git-async = nvimTest "git-async";
               git-hooks = nvimTest "git-hooks";
               terraform-tools = pkgs.runCommand "terraform-tools-test"

@@ -88,7 +88,7 @@ Automated tests run as flake checks (`nix flake check`, and in CI):
 - `checks.default` - nixvim startup check; fails on any startup error or evaluation warning
 - `checks.treefmt` - formatting (`nix fmt` fixes it)
 - `checks.terraform-tools` - `tests/lua/test_terraform_tools.lua` under luajit
-- `checks.git-async`, `checks.git-hooks` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them
+- `checks.bigfile`, `checks.git-async`, `checks.git-hooks` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them
 
 The `tests/` directory also contains example projects for trying language-specific features by hand:
 - `tests/python/` - Python project with nox testing setup
@@ -117,6 +117,8 @@ The `tests/` directory also contains example projects for trying language-specif
 ### Large Files
 - Files over 1 MB get `vim.b.bigfile` in the `BufReadPre` gate in `flake.nix` (snacks `bigfile` also sets it for long-line files). Per-buffer scanners that walk the whole text must check it: smartcolumn, nvim-ufo's `provider_selector`, conform (`disable_autoformat`), smear-cursor
 - Over 1 MB `modeline` is off for the buffer: vim-sleuth parses modelines before it reads `b:sleuth_automatic`
+- `incsearch`, `inccommand` and smear-cursor are global, so they are switched off on entering a big buffer and put back to the user's values on leaving
+- `tests/nvim/bigfile.lua` (`checks.bigfile`) pins all of the above, each assertion next to its small-file control
 
 ### Custom Lua Setup
 Extra Lua configuration in `extraConfigLua` sets up safe directories for backups, swap files, and undo files outside of git repositories.
