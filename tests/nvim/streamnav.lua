@@ -1271,6 +1271,16 @@ local steps = {
     vim.api.nvim_feedkeys("G", "mx", false)
     eq(sv.cursor_offset(V), text:find("line 300", 1, true) - 1 + 3, "and G")
     sv.place(V, 0)
+    -- j on the last line and k on the first fail like f: the keys after them are dropped
+    sv.place(V, 0)
+    local first_text = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+    vim.api.nvim_feedkeys("kx", "mx", false)
+    eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], first_text, "k on the first line of the file drops the x after it")
+    vim.api.nvim_feedkeys("G", "mx", false)
+    local last_text = vim.api.nvim_buf_get_lines(0, -2, -1, false)[1]
+    vim.api.nvim_feedkeys("jx", "mx", false)
+    eq(vim.api.nvim_buf_get_lines(0, -2, -1, false)[1], last_text, "j on the last line drops the x after it")
+    sv.place(V, 0)
     -- a failed f drops the keys typed after it, as Neovim does
     local before_text = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
     vim.api.nvim_feedkeys("f]x", "mx", false)

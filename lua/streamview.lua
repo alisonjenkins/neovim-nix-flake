@@ -1120,6 +1120,17 @@ function M.scroll(S, n)
   end)
 end
 
+-- Neovim drops the keys typed ahead when a command fails (a beep): "f]%" does not run the % when
+-- there is no ] to find. The viewer's own motions do the same.
+-- It stops at an <Esc>: feedkeys() with "x" keeps one at the end of what it runs.
+local function flush_typeahead()
+  for _ = 1, 100000 do
+    local c = vim.fn.getchar(1)
+    if c == 0 or c == 27 then return end
+    vim.fn.getchar(0)
+  end
+end
+
 -- Where the cursor is in its line: its byte in the file, the line's start and the column. The keys gg,
 -- G and {N}G keep the column (Neovim's 'nostartofline'; they pass keep_col); a line that is shorter
 -- puts the cursor on its last character. The functions without it go to the start of the line.
@@ -1188,6 +1199,11 @@ local check_slice
 -- Moves the cursor; the window scrolls only when the cursor is at its edge.
 function M.move(S, n)
   sync_row(S)
+  -- j on the last line of the file and k on the first fail, which drops the keys typed after them
+  local here = S.entries[S.row]
+  if here and ((n > 0 and not here.ropen and here.nxt >= S.r.size) or (n < 0 and not here.lopen and here.off == 0)) then
+    return flush_typeahead()
+  end
   local rows = vim.api.nvim_buf_line_count(S.buf)
   local row = S.row + n
   local win = win_of(S)
@@ -1373,17 +1389,6 @@ local function motion_target(S, row, key, n, arg, op)
     end
   end
   return target, why, inclusive
-end
-
--- Neovim drops the keys typed ahead when a command fails (a beep): "f]%" does not run the % when
--- there is no ] to find. The viewer's own motions do the same.
--- It stops at an <Esc>: feedkeys() with "x" keeps one at the end of what it runs.
-local function flush_typeahead()
-  for _ = 1, 100000 do
-    local c = vim.fn.getchar(1)
-    if c == 0 or c == 27 then return end
-    vim.fn.getchar(0)
-  end
 end
 
 local function hmove_abs(S, key, n, arg)
