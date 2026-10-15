@@ -262,11 +262,11 @@ local steps = {
     sv.opts.block = 4096
     local res
     sv.search(S, "never there", true, function(pos, err) res = { pos = pos, err = err } end)
-    h.check(S.search ~= nil, "a running search is recorded on the viewer")
+    h.check(S.job ~= nil, "a running search is recorded on the viewer")
     vim.wait(50)
     sv.cancel(S)
     eq(res and res.err, "cancelled", "cancelling a search reports it")
-    eq(S.search, nil, "and clears the job")
+    eq(S.job, nil, "and clears the job")
     os.remove(path)
   end,
 

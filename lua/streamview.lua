@@ -391,11 +391,10 @@ function M.winbar()
   }
   if S.col > 0 then parts[#parts + 1] = "col +" .. S.col end
   if S.follow then parts[#parts + 1] = "FOLLOW" end
-  local job = S.search
+  local job = S.job
   if job then
-    local span = job.forward and size - job.origin or job.origin
-    local done = job.forward and job.pos - job.origin or job.origin - job.pos
-    parts[#parts + 1] = string.format("searching %d%% (<C-c> cancels)", span > 0 and done / span * 100 or 100)
+    local pct = job.span > 0 and job.done_bytes / job.span * 100 or 100
+    parts[#parts + 1] = string.format("%s %d%% (<C-c> cancels)", job.label, pct)
   end
   return table.concat(parts, "  ")
 end
@@ -440,16 +439,53 @@ local function scan_backward(r, pat, before, tick)
 end
 
 function M.cancel(S)
-  local job = S.search
+  local job = S.job
   if not job then return end
   job.cancelled = true
-  S.search = nil
+  S.job = nil
   vim.cmd.redrawstatus()
   if job.done then job.done(nil, "cancelled") end
 end
 
--- Scans from the cursor line (past the current match, if it is there) in time slices so the editor stays responsive; `done(pos, err)`
--- is called when the scan ends. The match line becomes the first line of the window.
+local SLICE_NS = 10e6
+
+-- Runs fn(tick) in slices of about 10 ms so the editor stays responsive. fn calls tick(bytes_done)
+-- as it goes and returns its result; done(result, err) runs once, also on cancel.
+local function run_job(S, label, span, fn, done)
+  M.cancel(S)
+  local job = { label = label, span = span, done_bytes = 0, done = done }
+  S.job = job
+  local co = coroutine.create(function()
+    return fn(function(bytes_done)
+      job.done_bytes = bytes_done
+      if uv.hrtime() > job.deadline then coroutine.yield() end
+    end)
+  end)
+
+  local function finish(result, err)
+    S.job = nil
+    vim.cmd.redrawstatus()
+    if done then done(result, err) end
+  end
+
+  local function step()
+    if job.cancelled or S.closed then return end
+    job.deadline = uv.hrtime() + SLICE_NS
+    local ok, result, err = coroutine.resume(co)
+    if not ok then
+      finish(nil, tostring(result))
+    elseif coroutine.status(co) == "dead" then
+      finish(result, err)
+    else
+      vim.cmd.redrawstatus()
+      vim.defer_fn(step, 1)
+    end
+  end
+  step()
+end
+
+-- Scans from the cursor line (past the current match, if it is there); `done(pos, err)` is called
+-- when the scan ends. The match line becomes the first line of the window.
 function M.search(S, pat, forward, done)
   M.cancel(S)
   stop_follow(S)
@@ -462,45 +498,20 @@ function M.search(S, pat, forward, done)
   local origin = cur and cur.off or 0
   local m = S.match
   if cur and m and m.pos >= cur.off and m.pos < cur.e then origin = forward and m.pos + 1 or m.pos end
-  local job = { pat = pat, forward = forward, origin = origin, pos = origin, done = done }
-  S.search = job
   S.last_search = { pat = pat, forward = forward }
 
   local scan = forward and scan_forward or scan_backward
-  local co = coroutine.create(function()
-    return scan(S.r, pat, origin, function(pos)
-      job.pos = pos
-      if uv.hrtime() > job.deadline then coroutine.yield() end
-    end)
-  end)
-
-  local function finish(pos, err)
-    S.search = nil
+  run_job(S, "searching", forward and S.r.size - origin or origin, function(tick)
+    return scan(S.r, pat, origin, function(pos) tick(math.abs(pos - origin)) end)
+  end, function(pos, err)
     if pos then
       S.match = { pos = pos, len = #pat }
       S.offset = S.r:seg_start(pos)
       S.row = 1
       M.render(S)
-    else
-      vim.cmd.redrawstatus()
     end
     if done then done(pos, err) end
-  end
-
-  local function step()
-    if job.cancelled or S.closed then return end
-    job.deadline = uv.hrtime() + 10e6
-    local ok, res = coroutine.resume(co)
-    if not ok then
-      finish(nil, tostring(res))
-    elseif coroutine.status(co) == "dead" then
-      finish(res)
-    else
-      vim.cmd.redrawstatus()
-      vim.defer_fn(step, 1)
-    end
-  end
-  step()
+  end)
 end
 
 local function notify_search_result(pat)
