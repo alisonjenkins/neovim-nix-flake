@@ -8,6 +8,7 @@ M.opts = {
   block = 256 * 1024, -- read unit; at most two blocks of file data are held at a time
   line_cap = 64 * 1024, -- bytes of one line shown at once; the rest is reached by horizontal paging
   segment = 16 * 1024 * 1024, -- longest line scanned; a longer one is split at multiples of this
+  follow_ms = 500, -- how often follow mode polls the file size
   min_bytes = 256 * 1024 * 1024, -- floor of the size at which a file opens in the viewer
 }
 
@@ -33,6 +34,7 @@ function M.open_reader(path)
   return setmetatable({
     fd = fd,
     size = st.size,
+    mtime = st.mtime.sec * 1e9 + st.mtime.nsec,
     bs = M.opts.block,
     seg = M.opts.segment,
     cache = {}, -- most recent first: { index, data }
@@ -46,7 +48,11 @@ end
 
 function Reader:refresh()
   local st = self.fd and uv.fs_fstat(self.fd)
-  if st then self.size = st.size end
+  if st then
+    local mtime = st.mtime.sec * 1e9 + st.mtime.nsec
+    if st.size ~= self.size or mtime ~= self.mtime then self.cache = {} end
+    self.size, self.mtime = st.size, mtime
+  end
   return self.size
 end
 
@@ -243,7 +249,16 @@ function M.render(S)
   end
 end
 
+local function stop_follow(S)
+  if not S.follow then return end
+  S.follow:stop()
+  S.follow:close()
+  S.follow = nil
+  vim.cmd.redrawstatus()
+end
+
 function M.scroll(S, n)
+  stop_follow(S)
   local size = S.r:refresh()
   if n > 0 then
     for _ = 1, n do
@@ -286,6 +301,7 @@ function M.half_page(S, dir)
 end
 
 function M.head(S)
+  stop_follow(S)
   S.offset, S.row = 0, 1
   M.render(S)
 end
@@ -299,6 +315,7 @@ end
 
 -- spec: a byte offset (number or "1234"), or a percentage ("60%", "12.5%")
 function M.goto_offset(S, spec)
+  stop_follow(S)
   local size = S.r:refresh()
   local target
   if type(spec) == "number" then
@@ -316,6 +333,30 @@ function M.goto_offset(S, spec)
   S.row = 1
   M.render(S)
   return S.offset
+end
+
+-- Like tail -f: polls the size and keeps the end of the file in view. Any other movement stops it.
+function M.toggle_follow(S, on)
+  if on == nil then on = not S.follow end
+  if not on then return stop_follow(S) end
+  if S.follow then return end
+  M.tail(S)
+  local last = S.r.size
+  local timer = assert(uv.new_timer())
+  S.follow = timer
+  timer:start(
+    M.opts.follow_ms,
+    M.opts.follow_ms,
+    vim.schedule_wrap(function()
+      if S.closed or S.follow ~= timer then return end
+      local size = S.r:refresh()
+      if size ~= last then
+        last = size
+        M.tail(S)
+      end
+    end)
+  )
+  vim.cmd.redrawstatus()
 end
 
 function M.hscroll(S, dir)
@@ -349,6 +390,7 @@ function M.winbar()
     string.format("%.1f%%", size > 0 and S.offset / size * 100 or 100),
   }
   if S.col > 0 then parts[#parts + 1] = "col +" .. S.col end
+  if S.follow then parts[#parts + 1] = "FOLLOW" end
   local job = S.search
   if job then
     local span = job.forward and size - job.origin or job.origin
@@ -410,6 +452,7 @@ end
 -- is called when the scan ends. The match line becomes the first line of the window.
 function M.search(S, pat, forward, done)
   M.cancel(S)
+  stop_follow(S)
   if pat == "" or #pat >= S.r.bs then
     if done then done(nil, "the pattern must be 1 to " .. (S.r.bs - 1) .. " bytes") end
     return
@@ -555,6 +598,7 @@ local function close(S)
   if S.closed then return end
   S.closed = true
   M.cancel(S)
+  stop_follow(S)
   if S.on_close then S.on_close() end
   S.r:close()
   states[S.buf] = nil
@@ -693,6 +737,11 @@ function M.setup()
     local _, err = M.goto_offset(S, o.args)
     if err then vim.notify("StreamGoto: " .. err, vim.log.levels.ERROR) end
   end, { nargs = 1, desc = "Stream view: jump to a byte offset or a percentage (60%)" })
+
+  vim.api.nvim_create_user_command("StreamFollow", function()
+    local S = current_state()
+    if S then M.toggle_follow(S) end
+  end, { desc = "Stream view: toggle following the end of the file (tail -f)" })
 
   vim.api.nvim_create_autocmd("VimResized", {
     group = group,
