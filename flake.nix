@@ -1793,7 +1793,7 @@
               (_final: prev:
                 let
                   forkPatch = { pr, rev, hash }: prev.fetchpatch2 {
-                    name = "neovim-fork-pr-${toString pr}.patch";
+                    name = "neovim-fork-pr-${toString pr}-${builtins.substring 0 8 rev}.patch";
                     url = "https://github.com/alisonjenkins/neovim/commit/${rev}.patch";
                     inherit hash;
                     excludes = [ "runtime/doc/news.txt" "test/*" ];
