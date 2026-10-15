@@ -911,7 +911,13 @@ local function run_job(S, label, span, fn, done, exclusive)
   end
 
   local function step()
-    if job.cancelled or S.closed then return end
+    if job.cancelled then return end
+    if S.closed then
+      -- the buffer is gone: let the job clean up (temp files, fds) instead of leaving them
+      S.job = nil
+      if done then done(nil, "the viewer was closed") end
+      return
+    end
     job.deadline = uv.hrtime() + SLICE_NS
     local ok, result, err = coroutine.resume(co)
     if not ok then
@@ -1065,6 +1071,7 @@ function M.write(S, opts, done)
   local function finish(ok, err)
     if done then done(ok, err) end
   end
+  if S.closed then return finish(false, "the viewer was closed") end
   if S.job then return finish(false, "busy: " .. S.job.label) end
   if not before_move(S) then return finish(false, "busy") end
   local r, rerr = S.r:snapshot()
@@ -1240,7 +1247,19 @@ local function close(S)
   stop_follow(S)
   if S.on_close then S.on_close() end
   S.r:close()
+  S.r.pieces, S.r.log, S.entries, S.shown = {}, {}, {}, {} -- the typed text is not kept alive
   states[S.buf] = nil
+end
+
+-- A buffer for a file that cannot be opened must not be writable: it would write itself, empty,
+-- over the file.
+local function refuse_buffer(buf, err)
+  local bo = vim.bo[buf]
+  bo.buftype = "nofile"
+  bo.modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Stream view cannot open this file: " .. tostring(err) })
+  bo.modifiable = false
+  bo.modified = false
 end
 
 -- Turns `buf` into a viewer of `path`. Returns the state, or nil and an error.
@@ -1264,10 +1283,30 @@ function M.attach(buf, path)
   keymaps(S)
 
   local group = vim.api.nvim_create_augroup("streamview-" .. buf, { clear = true })
-  vim.api.nvim_create_autocmd({ "BufWipeout", "BufUnload" }, {
+  -- :edit on the viewer unloads the buffer and reads it again: read the file again the same way
+  vim.api.nvim_create_autocmd("BufUnload", {
     group = group,
     buffer = buf,
     callback = function() close(S) end,
+  })
+  vim.api.nvim_create_autocmd("BufReadCmd", {
+    group = group,
+    buffer = buf,
+    callback = function()
+      local again, aerr = M.attach(buf, path)
+      if not again then
+        refuse_buffer(buf, aerr)
+        vim.notify("Stream view: " .. tostring(aerr), vim.log.levels.ERROR)
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    group = group,
+    buffer = buf,
+    callback = function()
+      close(S)
+      pcall(vim.api.nvim_del_augroup_by_id, group)
+    end,
   })
   if S.editable then
     vim.api.nvim_create_autocmd("BufWriteCmd", {
@@ -1297,6 +1336,7 @@ function M.attach(buf, path)
   vim.api.nvim_create_autocmd("WinResized", {
     group = group,
     callback = function()
+      if S.closed then return end
       if win_of(S) and #S.entries ~= math.min(height_of(S), #S.entries + 1) then M.render(S) end
     end,
   })
@@ -1337,6 +1377,7 @@ local function take_over_read(name, where)
     callback = function(ev)
       local S, err = M.attach(ev.buf, name)
       if not S then
+        refuse_buffer(ev.buf, err)
         vim.notify("Stream view: " .. tostring(err), vim.log.levels.ERROR)
         return
       end

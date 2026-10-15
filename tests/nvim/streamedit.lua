@@ -494,6 +494,79 @@ local steps = {
   end,
 
   function()
+    -- :edit on a viewer reads it again; a closed viewer cannot write; nothing is left behind
+    local dir = tmp .. "/reload"
+    vim.fn.mkdir(dir, "p")
+    local lines = {}
+    for i = 1, 100 do lines[i] = string.format("L%03d", i) end
+    local path = write("reload/data.txt", text_of(lines))
+    vim.g.stream_viewer_min_bytes = 100
+    vim.cmd("edit " .. vim.fn.fnameescape(path))
+    local first = sv.state()
+    h.check(first ~= nil, "a file over the threshold opens in the viewer")
+    vim.cmd("edit")
+    S = sv.state()
+    h.check(S ~= nil and S ~= first and not S.closed, "':edit' on the viewer opens it again")
+    eq(sv.lines(S)[1], "L001", "with the file's first lines")
+    h.check(first.closed, "the old state is closed")
+    set_lines(0, 1, { "RELOADED" })
+    vim.cmd("write")
+    vim.wait(5000, function() return not vim.bo.modified end, 5)
+    lines[1] = "RELOADED"
+    eq(read(path), text_of(lines), "and ':write' saves through it")
+    eq(leftovers(dir), {}, "no temp file is left behind")
+    local res = save(first)
+    h.check(not res.ok and tostring(res.err):find("closed", 1, true) ~= nil, "a closed viewer refuses to write", tostring(res.err))
+    eq(read(path), text_of(lines), "and the file is untouched")
+    eq(leftovers(dir), {}, "with no temp file")
+
+    -- wiping the buffer in the middle of a save removes the temp file
+    set_lines(0, 1, { "WIPED" })
+    local ticks = 0
+    local real_hrtime = uv.hrtime
+    uv.hrtime = function()
+      ticks = ticks + 20e6
+      return ticks
+    end
+    local done
+    sv.write(S, nil, function(ok, err) done = { ok = ok, err = err } end)
+    local buf = S.buf
+    vim.cmd("enew!")
+    if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_delete(buf, { force = true }) end
+    vim.wait(2000, function() return done ~= nil end, 5)
+    uv.hrtime = real_hrtime
+    h.check(done ~= nil and not done.ok, "a save of a wiped buffer ends", vim.inspect(done))
+    eq(leftovers(dir), {}, "and removes its temp file")
+    eq(read(path), text_of(lines), "leaving the file as it was")
+
+    -- the autocmds of a viewer go with its buffer
+    local count = #vim.api.nvim_get_autocmds({ event = "WinResized" })
+    for _ = 1, 10 do
+      local v = open(path)
+      vim.api.nvim_buf_delete(v.buf, { force = true })
+    end
+    eq(#vim.api.nvim_get_autocmds({ event = "WinResized" }), count, "opening and wiping viewers leaves no WinResized autocmd")
+
+    -- a file that cannot be opened gives a buffer that cannot be written
+    local locked = write("reload/locked.txt", text_of(lines))
+    uv.fs_chmod(locked, 0)
+    local readable = io.open(locked, "rb")
+    if readable then
+      readable:close()
+      h.check(true, "file permissions are not enforced here (running as root): unreadable-file case skipped")
+    else
+      pcall(vim.cmd, "edit " .. vim.fn.fnameescape(locked))
+      h.check(sv.state() == nil and vim.bo.buftype == "nofile" and not vim.bo.modifiable, "an unreadable big file gives a read-only scratch buffer")
+      local ok = pcall(vim.cmd, "write")
+      h.check(not ok, "which cannot be written")
+      uv.fs_chmod(locked, 420)
+      eq(read(locked), text_of(lines), "and the file is untouched")
+    end
+    vim.g.stream_viewer_min_bytes = nil
+    vim.cmd("StreamView! " .. vim.fn.fnameescape(numbered))
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)
