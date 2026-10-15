@@ -1080,6 +1080,20 @@ function M.goto_abs(S, abs, match, after)
   end)
 end
 
+-- Absolute byte offset of the cursor in the file, also inside a slice of a long line.
+M.cursor_offset = M.cursor_abs
+
+-- Puts the cursor on the byte `abs` of the file, as the first row of the window (a jump into a long
+-- line slides the slice there), and waits for the scan that needs. Returns true when the cursor is
+-- on that byte; false when it could not be (a refused move, a cancelled scan, or `abs` is not the
+-- start of a character, so the cursor is on the character's start).
+function M.place(S, abs)
+  local landed = false
+  M.goto_abs(S, abs, nil, function() landed = true end)
+  vim.wait(600000, function() return landed and S.job == nil end, 5)
+  return landed and M.cursor_abs(S) == abs
+end
+
 -- Scrolls the window n lines (down for n > 0). Beyond a few lines this counts newlines through the file
 -- in big chunks, as a job with progress when it is far.
 function M.scroll(S, n)

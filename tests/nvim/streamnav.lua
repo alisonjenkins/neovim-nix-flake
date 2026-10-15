@@ -1227,6 +1227,36 @@ local steps = {
     local want = shown[2][2].pos
     eq(sv.cursor_abs(V), want, "the match picked is where the cursor goes")
   end,
+
+  function()
+    -- the seams of the motion tests: place puts the cursor on a byte, cursor_offset reads it back
+    local lines = {}
+    for i = 1, 300 do lines[i] = string.format("line %03d \195\169x", i) end
+    local text = table.concat(lines, "\n") .. "\n"
+    local V = open(write("place.txt", text))
+    eq(sv.cursor_offset, sv.cursor_abs, "cursor_offset is the cursor's absolute byte")
+    local at = text:find("line 150", 1, true) - 1 + 3
+    h.check(sv.place(V, at), "place reports that the cursor is on the byte")
+    eq(sv.cursor_offset(V), at, "in a short line")
+    eq(V.job, nil, "with no job left")
+    eq(V.entries[1].off, at - 3, "and that line is the first row")
+    h.check(sv.place(V, 0) and sv.cursor_offset(V) == 0, "place at 0 goes to the start of the file")
+    local before_char = text:find("\195\169", 1, true) -- the second byte of the first accented letter
+    h.check(not sv.place(V, before_char), "inside a character it reports that it could not")
+    eq(sv.cursor_offset(V), before_char - 1, "and the cursor is on the start of the character")
+    h.check(sv.place(V, #text - 2), "the last character of the file")
+    eq(sv.cursor_offset(V), #text - 2, "is reached")
+
+    -- a long line: the slice slides to the byte, after a scan that may be a job
+    local far = #first + 40 * MB + 5
+    local L = open(path64)
+    h.check(sv.place(L, far), "place into the middle of a 64 MB line")
+    eq(sv.cursor_offset(L), far, "puts the cursor there")
+    eq(L.job, nil, "with the scan finished")
+    h.check(L.slice_rel > 0, "by sliding the slice", tostring(L.slice_rel))
+    h.check(sv.place(L, mid) and sv.cursor_offset(L) == mid, "and back to another byte of it")
+    h.check(sv.place(L, 3) and sv.cursor_offset(L) == 3, "and to the first line")
+  end,
 }
 
 h.run(steps, 600000)
