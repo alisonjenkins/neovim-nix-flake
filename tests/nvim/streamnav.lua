@@ -1244,6 +1244,14 @@ local steps = {
     vim.api.nvim_feedkeys("0l", "mx", false)
     eq(sv.cursor_offset(V), at - 3 + 1, "0l typed together moves to the start of the line, then one right")
     h.check(sv.place(V, 0) and sv.cursor_offset(V) == 0, "place at 0 goes to the start of the file")
+    -- a failed f drops the keys typed after it, as Neovim does
+    local before_text = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+    vim.api.nvim_feedkeys("f]x", "mx", false)
+    eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], before_text, "f] with no ] does not run the x typed after it")
+    eq(sv.cursor_offset(V), 0, "and the cursor stays")
+    vim.api.nvim_feedkeys("fex", "mx", false)
+    eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], before_text:gsub("e", "", 1), "while fe runs the x after it")
+    vim.cmd("undo")
     local before_char = text:find("\195\169", 1, true) -- the second byte of the first accented letter
     h.check(not sv.place(V, before_char), "inside a character it reports that it could not")
     eq(sv.cursor_offset(V), before_char - 1, "and the cursor is on the start of the character")

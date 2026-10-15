@@ -1339,26 +1339,41 @@ local function motion_target(S, row, key, n, arg, op)
   return target, why, inclusive
 end
 
+-- Neovim drops the keys typed ahead when a command fails (a beep): "f]%" does not run the % when
+-- there is no ] to find. The viewer's own motions do the same.
+-- It stops at an <Esc>: feedkeys() with "x" keeps one at the end of what it runs.
+local function flush_typeahead()
+  for _ = 1, 100000 do
+    local c = vim.fn.getchar(1)
+    if c == 0 or c == 27 then return end
+    vim.fn.getchar(0)
+  end
+end
+
 local function hmove_abs(S, key, n, arg)
   nav(S, function()
     if not before_move(S) then return end
     sync_row(S)
     local row = S.entries[S.row]
     if not row then return end
-    local target = motion_target(S, row, key, n, arg)
-    if target then place(S, target) end
+    local target, why = motion_target(S, row, key, n, arg)
+    if target then
+      place(S, target)
+    elseif why == "fail" then
+      flush_typeahead()
+    end
   end)
 end
 
--- Horizontal motions along the cursor's line. They work in absolute bytes, so they never stop at the
--- edge of the slice: inside the slice a plain l or h is Neovim's, anything else (or a motion that
--- reaches an edge of the slice that is not the line's own) is worked out on the file.
 -- The 0 key: to the start of the cursor's line (run by the key's mapping)
 function M.home()
   local S = M.state()
   if S then guarded(function() M.hmove(S, "0", 0) end)() end
 end
 
+-- Horizontal motions along the cursor's line. They work in absolute bytes, so they never stop at the
+-- edge of the slice: inside the slice a plain l or h is Neovim's, anything else (or a motion that
+-- reaches an edge of the slice that is not the line's own) is worked out on the file.
 function M.hmove(S, key, count, arg)
   local n = math.max(count or 0, 1)
   if (key == "l" or key == "h") and not S.job then
