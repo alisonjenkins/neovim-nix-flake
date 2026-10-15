@@ -814,7 +814,7 @@ function M.winbar()
     " STREAM",
     vim.fn.fnamemodify(S.path, ":t"):gsub("%%", "%%%%"),
     string.format("%s / %s (%s)", grouped(abs), grouped(size), human(size)),
-    string.format("%.1f%%", size > 0 and abs / size * 100 or 100),
+    string.format("%.1f%%%%", size > 0 and abs / size * 100 or 100),
   }
   if S.line_top then
     local at = vim.api.nvim_win_get_cursor(winid)[1]
@@ -826,7 +826,7 @@ function M.winbar()
     local col = abs - row.off
     if row.e then
       local len = row.e - row.off
-      parts[#parts + 1] = string.format("col %s / %s (%d%%)", grouped(col), grouped(len), len > 0 and col / len * 100 or 100)
+      parts[#parts + 1] = string.format("col %s / %s (%d%%%%)", grouped(col), grouped(len), len > 0 and col / len * 100 or 100)
     else
       parts[#parts + 1] = string.format("col %s / ?", grouped(col))
     end
@@ -836,7 +836,7 @@ function M.winbar()
   if job then
     local pct = job.span > 0 and job.done_bytes / job.span * 100 or 100
     local elapsed = job.started and string.format(" %.1fs", (uv.hrtime() - job.started) / 1e9) or ""
-    parts[#parts + 1] = string.format("%s %d%%%s (<C-c> cancels)", job.label, pct, elapsed)
+    parts[#parts + 1] = string.format("%s %d%%%%%s (<C-c> cancels)", job.label, pct, elapsed)
   end
   return table.concat(parts, "  ")
 end

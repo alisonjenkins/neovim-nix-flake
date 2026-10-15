@@ -84,9 +84,10 @@ local function save(S, opts)
   return res or { ok = false, err = "timed out" }
 end
 
+-- The winbar as it is drawn: the viewer's string is evaluated as a statusline
 local function winbar_of(S)
   vim.g.statusline_winid = vim.fn.bufwinid(S.buf)
-  return sv.winbar()
+  return vim.api.nvim_eval_statusline(sv.winbar(), { winid = vim.fn.bufwinid(S.buf) }).str
 end
 
 sv.opts.block = 256 * 1024
@@ -1260,6 +1261,10 @@ local steps = {
     eq(sv.cursor_offset(V), before_char - 1, "and the cursor is on the start of the character")
     h.check(sv.place(V, #text - 2), "the last character of the file")
     eq(sv.cursor_offset(V), #text - 2, "is reached")
+
+    -- the winbar is evaluated as a statusline: a literal % in it must be doubled
+    local bar = vim.api.nvim_eval_statusline(vim.wo.winbar, { winid = vim.api.nvim_get_current_win(), use_winbar = true }).str
+    h.check(bar:find("%d+%.%d%%") ~= nil, "the winbar shows the percentage into the file", bar)
 
     -- a long line: the slice slides to the byte, after a scan that may be a job
     local far = #first + 40 * MB + 5
