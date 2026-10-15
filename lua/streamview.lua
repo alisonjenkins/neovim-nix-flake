@@ -1353,6 +1353,12 @@ end
 -- Horizontal motions along the cursor's line. They work in absolute bytes, so they never stop at the
 -- edge of the slice: inside the slice a plain l or h is Neovim's, anything else (or a motion that
 -- reaches an edge of the slice that is not the line's own) is worked out on the file.
+-- The 0 key: to the start of the cursor's line (run by the key's mapping)
+function M.home()
+  local S = M.state()
+  if S then guarded(function() M.hmove(S, "0", 0) end)() end
+end
+
 function M.hmove(S, key, count, arg)
   local n = math.max(count or 0, 1)
   if (key == "l" or key == "h") and not S.job then
@@ -1851,8 +1857,8 @@ local function keymaps(S)
   -- 0 is a digit of a count when one is typed
   vim.keymap.set("n", "0", function()
     if vim.v.count > 0 then return "0" end
-    vim.schedule(function() M.hmove(S, "0", 0) end)
-    return ""
+    -- run in the order the keys were typed: a scheduled move would come after the next key
+    return "<Cmd>lua require('streamview').home()<CR>"
   end, { buffer = S.buf, nowait = true, silent = true, expr = true, desc = "Stream view: start of the line" })
   for _, key in ipairs({ "l", "h", "w", "W", "b", "B", "e", "E", "^", "$", "|", ";", ",", "ge", "gE", "f", "F", "t", "T", "j", "k" }) do
     op_motion_map(S, key)

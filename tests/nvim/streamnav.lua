@@ -1240,6 +1240,9 @@ local steps = {
     eq(sv.cursor_offset(V), at, "in a short line")
     eq(V.job, nil, "with no job left")
     eq(V.entries[1].off, at - 3, "and that line is the first row")
+    -- keys typed ahead run in order: 0 is done before the l that follows it
+    vim.api.nvim_feedkeys("0l", "mx", false)
+    eq(sv.cursor_offset(V), at - 3 + 1, "0l typed together moves to the start of the line, then one right")
     h.check(sv.place(V, 0) and sv.cursor_offset(V) == 0, "place at 0 goes to the start of the file")
     local before_char = text:find("\195\169", 1, true) -- the second byte of the first accented letter
     h.check(not sv.place(V, before_char), "inside a character it reports that it could not")
