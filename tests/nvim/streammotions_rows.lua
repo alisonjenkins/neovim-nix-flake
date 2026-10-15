@@ -653,7 +653,7 @@ row("ins.completion", {
 ---------------------------------------------------------------------------------------------------
 
 local function scale(id, cmd, expect, budget, rank, extra)
-  local o = { chk = "scale", cmd = cmd, expect = expect, budget = budget, rank = rank, scope = "yes", applies = id:find("^scale1") and "one" or "many" }
+  local o = { chk = "scale", owner = id:find("search") and "search" or "navigation", cmd = cmd, expect = expect, budget = budget, rank = rank, scope = "yes", applies = id:find("^scale1") and "one" or "many" }
   for k, v in pairs(extra or {}) do
     o[k] = v
   end
