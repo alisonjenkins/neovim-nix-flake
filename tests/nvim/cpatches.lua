@@ -141,6 +141,78 @@ local function readfile_steps()
     end,
   }
 end
-local steps = readfile_steps()
+
+---------------------------------------------------------------------------------------------------
+-- 0002: Insert mode measures the line only when 'textwidth' and the "l" flag need it
+---------------------------------------------------------------------------------------------------
+
+local function with_buffer(line, setup)
+  vim.cmd("enew!")
+  vim.bo.textwidth = 0
+  vim.bo.formatoptions = "tcq"
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { line })
+  if setup then setup() end
+  vim.cmd("normal! $")
+end
+
+local function type_keys(keys) vim.api.nvim_feedkeys(vim.keycode(keys), "xt", false) end
+
+local function insert_cases()
+  local long = string.rep("x", 40)
+  local tail = " tail words that go on"
+  -- With "l", a line already longer than 'textwidth' when Insert started is not broken. Without
+  -- it the line is broken at blanks. A short line is broken either way. The tail breaks after
+  -- "go" because "tail words that go on" is 21 cells and 'textwidth' is 20.
+  local long_kept = { long .. tail }
+  local long_broken = { long, "tail words that go", "on" }
+  local short_broken = { "short tail words", "that go on" }
+  return {
+    { "late, long line, with l: not broken", long, "A<Cmd>setlocal textwidth=20 formatoptions+=l<CR>", long_kept },
+    { "late, long line, without l: broken", long, "A<Cmd>setlocal textwidth=20<CR>", long_broken },
+    { "late, short line, with l: broken", "short", "A<Cmd>setlocal textwidth=20 formatoptions+=l<CR>", short_broken },
+    { "late, short line, without l: broken", "short", "A<Cmd>setlocal textwidth=20<CR>", short_broken },
+    { "early, long line, with l: not broken", long, "A", long_kept, "textwidth=20 formatoptions+=l" },
+    { "early, long line, without l: broken", long, "A", long_broken, "textwidth=20" },
+    { "early, short line, with l: broken", "short", "A", short_broken, "textwidth=20 formatoptions+=l" },
+    { "early, short line, without l: broken", "short", "A", short_broken, "textwidth=20" },
+    { "no textwidth, long line: never broken", long, "A", long_kept, "formatoptions+=l" },
+    { "no textwidth, short line: never broken", "short", "A", { "short" .. tail }, "formatoptions+=l" },
+  }, tail
+end
+
+local function insert_steps()
+  local cases, tail = insert_cases()
+  return {
+    function()
+      for _, c in ipairs(cases) do
+        local name, line, keys, want, early = unpack(c)
+        with_buffer(line, early and function() vim.cmd("setlocal " .. early) end)
+        type_keys(keys .. tail .. "<Esc>")
+        local got = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        h.check(vim.deep_equal(got, want), "insert, " .. name, vim.inspect(got))
+      end
+    end,
+    function()
+      -- Appending to a very long line must stay fast and land at the end
+      local path = tmp .. "/insert-long.txt"
+      spit(path, string.rep("a", 5 * 1024 * 1024) .. "\n")
+      vim.cmd("silent edit " .. vim.fn.fnameescape(path))
+      vim.bo.textwidth = 0
+      local started = vim.uv.hrtime()
+      type_keys("Axyz<Esc>")
+      local ms = (vim.uv.hrtime() - started) / 1e6
+      local line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+      h.check(#line == 5 * 1024 * 1024 + 3 and line:sub(-4) == "axyz", "insert at the end of a 5 MB line lands there")
+      h.check(ms < 2000, "insert at the end of a 5 MB line takes under 2 s", string.format("%.0f ms", ms))
+      with_buffer("short")
+      type_keys("Axyz<Esc>")
+      h.check(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == "shortxyz", "insert at the end of a short line (control)")
+    end,
+  }
+end
+
+local steps = {}
+vim.list_extend(steps, readfile_steps())
+vim.list_extend(steps, insert_steps())
 
 h.run(steps, 280000)
