@@ -88,7 +88,7 @@ Automated tests run as flake checks (`nix flake check`, and in CI):
 - `checks.default` - nixvim startup check; fails on any startup error or evaluation warning
 - `checks.treefmt` - formatting (`nix fmt` fixes it)
 - `checks.terraform-tools` - `tests/lua/test_terraform_tools.lua` under luajit
-- `checks.bigfile`, `checks.cpatches`, `checks.git-async`, `checks.git-hooks`, `checks.lazyload` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them
+- `checks.bigfile`, `checks.lazyload`, `checks.cpatches`, `checks.git-async`, `checks.git-hooks`, `checks.streamview` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them; `run.sh` exports `NVIM_BIN` (the wrapped nvim) for tests that start a second Neovim, since `vim.v.progpath` is the unwrapped binary without the config
 
 The `tests/` directory also contains example projects for trying language-specific features by hand:
 - `tests/python/` - Python project with nox testing setup
@@ -126,6 +126,15 @@ The `tests/` directory also contains example projects for trying language-specif
 - Over 1 MB `modeline` is off for the buffer: vim-sleuth parses modelines before it reads `b:sleuth_automatic`
 - `incsearch`, `inccommand` and smear-cursor are global, so they are switched off on entering a big buffer and put back to the user's values on leaving
 - `tests/nvim/bigfile.lua` (`checks.bigfile`) pins all of the above, each assertion next to its small-file control
+- Files above the stream-viewer threshold are not loaded at all (see below); the `bigfile` gating above covers the files that are still loaded
+
+#### Stream viewer (`lua/streamview.lua`)
+- A file larger than half of `MemAvailable` (at least 256 MB; override with `vim.g.stream_viewer_min_bytes`) opens in a read-only scratch buffer (`buftype=nofile`, `filetype=streamview`, `vim.b.bigfile`) instead of being read. `setup()` takes the read over with a `BufReadCmd`: buffer-local from `BufNew` for `:edit`, and by path at startup for files named on the command line (those buffers get no `BufNew`). A `BufReadPre` cannot cancel a read, which is why it is not used
+- `:StreamView[!] [file]` forces the viewer for any file (`<leader>.v` for the current one); `:StreamGoto {byte|N%}`; `:StreamFollow` (tail -f by polling the size, any other movement stops it)
+- Keys: `j k <C-d> <C-u> <C-f> <C-b> gg G`, `{count}%` jumps to a percentage, `zL`/`zH` page sideways within a line, `/ ? n N` search, `<C-c>` cancels a running search. Search is literal text (no regex), scanned in 10 ms slices with progress in the winbar. rg/grep are not used: they hold a whole line in memory, which breaks the bounded-memory guarantee on line-less data
+- Memory is bounded: the reader keeps two 256 KB blocks; a window is rebuilt from a byte offset. Lines are cut at `\n` or at multiples of 16 MB (so a line never needs more than one segment of scanning, and the cuts depend only on the contents); at most 64 KB of a line is shown, with a `[+N bytes]` marker. The tunables are `require("streamview").opts`
+- Paths from user input go through `vim.fs.normalize`, not `expand()`: this config's `wildignore` makes `expand("x.bin")` return an empty string
+- `tests/nvim/streamview.lua` (`checks.streamview`) fakes "bigger than RAM" with a small threshold, and checks Lua memory over a 512 MB sparse file
 
 ### Custom Lua Setup
 Extra Lua configuration in `extraConfigLua` sets up safe directories for backups, swap files, and undo files outside of git repositories.
