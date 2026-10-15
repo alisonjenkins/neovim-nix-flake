@@ -2195,7 +2195,7 @@ function M.threshold()
   return math.max(M.opts.min_bytes, (M.available_memory() or 0) / 2)
 end
 
-local function is_too_big(path)
+function M.is_too_big(path)
   local st = uv.fs_stat(path)
   if not st or st.type ~= "file" then return false end
   -- Most files are small: do not read /proc and /sys for each of them
@@ -2225,7 +2225,7 @@ end
 local function intercept(buf)
   if vim.bo[buf].buftype ~= "" or vim.api.nvim_buf_is_loaded(buf) then return end
   local name = vim.api.nvim_buf_get_name(buf)
-  if name == "" or name:find("^%a[%w+.-]*://") or not is_too_big(name) then return end
+  if name == "" or name:find("^%a[%w+.-]*://") or not M.is_too_big(name) then return end
   take_over_read(name, { buffer = buf })
 end
 
@@ -2274,7 +2274,7 @@ function M.setup()
   -- Files named on the command line get their buffers after this runs, without BufNew
   for _, arg in ipairs(vim.fn.argv()) do
     local path = vim.fn.fnamemodify(arg, ":p")
-    if is_too_big(path) then
+    if M.is_too_big(path) then
       take_over_read(path, { group = group, pattern = vim.fn.escape(path, "\\*?[]{},") })
     end
   end
