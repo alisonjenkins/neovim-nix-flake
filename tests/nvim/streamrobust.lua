@@ -59,6 +59,8 @@ local function last_line(S)
   return l[#l]
 end
 
+local typing_path, TS
+
 local steps = {
   function()
     local path = write("leak.txt", numbered(100))
@@ -249,6 +251,72 @@ local steps = {
 
     sv.available_memory = real
     sv.opts.cgroup_root, sv.opts.proc_cgroup, sv.opts.min_bytes = saved_cg, saved_proc, saved_min
+  end,
+
+  -- follow mode does not redraw under the user's hands. Keys are typed on the main loop, between
+  -- steps, so Insert mode lasts across them.
+  function()
+    typing_path = write("typing.log", numbered(30))
+    sv.opts.follow_ms = 40
+    TS = open(typing_path)
+    sv.toggle_follow(TS)
+    append(typing_path, "grown1\n")
+  end,
+  {
+    ["until"] = function() return last_line(TS) == "grown1" end,
+    what = "follow to show an appended line",
+  },
+  function()
+    h.check(true, "follow shows an appended line when nothing is typed")
+    -- <Esc> first: the viewer's notice may have left a hit-enter prompt that would swallow the key
+    vim.api.nvim_feedkeys(vim.keycode("<Esc>i"), "n", false)
+  end,
+  {
+    ["until"] = function() return vim.api.nvim_get_mode().mode == "i" end,
+    what = "Insert mode",
+  },
+  function() append(typing_path, "grown2\n") end,
+  function()
+    vim.wait(400, function() return false end, 20)
+    eq(last_line(TS), "grown1", "no redraw in Insert mode")
+    h.check(TS.follow ~= nil, "and follow is still on")
+    vim.api.nvim_feedkeys("typed", "n", false)
+  end,
+  {
+    ["until"] = function() return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n"):find("typed", 1, true) end,
+    what = "the typed text",
+  },
+  function()
+    append(typing_path, "grown3\n")
+    vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "n", false)
+  end,
+  {
+    ["until"] = function() return vim.api.nvim_get_mode().mode == "n" end,
+    what = "Normal mode",
+  },
+  function()
+    vim.wait(400, function() return false end, 20)
+    local text = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+    h.check(text:find("typed", 1, true) ~= nil, "typed text survives while the typed change is unapplied")
+    h.check(TS.follow_paused == true, "and follow reports that it is paused")
+    sv.undo(TS)
+  end,
+  {
+    ["until"] = function() return last_line(TS) == "grown3" end,
+    what = "the held-back lines once the typed change is gone",
+  },
+  function()
+    h.check(not TS.follow_paused, "then follow is no longer paused")
+
+    -- a hit-enter or more prompt ("r?", "rm") is not typing into the buffer
+    local real_mode = vim.api.nvim_get_mode
+    vim.api.nvim_get_mode = function() return { mode = "r?", blocking = true } end
+    append(typing_path, "grown4\n")
+    vim.wait(3000, function() return last_line(TS) == "grown4" end, 20)
+    vim.api.nvim_get_mode = real_mode
+    eq(last_line(TS), "grown4", "follow keeps going at a hit-enter prompt")
+    sv.toggle_follow(TS, false)
+    sv.opts.follow_ms = 500
   end,
 
   function()

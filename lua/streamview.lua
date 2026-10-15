@@ -707,11 +707,22 @@ local function stop_follow(S)
   if not S.follow then return end
   S.follow:stop()
   S.follow:close()
-  S.follow = nil
+  S.follow, S.follow_paused = nil, nil
   vim.cmd.redrawstatus()
 end
 
+-- True while the user types into the viewer's buffer (Insert or Replace mode, also from i_CTRL-O, or
+-- the command line): replacing its lines then would eat what is being typed. A prompt such as
+-- hit-enter ("r?") does not count: nothing is being typed into the buffer.
+local function typing(S)
+  if vim.api.nvim_get_current_buf() ~= S.buf then return false end
+  local mode = vim.api.nvim_get_mode().mode
+  return mode:find("^[iRc]") ~= nil or mode:find("^ni") ~= nil
+end
+
 -- Like tail -f: polls the size and keeps the end of the file in view. Any other movement stops it.
+-- The window is only redrawn when nothing is being typed, no typed change waits to be applied and no
+-- save is running; until then the update is held back and the next poll tries again.
 function M.toggle_follow(S, on)
   if on == nil then on = not S.follow end
   if not on then return stop_follow(S) end
@@ -725,8 +736,8 @@ function M.toggle_follow(S, on)
     M.opts.follow_ms,
     vim.schedule_wrap(function()
       if S.closed or S.follow ~= timer then return end
-      -- Redrawing would replace what is being typed: wait for a quiet moment
-      if vim.api.nvim_get_mode().mode:find("^[iR]") or is_pending(S) or saving(S) then return end
+      S.follow_paused = typing(S) or is_pending(S) or saving(S)
+      if S.follow_paused then return end
       local size = S.r:refresh()
       if size ~= last then
         last = size
@@ -773,7 +784,7 @@ function M.winbar()
       parts[#parts + 1] = string.format("col %s / ?", grouped(col))
     end
   end
-  if S.follow then parts[#parts + 1] = "FOLLOW" end
+  if S.follow then parts[#parts + 1] = S.follow_paused and "FOLLOW (paused)" or "FOLLOW" end
   local job = S.job
   if job then
     local pct = job.span > 0 and job.done_bytes / job.span * 100 or 100
