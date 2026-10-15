@@ -32,6 +32,14 @@ local steps = {
     local ok, err = pcall(vim.cmd, "ClaudeCodeStatus")
     h.check(ok, ":ClaudeCodeStatus runs", tostring(err))
     h.check(vim.fn.exists(":ClaudeCodeSend") == 2, ":ClaudeCodeSend is the real command after loading")
+
+    -- the tmux backends only make sense inside tmux
+    local in_tmux = (vim.env.TMUX or "") ~= ""
+    h.check(
+      require("sidekick.config").cli.mux.enabled == in_tmux,
+      "sidekick uses its tmux backend only inside tmux",
+      tostring(require("sidekick.config").cli.mux.enabled)
+    )
   end,
 
   function()

@@ -802,10 +802,12 @@
                   "ClaudeCodeStop", "ClaudeCodeTreeAdd",
                 },
                 after = function()
+                  -- the tmux split fails outside tmux; let the plugin pick its own terminal there
+                  local in_tmux = (vim.env.TMUX or "") ~= ""
                   require('claudecode').setup({
                     log_level = "warn",
                     terminal = {
-                      provider = "external",
+                      provider = in_tmux and "external" or "auto",
                       provider_opts = {
                         external_terminal_cmd = "tmux split-window -h -l 40%% '%s'",
                       },

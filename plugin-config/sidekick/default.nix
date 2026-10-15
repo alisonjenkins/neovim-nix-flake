@@ -14,7 +14,8 @@ in
 
       cli = {
         mux = {
-          enabled = true;
+          # the tmux backend has nothing to attach to outside tmux
+          enabled.__raw = "(vim.env.TMUX or '') ~= ''";
           backend = "tmux";
 
           create = "split";
