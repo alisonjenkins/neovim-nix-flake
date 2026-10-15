@@ -671,6 +671,35 @@ local steps = {
   end,
 
   function()
+    -- follow mode waits while text is being typed
+    sv.opts.follow_ms = 30
+    local path = write("follow-typing.txt", "one\ntwo\n")
+    S = open(path)
+    sv.toggle_follow(S)
+    set_lines(0, 1, { "typed" })
+    local f = io.open(path, "ab")
+    f:write("three\n")
+    f:close()
+    vim.wait(300, function() return false end, 10)
+    eq(sv.lines(S), { "typed", "two" }, "follow does not redraw over typed text")
+    set_lines(0, 1, { "one" })
+    vim.wait(2000, function() return sv.lines(S)[3] == "three" end, 10)
+    eq(sv.lines(S), { "one", "two", "three" }, "and catches up once the window is back as it was")
+    local real_mode = vim.api.nvim_get_mode
+    vim.api.nvim_get_mode = function() return { mode = "i", blocking = false } end
+    f = io.open(path, "ab")
+    f:write("four\n")
+    f:close()
+    vim.wait(300, function() return false end, 10)
+    eq(#sv.lines(S), 3, "follow does not redraw in Insert mode")
+    vim.api.nvim_get_mode = real_mode
+    vim.wait(2000, function() return sv.lines(S)[4] == "four" end, 10)
+    eq(sv.lines(S)[4], "four", "and catches up after it")
+    sv.toggle_follow(S, false)
+    sv.opts.follow_ms = 50
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)

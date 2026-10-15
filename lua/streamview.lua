@@ -800,6 +800,8 @@ function M.toggle_follow(S, on)
     M.opts.follow_ms,
     vim.schedule_wrap(function()
       if S.closed or S.follow ~= timer then return end
+      -- Redrawing would replace what is being typed: wait for a quiet moment
+      if vim.api.nvim_get_mode().mode:find("^[iR]") or is_pending(S) or saving(S) then return end
       local size = S.r:refresh()
       if size ~= last then
         last = size
