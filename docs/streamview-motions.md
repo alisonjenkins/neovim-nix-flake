@@ -42,7 +42,7 @@ was generated from), whether it belongs in the viewer, and the test that pins it
 
 ## Summary
 
-145 command classes: 37 ok, 67 partial, 33 unsupported/wrong, 7 documented only, 1 not run.
+145 command classes: 37 ok, 69 partial, 32 unsupported/wrong, 7 documented only, 0 not run.
 
 ### Most likely used and not (fully) supported today
 
@@ -59,10 +59,10 @@ was generated from), whether it belongs in the viewer, and the test that pins it
 | 9 | 1 | `x X s S C D r{c} ~ R` | lines: partial (99/108); one line: unsupported | opr.char, opr.char@1 |
 | 10 | 1 | `dd yy cc >> << == ~ gUU guu g~~ J gJ with counts` | partial (78/96) | opr.line |
 | 11 | 1 | `d y c > < = gu gU g~ g? ! + motion` | lines: partial (143/186); one line: partial (12/80) | opr.motion, opr.motion@1 |
-| 12 | 1 | `{N}G for N in the millions` | 64 MB unsupported | scale.NG, scale.NG@big |
-| 13 | 1 | `:{N}` | 64 MB unsupported | scale.colon, scale.colon@big |
-| 14 | 1 | `{N}G then ihi<Esc>` | 64 MB unsupported | scale.edit, scale.edit@big |
-| 15 | 1 | `200 times <C-f>` | 64 MB unsupported | scale.pages, scale.pages@big |
+| 12 | 1 | `{N}G for N in the millions` | 64 MB unsupported; big unsupported | scale.NG, scale.NG@big |
+| 13 | 1 | `:{N}` | 64 MB unsupported; big unsupported | scale.colon, scale.colon@big |
+| 14 | 1 | `{N}G then ihi<Esc>` | 64 MB unsupported; big unsupported | scale.edit, scale.edit@big |
+| 15 | 1 | `200 times <C-f>` | 64 MB unsupported; big unsupported | scale.pages, scale.pages@big |
 
 ## Matrix
 
@@ -301,38 +301,38 @@ was generated from), whether it belongs in the viewer, and the test that pins it
 
 | Rank | Command | Expected (Vim) | Applies | Today | Scope | Test id | Perf budget |
 |---|---|---|---|---|---|---|---|
-| 1 | `G on 64 MB / 2 GB of short lines` | Last line, exact. | many | 64 MB ok | yes | scale.G, scale.G@big | 1 s / 3 s |
-| 1 | `G then gg` | Back to byte 0. | many | 64 MB ok | yes | scale.gg, scale.gg@big | 1 s / 3 s |
-| 1 | `{N}G for N in the millions` | Line N, exact (needs a line index or a scan). | many | 64 MB unsupported | yes | scale.NG, scale.NG@big | 3 s / 30 s |
-| 1 | `:{N}` | As {N}G. | many | 64 MB unsupported | yes | scale.colon, scale.colon@big | 3 s / 30 s |
-| 2 | `:$` | Last line. | many | 64 MB unsupported | yes | scale.dollar, scale.dollar@big | 1 s / 3 s |
-| 2 | `50%` | The middle of the file (+-1 percent). | many | 64 MB ok | yes | scale.pct, scale.pct@big | 1 s / 3 s |
-| 3 | `{B}go` | Byte B exactly. | many | 64 MB unsupported | yes | scale.go, scale.go@big | 1 s / 3 s |
-| 1 | `100000j` | 100000 lines down, exact, not a per-line loop in Lua. | many | 64 MB ok | yes | scale.jN, scale.jN@big | 5 s / 15 s |
-| 2 | `G then 100000k` | 100000 lines up from the end. | many | 64 MB unsupported | yes | scale.kN, scale.kN@big | 5 s / 15 s |
-| 1 | `200 times <C-f>` | 200 pages down, each as in Vim. | many | 64 MB unsupported | yes | scale.pages, scale.pages@big | 5 s / 8 s |
-| 1 | `/{literal} for a number near the end` | Exact landing; progress shown; memory flat. | many | 64 MB ok | yes | scale.search, scale.search@big | 5 s / 60 s |
-| 2 | `G then ?{literal}` | Exact landing backwards. | many | 64 MB ok | yes | scale.search_back, scale.search_back@big | 5 s / 60 s |
-| 3 | `} in a file without blank lines` | Last character of the file (a scan to the end). | many | 64 MB unsupported | yes | scale.paragraph, scale.paragraph@big | 5 s / 60 s |
-| 3 | `G then {` | First line. | many | 64 MB unsupported | yes | scale.paragraph_back, scale.paragraph_back@big | 5 s / 60 s |
-| 3 | `y100000j` | The register holds exactly the 100001 lines. | many | 64 MB unsupported | yes | scale.yank, scale.yank@big | 3 s / 10 s |
-| 1 | `{N}G then ihi<Esc>` | The edit is held as a piece (size +2); memory flat. | many | 64 MB unsupported | yes | scale.edit, scale.edit@big | 3 s / 10 s |
-| 1 | `$ in a 64 MB / 1 GB single line` | Last character of the line. | one | 64 MB unsupported | yes | scale1.dollar, scale1.dollar@big | 1 s / 3 s |
-| 1 | `$ then 0` | Back at byte 0. | one | 64 MB ok | yes | scale1.zero, scale1.zero@big | 1 s / 3 s |
-| 1 | `{K}l (K = 30 MB / 500 MB)` | Byte K exactly. | one | 64 MB unsupported | yes | scale1.bigl, scale1.bigl@big | 2 s / 6 s |
-| 1 | `fQ for a char 40 MB away` | Lands on it. | one | 64 MB unsupported | yes | scale1.fq, scale1.fq@big | 3 s / 10 s |
-| 2 | `fQ;` | The second Q. | one | 64 MB unsupported | yes | scale1.fq_repeat, scale1.fq_repeat@big | 3 s / 10 s |
-| 2 | `$ then FQ` | The last Q. | one | 64 MB unsupported | yes | scale1.Fq, scale1.Fq@big | 3 s / 10 s |
-| 1 | `% from a ( whose ) is 49 MB / 850 MB away` | Lands on the ), memory-bounded. | one | 64 MB unsupported | yes | scale1.pct, scale1.pct@big | 5 s / 60 s |
-| 2 | `% twice` | Back on the (. | one | 64 MB unsupported | yes | scale1.pct_back, scale1.pct_back@big | 10 s / 120 s |
-| 2 | `% on a ( that never closes` | Cursor stays; bounded scan. | one | 64 MB unsupported | yes | scale1.unmatched, scale1.unmatched@big | 5 s / 60 s |
-| 1 | `/MARKER42` | Exact landing. | one | 64 MB unsupported | yes | scale1.search, scale1.search@big | 3 s / 30 s |
-| 2 | `$ then ?MARKER42` | Exact landing backwards. | one | 64 MB unsupported | yes | scale1.search_back, scale1.search_back@big | 3 s / 30 s |
-| 3 | `{K}go` | Byte K exactly in the middle of the line. | one | 64 MB unsupported | yes | scale1.go, scale1.go@big | 1 s / 3 s |
-| 2 | `{K}l then G` | G on a single line goes to byte 0. | one | 64 MB unsupported | yes | scale1.gg_G, scale1.gg_G@big | 1 s / 3 s |
-| 2 | `{K}l then x` | Deletes one byte (size -1), memory flat. | one | 64 MB unsupported | yes | scale1.xdel, scale1.xdel@big | 2 s / 6 s |
+| 1 | `G on 64 MB / 2 GB of short lines` | Last line, exact. | many | 64 MB ok; big ok | yes | scale.G, scale.G@big | 1 s / 3 s |
+| 1 | `G then gg` | Back to byte 0. | many | 64 MB ok; big ok | yes | scale.gg, scale.gg@big | 1 s / 3 s |
+| 1 | `{N}G for N in the millions` | Line N, exact (needs a line index or a scan). | many | 64 MB unsupported; big unsupported | yes | scale.NG, scale.NG@big | 3 s / 30 s |
+| 1 | `:{N}` | As {N}G. | many | 64 MB unsupported; big unsupported | yes | scale.colon, scale.colon@big | 3 s / 30 s |
+| 2 | `:$` | Last line. | many | 64 MB unsupported; big unsupported | yes | scale.dollar, scale.dollar@big | 1 s / 3 s |
+| 2 | `50%` | The middle of the file (+-1 percent). | many | 64 MB ok; big unsupported | yes | scale.pct, scale.pct@big | 1 s / 3 s |
+| 3 | `{B}go` | Byte B exactly. | many | 64 MB unsupported; big unsupported | yes | scale.go, scale.go@big | 1 s / 3 s |
+| 1 | `100000j` | 100000 lines down, exact, not a per-line loop in Lua. | many | 64 MB ok; big ok | yes | scale.jN, scale.jN@big | 5 s / 15 s |
+| 2 | `G then 100000k` | 100000 lines up from the end. | many | 64 MB unsupported; big ok | yes | scale.kN, scale.kN@big | 5 s / 15 s |
+| 1 | `200 times <C-f>` | 200 pages down, each as in Vim. | many | 64 MB unsupported; big unsupported | yes | scale.pages, scale.pages@big | 5 s / 8 s |
+| 1 | `/{literal} for a number near the end` | Exact landing; progress shown; memory flat. | many | 64 MB ok; big ok | yes | scale.search, scale.search@big | 5 s / 60 s |
+| 2 | `G then ?{literal}` | Exact landing backwards. | many | 64 MB ok; big ok | yes | scale.search_back, scale.search_back@big | 5 s / 60 s |
+| 3 | `} in a file without blank lines` | Last character of the file (a scan to the end). | many | 64 MB unsupported; big unsupported | yes | scale.paragraph, scale.paragraph@big | 5 s / 60 s |
+| 3 | `G then {` | First line. | many | 64 MB unsupported; big unsupported | yes | scale.paragraph_back, scale.paragraph_back@big | 5 s / 60 s |
+| 3 | `y100000j` | The register holds exactly the 100001 lines. | many | 64 MB unsupported; big unsupported | yes | scale.yank, scale.yank@big | 3 s / 10 s |
+| 1 | `{N}G then ihi<Esc>` | The edit is held as a piece (size +2); memory flat. | many | 64 MB unsupported; big unsupported | yes | scale.edit, scale.edit@big | 3 s / 10 s |
+| 1 | `$ in a 64 MB / 1 GB single line` | Last character of the line. | one | 64 MB unsupported; big unsupported | yes | scale1.dollar, scale1.dollar@big | 1 s / 3 s |
+| 1 | `$ then 0` | Back at byte 0. | one | 64 MB ok; big ok | yes | scale1.zero, scale1.zero@big | 1 s / 3 s |
+| 1 | `{K}l (K = 30 MB / 500 MB)` | Byte K exactly. | one | 64 MB unsupported; big unsupported | yes | scale1.bigl, scale1.bigl@big | 2 s / 6 s |
+| 1 | `fQ for a char 40 MB away` | Lands on it. | one | 64 MB unsupported; big unsupported | yes | scale1.fq, scale1.fq@big | 3 s / 10 s |
+| 2 | `fQ;` | The second Q. | one | 64 MB unsupported; big unsupported | yes | scale1.fq_repeat, scale1.fq_repeat@big | 3 s / 10 s |
+| 2 | `$ then FQ` | The last Q. | one | 64 MB unsupported; big unsupported | yes | scale1.Fq, scale1.Fq@big | 3 s / 10 s |
+| 1 | `% from a ( whose ) is 49 MB / 850 MB away` | Lands on the ), memory-bounded. | one | 64 MB unsupported; big unsupported | yes | scale1.pct, scale1.pct@big | 5 s / 60 s |
+| 2 | `% twice` | Back on the (. | one | 64 MB unsupported; big unsupported | yes | scale1.pct_back, scale1.pct_back@big | 10 s / 120 s |
+| 2 | `% on a ( that never closes` | Cursor stays; bounded scan. | one | 64 MB unsupported; big unsupported | yes | scale1.unmatched, scale1.unmatched@big | 5 s / 60 s |
+| 1 | `/MARKER42` | Exact landing. | one | 64 MB unsupported; big unsupported | yes | scale1.search, scale1.search@big | 3 s / 30 s |
+| 2 | `$ then ?MARKER42` | Exact landing backwards. | one | 64 MB unsupported; big unsupported | yes | scale1.search_back, scale1.search_back@big | 3 s / 30 s |
+| 3 | `{K}go` | Byte K exactly in the middle of the line. | one | 64 MB unsupported; big unsupported | yes | scale1.go, scale1.go@big | 1 s / 3 s |
+| 2 | `{K}l then G` | G on a single line goes to byte 0. | one | 64 MB unsupported; big unsupported | yes | scale1.gg_G, scale1.gg_G@big | 1 s / 3 s |
+| 2 | `{K}l then x` | Deletes one byte (size -1), memory flat. | one | 64 MB unsupported; big unsupported | yes | scale1.xdel, scale1.xdel@big | 2 s / 6 s |
 | 2 | `1000000w (64 MB only)` | One million words on, 3 bytes each. | one | 64 MB unsupported | yes | scale1.w, scale1.w@big | 3 s |
 | 3 | `1000000e (64 MB only)` | One million word ends on. | one | 64 MB unsupported | yes | scale1.e, scale1.e@big | 3 s |
 | 3 | `{K}l then y$ (64 MB only)` | The register holds the 8 MB tail exactly. | one | 64 MB unsupported | yes | scale1.yank, scale1.yank@big | 3 s |
-| 1 | `<C-c> during a scan of a 1 GB line (1 GB only)` | Stops in 1.5 s, cursor unchanged, memory flat. | one | not run | yes | scale1.cancel, scale1.cancel@big | 1.5 s |
+| 1 | `<C-c> during a scan of a 2 GB file (2 GB only)` | Stops in 1.5 s, cursor unchanged, memory flat. | many | big ok | yes | scale.cancel, scale.cancel@big | 1.5 s |
 
