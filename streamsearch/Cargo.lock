@@ -198,6 +198,7 @@ dependencies = [
  "memchr",
  "pcre2",
  "regex",
+ "regex-syntax",
  "tempfile",
 ]
 

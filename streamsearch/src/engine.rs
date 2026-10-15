@@ -103,6 +103,50 @@ impl Matcher {
     }
 }
 
+/// A literal every match must contain.
+pub struct Needle {
+    pub bytes: Vec<u8>,
+    /// The literal is the whole match.
+    pub exact: bool,
+}
+
+fn longest_required(hir: &regex_syntax::hir::Hir) -> Option<Vec<u8>> {
+    use regex_syntax::hir::HirKind;
+    match hir.kind() {
+        HirKind::Literal(l) => Some(l.0.to_vec()),
+        HirKind::Capture(c) => longest_required(&c.sub),
+        HirKind::Repetition(r) if r.min >= 1 => longest_required(&r.sub),
+        HirKind::Concat(parts) => parts
+            .iter()
+            .filter_map(longest_required)
+            .max_by_key(Vec::len),
+        _ => None,
+    }
+}
+
+/// The literal the block index can look for, if the pattern has one.
+pub fn required_literal(cfg: &Config) -> Option<Needle> {
+    let text = std::str::from_utf8(&cfg.pattern).ok();
+    let caseless = ignore_case(cfg, text);
+    match cfg.syntax {
+        Syntax::Fixed if !caseless => Some(Needle {
+            bytes: cfg.pattern.clone(),
+            exact: true,
+        }),
+        Syntax::Regex => {
+            let hir = regex_syntax::ParserBuilder::new()
+                .case_insensitive(caseless)
+                .multi_line(true)
+                .build()
+                .parse(text?)
+                .ok()?;
+            let exact = matches!(hir.kind(), regex_syntax::hir::HirKind::Literal(_));
+            longest_required(&hir).map(|bytes| Needle { bytes, exact })
+        }
+        _ => None,
+    }
+}
+
 fn build_regex(pattern: &str, caseless: bool) -> Result<Matcher, EngineError> {
     regex::bytes::RegexBuilder::new(pattern)
         .case_insensitive(caseless)
@@ -131,6 +175,8 @@ mod tests {
             overlap: DEFAULT_OVERLAP,
             threads: 1,
             index: IndexMode::Off,
+            index_block: crate::index::DEFAULT_BLOCK,
+            index_min: crate::index::DEFAULT_MIN_FILE,
             progress_ms: 0,
             chunk: DEFAULT_CHUNK,
             pattern: pattern.to_vec(),
@@ -170,6 +216,37 @@ mod tests {
         assert_eq!(m.find_at(b"ab\nb", 1).unwrap(), Some((3, 4)));
         let m = Matcher::new(&cfg(Syntax::Pcre, Case::Sensitive, b"(?<=a)b")).unwrap();
         assert_eq!(m.find_at(b"ab", 1).unwrap(), Some((1, 2)));
+    }
+
+    #[test]
+    fn required_literal_comes_from_the_pattern() {
+        let lit = |syntax, case, pat: &[u8]| {
+            required_literal(&cfg(syntax, case, pat)).map(|n| (n.bytes, n.exact))
+        };
+        assert_eq!(
+            lit(Syntax::Fixed, Case::Sensitive, b"abc"),
+            Some((b"abc".to_vec(), true))
+        );
+        assert_eq!(lit(Syntax::Fixed, Case::Ignore, b"abc"), None);
+        assert_eq!(
+            lit(Syntax::Regex, Case::Sensitive, b"foo"),
+            Some((b"foo".to_vec(), true))
+        );
+        assert_eq!(
+            lit(Syntax::Regex, Case::Sensitive, b"\\d+ERROR[0-9]"),
+            Some((b"ERROR".to_vec(), false))
+        );
+        assert_eq!(
+            lit(Syntax::Regex, Case::Sensitive, b"NEEDLE_(EARLY|LATE)"),
+            Some((b"NEEDLE_".to_vec(), false))
+        );
+        assert_eq!(lit(Syntax::Regex, Case::Sensitive, b"(foo|bar)"), None);
+        assert_eq!(
+            lit(Syntax::Regex, Case::Sensitive, b"a*bcd?"),
+            Some((b"bc".to_vec(), false))
+        );
+        assert_eq!(lit(Syntax::Regex, Case::Ignore, b"foo"), None);
+        assert_eq!(lit(Syntax::Pcre, Case::Sensitive, b"foo"), None);
     }
 
     #[test]

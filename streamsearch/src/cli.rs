@@ -28,6 +28,8 @@ pub enum Case {
 pub enum IndexMode {
     Auto,
     Off,
+    /// Build the index in the foreground and exit.
+    Build,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,6 +49,8 @@ pub struct Config {
     pub overlap: usize,
     pub threads: usize,
     pub index: IndexMode,
+    pub index_block: u64,
+    pub index_min: u64,
     pub progress_ms: u64,
     pub chunk: usize,
     pub pattern: Vec<u8>,
@@ -62,7 +66,7 @@ pub enum CliError {
 pub const USAGE: &str =
     "usage: streamsearch [--fixed|--regex|--pcre] [--ignore-case|--smart-case] [--backward]
                     [--from OFFSET] [--to OFFSET] [--limit N] [--nth N] [--count] [--max-match-bytes N] [--threads N]
-                    [--index auto|off] [--progress-ms N] [--chunk-bytes N] PATTERN FILE
+                    [--index auto|off|build] [--progress-ms N] [--chunk-bytes N] PATTERN FILE
 stdout: one JSON object per match {\"start\":N,\"end\":M} (byte offsets, search order)
 stderr: progress {\"scanned\":N,\"total\":T}; exit 0 found, 1 none, 2 error";
 
@@ -94,6 +98,8 @@ where
     let mut overlap = DEFAULT_OVERLAP;
     let mut threads = default_threads();
     let mut index = IndexMode::Auto;
+    let mut index_block = crate::index::DEFAULT_BLOCK;
+    let mut index_min = crate::index::DEFAULT_MIN_FILE;
     let mut progress_ms = DEFAULT_PROGRESS_MS;
     let mut chunk = DEFAULT_CHUNK;
     let mut positional: Vec<OsString> = Vec::new();
@@ -153,12 +159,19 @@ where
                 index = match value("--index")?.as_str() {
                     "auto" => IndexMode::Auto,
                     "off" => IndexMode::Off,
+                    "build" => IndexMode::Build,
                     other => {
                         return Err(CliError::Usage(format!(
-                            "--index: expected auto or off, got {other:?}"
+                            "--index: expected auto, off or build, got {other:?}"
                         )))
                     }
                 };
+            }
+            "--index-block-bytes" => {
+                index_block = parse_num("--index-block-bytes", &value("--index-block-bytes")?)?;
+            }
+            "--index-min-bytes" => {
+                index_min = parse_num("--index-min-bytes", &value("--index-min-bytes")?)?;
             }
             "--progress-ms" => progress_ms = parse_num("--progress-ms", &value("--progress-ms")?)?,
             "--chunk-bytes" => {
@@ -196,6 +209,8 @@ where
         overlap,
         threads,
         index,
+        index_block,
+        index_min,
         progress_ms,
         chunk,
         pattern: pattern.into_vec(),

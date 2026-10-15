@@ -8,6 +8,7 @@
 
 use crate::cli::Config;
 use crate::engine::{EngineError, Matcher};
+use crate::index::{Index, Query};
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::fs::File;
@@ -132,6 +133,10 @@ struct ScanCtx<'a> {
     collect: bool,
     /// The pattern is one literal byte: no overlap window, no regex.
     byte: Option<u8>,
+    /// Block index and the literal to look up in it.
+    skip: Option<(&'a Index, &'a Query)>,
+    /// Bytes of chunks the index ruled out.
+    skipped: &'a AtomicU64,
     stop: &'a AtomicBool,
 }
 
@@ -209,6 +214,13 @@ fn scan_chunk(
     if let Some(byte) = ctx.byte {
         return scan_byte(ctx, byte, lo, up, buf);
     }
+    if let Some((index, query)) = ctx.skip {
+        if !index.may_match(query, lo, up) {
+            ctx.skipped
+                .fetch_add(up.saturating_sub(lo), Ordering::Relaxed);
+            return Ok(ChunkOut::default());
+        }
+    }
     let read_start = lo.saturating_sub(1);
     let window_end = up.saturating_add(ctx.overlap as u64);
     let filled = read_window(ctx, read_start, window_end, buf)?;
@@ -271,6 +283,7 @@ struct Shared {
     finished: AtomicBool,
     output_closed: AtomicBool,
     scanned: AtomicU64,
+    skipped: AtomicU64,
 }
 
 fn lock(m: &Mutex<State>) -> MutexGuard<'_, State> {
@@ -328,6 +341,10 @@ enum Mode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Outcome {
     pub matches: u64,
+    /// Every chunk of the whole file was consumed.
+    pub complete: bool,
+    /// Bytes the block index let the scan skip.
+    pub skipped: u64,
     pub output_closed: bool,
 }
 
@@ -373,6 +390,7 @@ pub fn run<W: Write>(
     file_len: u64,
     out: &mut W,
     watch_fd: Option<RawFd>,
+    skip: Option<(&Index, &Query)>,
 ) -> Result<Outcome, SearchError> {
     let plan = Plan::new(cfg, file_len);
     let nchunks = plan.chunks();
@@ -401,6 +419,7 @@ pub fn run<W: Write>(
         finished: AtomicBool::new(false),
         output_closed: AtomicBool::new(false),
         scanned: AtomicU64::new(0),
+        skipped: AtomicU64::new(0),
     };
     let ctx = ScanCtx {
         file,
@@ -411,6 +430,8 @@ pub fn run<W: Write>(
         forward: !cfg.backward,
         collect: mode == Mode::Search,
         byte: matcher.single_byte(),
+        skip,
+        skipped: &sh.skipped,
         stop: &sh.stop,
     };
 
@@ -506,11 +527,20 @@ pub fn run<W: Write>(
         } else {
             sh.scanned.load(Ordering::Relaxed).min(plan.range)
         };
-        let _ = writeln!(
-            io::stderr(),
-            "{{\"scanned\":{done},\"total\":{}}}",
-            plan.range
-        );
+        let skipped = sh.skipped.load(Ordering::Relaxed);
+        let _ = if skip.is_some() {
+            writeln!(
+                io::stderr(),
+                "{{\"scanned\":{done},\"total\":{},\"skipped\":{skipped}}}",
+                plan.range
+            )
+        } else {
+            writeln!(
+                io::stderr(),
+                "{{\"scanned\":{done},\"total\":{}}}",
+                plan.range
+            )
+        };
     }
     if let Some(e) = lock(&sh.state).error.take() {
         return Err(e);
@@ -544,14 +574,23 @@ pub fn run<W: Write>(
             matches = 1;
         }
     }
+    let complete = !closed
+        && write_error.is_none()
+        && plan.range == file_len
+        && nchunks == lock(&sh.state).emitted;
+    let skipped = sh.skipped.load(Ordering::Relaxed);
     match write_error {
         Some(e) if e.kind() == io::ErrorKind::BrokenPipe => Ok(Outcome {
             matches,
+            complete: false,
+            skipped,
             output_closed: true,
         }),
         Some(e) => Err(SearchError::Output(e)),
         None => Ok(Outcome {
             matches,
+            complete,
+            skipped,
             output_closed: closed,
         }),
     }
