@@ -1,4 +1,4 @@
--- Regression tests for the Neovim C patches in patches/neovim/. The expectations are computed here,
+-- Regression tests for the Neovim C patches applied in flake.nix (PRs on alisonjenkins/neovim). The expectations are computed here,
 -- independently of Neovim, so the file passes on stock Neovim and on the patched build alike.
 -- Each assertion sits next to a control that exercises the same path on small input.
 local h = dofile(os.getenv("TEST_DIR") .. "/harness.lua")

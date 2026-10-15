@@ -1689,17 +1689,32 @@
             overlays = [
               inputs.neovim-nightly-overlay.overlays.default
               # Fixes for editing files with very long lines (minified JSON, one-line
-              # logs). Each patch is independent and touches one function; if one stops
-              # applying after a nightly update, drop it and check upstream first.
-              (_final: prev: {
-                neovim-unwrapped = prev.neovim-unwrapped.overrideAttrs (old: {
-                  patches = (old.patches or [ ]) ++ [
-                    ./patches/neovim/0001-fileio-grow-the-line-buffer-in-place-in-readfile.patch
-                    ./patches/neovim/0002-insert-skip-measuring-the-line-when-nothing-reads-it.patch
-                    ./patches/neovim/0003-plines-skip-printable-ASCII-runs-when-measuring-columns.patch
-                  ];
-                });
-              })
+              # logs). Each is a PR on our fork (the reminder to upstream it), pinned by
+              # commit, and independent of the others. news.txt and tests are excluded so
+              # they cannot conflict with the locked Neovim source. If one stops applying
+              # after a nightly update, rebase the PR and bump its rev, or drop it once
+              # upstream has the fix.
+              (_final: prev:
+                let
+                  forkPatch = { pr, rev, hash }: prev.fetchpatch2 {
+                    name = "neovim-fork-pr-${toString pr}.patch";
+                    url = "https://github.com/alisonjenkins/neovim/commit/${rev}.patch";
+                    inherit hash;
+                    excludes = [ "runtime/doc/news.txt" "test/*" ];
+                  };
+                in
+                {
+                  neovim-unwrapped = prev.neovim-unwrapped.overrideAttrs (old: {
+                    patches = (old.patches or [ ]) ++ [
+                      # alisonjenkins/neovim#1: grow the line buffer in place when reading
+                      (forkPatch { pr = 1; rev = "e017bff092b2816829655869106df11c493050e9"; hash = "sha256-aG4Ddrnr6yughN6xadQ1nt1QgHUhymGqw1gleNDJLic="; })
+                      # alisonjenkins/neovim#2: measure the line on first use, not on Insert start
+                      (forkPatch { pr = 2; rev = "52d4128e6116d0847470db94871518dc4ce715e2"; hash = "sha256-kNA0H72kXWV+VHe/urKewR+21HNJCDEuZf/cFdLVW8M="; })
+                      # alisonjenkins/neovim#3: skip runs of printable ASCII when measuring columns
+                      (forkPatch { pr = 3; rev = "0f20305d52a3236ca4cea076ceb3afef6c5e4f09"; hash = "sha256-SE29PByNgZcDhKQqnnFwdxxge+73htrqOSHaGUl+XT4="; })
+                    ];
+                  });
+                })
               # python-lsp-server 1.14.0 declares `jedi<0.20.0` in pyproject.toml,
               # but nixpkgs ships jedi 0.20.0 as of 2026-05-23 →
               # pythonRuntimeDepsCheckHook fails. pylsp works fine at runtime
