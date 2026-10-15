@@ -239,6 +239,32 @@ function M.write(S, opts, done)
     return finish(false, dest .. " is read-only; use ! to overwrite it")
   end
 
+  -- A copy renamed over the file leaves the other names of a hard-linked file with the old text
+  if existing and existing.nlink > 1 then
+    local links = opts.links
+    if links == nil and not same then links = "break" end
+    if links == nil then
+      local choice = vim.fn.confirm(
+        string.format("%s has %d hard links. A copy would detach this name from the others.", dest, existing.nlink),
+        "&Keep the links (patch in place, not atomic)\n&Detach (atomic copy)\n&Cancel",
+        3
+      )
+      links = ({ "keep", "break" })[choice]
+      if not links then return finish(false, "not saved: " .. dest .. " has hard links") end
+    end
+    local detach = links == "break"
+    if not detach then
+      if not patchable(r) then
+        return finish(false, string.format(
+          "%s has %d hard links and the edits changed its length, so it cannot be patched in place; use links = \"break\" to detach this name",
+          dest, existing.nlink
+        ))
+      end
+      local ok, err = patch_in_place(S, dest)
+      return finish(ok, err)
+    end
+  end
+
   local dir = vim.fs.dirname(dest)
   -- holes of the file stay holes in the copy, so only its data and the edits take room
   local need = r.size
@@ -283,6 +309,19 @@ function M.write(S, opts, done)
       ))
     end
     vim.notify(string.format("Stream view: %s now belongs to you, not to %d:%d", dest, src.uid, src.gid), vim.log.levels.WARN)
+  end
+  -- ACLs, SELinux labels and user attributes live in extended attributes
+  local sfd = existing and uv.fs_open(dest, "r", 0)
+  if sfd then
+    local lost = fs.copy_xattrs(sfd, fd)
+    uv.fs_close(sfd)
+    if #lost > 0 then
+      local list = table.concat(lost, ", ")
+      if not opts.force then
+        return abandon(string.format("cannot keep the extended attributes of %s (%s); use ! to save without them", dest, list))
+      end
+      vim.notify(string.format("Stream view: %s lost these extended attributes: %s", dest, list), vim.log.levels.WARN)
+    end
   end
 
   local snap = snapshot(r)

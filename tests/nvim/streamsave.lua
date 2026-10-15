@@ -413,6 +413,95 @@ local steps = {
   end,
 
   function()
+    -- S3: extended attributes and ACLs survive an atomic save
+    local path = write("xattr.txt", numbered(20))
+    local function sh(cmd) return vim.system(cmd, { text = true }):wait() end
+    if vim.fn.executable("setfattr") == 0 or vim.fn.executable("setfacl") == 0 then
+      h.check(true, "skipped: setfattr and setfacl are not installed")
+      return
+    end
+    local set = sh({ "setfattr", "-n", "user.streamsave", "-v", "kept", path })
+    if set.code ~= 0 then
+      h.check(true, "skipped: this file system has no user extended attributes: " .. vim.trim(set.stderr))
+      return
+    end
+    local acl = sh({ "setfacl", "-m", "u:1:r,g:2:rw", path })
+    local has_acl = acl.code == 0
+    if not has_acl then h.check(true, "no ACL check: " .. vim.trim(acl.stderr)) end
+    local function attrs() return sh({ "getfattr", "-d", "-m", "-", "--absolute-names", path }).stdout:gsub("# file:[^\n]*\n", "") end
+    local function acls() return sh({ "getfacl", "--absolute-names", path }).stdout:gsub("# file:[^\n]*\n", "") end
+    local attrs_before, acls_before = attrs(), acls()
+    local ino = uv.fs_stat(path).ino
+    S = open(path)
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "XATTR EDIT AND LONGER" })
+    local res = save(S, { strategy = "atomic" })
+    h.check(res.ok, "the file with attributes is saved", vim.inspect(res))
+    h.check(uv.fs_stat(path).ino ~= ino, "by a copy")
+    eq(attrs(), attrs_before, "and keeps its extended attributes")
+    h.check(attrs():find("user.streamsave=\"kept\"", 1, true) ~= nil, "including the user one")
+    if has_acl then
+      eq(acls(), acls_before, "and its ACL")
+      h.check(acls():find("user:[^:\n]+:r%-%-") ~= nil, "with the entry that was set")
+    end
+    -- an attribute that cannot be copied stops the save instead of being dropped
+    local real = fs.copy_xattrs
+    fs.copy_xattrs = function() return { "security.selinux: EACCES" } end
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "SECOND EDIT" })
+    res = save(S, { strategy = "atomic" })
+    h.check(not res.ok and res.err:find("extended attributes", 1, true), "an attribute that cannot be copied refuses the save", vim.inspect(res))
+    eq(leftovers(tmp), {}, "and leaves no temp file")
+    res = save(S, { strategy = "atomic", force = true })
+    fs.copy_xattrs = real
+    h.check(res.ok, "! saves without it", vim.inspect(res))
+    vim.cmd("bwipeout!")
+  end,
+
+  function()
+    -- S3: a symlink stays a symlink and its target is replaced atomically
+    local real = write("link-target.txt", numbered(20))
+    local link = tmp .. "/link-name.txt"
+    os.remove(link)
+    assert(uv.fs_symlink(real, link))
+    local ino = uv.fs_stat(real).ino
+    S = open(link)
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "VIA THE LINK" })
+    local res = save(S, { strategy = "atomic" })
+    h.check(res.ok, "a file opened through a symlink is saved", vim.inspect(res))
+    eq(uv.fs_lstat(link).type, "link", "the link is still a link")
+    eq(uv.fs_readlink(link), real, "to the same target")
+    h.check(read(real):sub(1, 13) == "VIA THE LINK\n", "and the target has the edit")
+    h.check(uv.fs_stat(real).ino ~= ino, "written as a copy renamed over the target")
+    eq(leftovers(tmp), {}, "with no temp file left beside either")
+    vim.cmd("bwipeout!")
+    os.remove(link)
+  end,
+
+  function()
+    -- S3: a file with other hard links is patched in place so that they see the edit
+    local first = write("hard-a.txt", numbered(20))
+    local second = tmp .. "/hard-b.txt"
+    os.remove(second)
+    assert(uv.fs_link(first, second))
+    S = open(first)
+    local line_one = "line 1"
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { string.rep("X", #line_one) })
+    local res = save(S, { links = "keep" })
+    h.check(res.ok, "a same-length edit of a hard-linked file is saved", vim.inspect(res))
+    eq(uv.fs_stat(first).nlink, 2, "both names are kept")
+    eq(read(second):sub(1, 7), "XXXXXX\n", "and the other name has the edit")
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "a longer first line" })
+    res = save(S, { links = "keep" })
+    h.check(not res.ok and res.err:find("hard links", 1, true), "an edit that changes the length refuses to keep the links", vim.inspect(res))
+    eq(read(first):sub(1, 7), "XXXXXX\n", "and leaves the file as it was")
+    res = save(S, { links = "break" })
+    h.check(res.ok and read(first):sub(1, 20) == "a longer first line\n", "links = break detaches it and saves", vim.inspect(res))
+    eq(uv.fs_stat(first).nlink, 1, "this name is a file of its own")
+    eq(read(second):sub(1, 7), "XXXXXX\n", "and the other name keeps the older text")
+    vim.cmd("bwipeout!")
+    os.remove(second)
+  end,
+
+  function()
     -- the zero page finder, with and without the FFI
     local z = string.rep("\0", 4096)
     eq(fs.data_runs(""), {}, "an empty string has no data")

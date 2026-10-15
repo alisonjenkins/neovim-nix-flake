@@ -2058,7 +2058,8 @@
               treefmtCfg = perSystemArgs.config.treefmt;
               nvimTest = name: pkgs.runCommand "nvim-test-${name}"
                 {
-                  nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.git ];
+                  # acl and attr: streamsave checks that ACLs and extended attributes survive a save
+                  nativeBuildInputs = [ pkgs.acl pkgs.attr pkgs.bash pkgs.coreutils pkgs.git ];
                 } ''
                 bash ${./tests/nvim}/run.sh ${nvim}/bin/nvim ${./tests/nvim}/${name}.lua
                 touch $out
