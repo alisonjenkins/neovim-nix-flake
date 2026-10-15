@@ -193,7 +193,7 @@ local function insert_steps()
       end
     end,
     function()
-      -- Appending to a very long line must stay fast and land at the end
+      -- Appending to a very long line must land at the end
       local path = tmp .. "/insert-long.txt"
       spit(path, string.rep("a", 5 * 1024 * 1024) .. "\n")
       vim.cmd("silent edit " .. vim.fn.fnameescape(path))
@@ -203,7 +203,9 @@ local function insert_steps()
       local ms = (vim.uv.hrtime() - started) / 1e6
       local line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
       h.check(#line == 5 * 1024 * 1024 + 3 and line:sub(-4) == "axyz", "insert at the end of a 5 MB line lands there")
-      h.check(ms < 2000, "insert at the end of a 5 MB line takes under 2 s", string.format("%.0f ms", ms))
+      -- Not sensitive to patch 0002: stock Neovim also takes a few ms for 5 MB. Guards only
+      -- against a catastrophic (quadratic) regression.
+      h.check(ms < 2000, "insert at the end of a 5 MB line is not catastrophically slow", string.format("%.0f ms", ms))
       with_buffer("short")
       type_keys("Axyz<Esc>")
       h.check(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == "shortxyz", "insert at the end of a short line (control)")
