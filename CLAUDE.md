@@ -111,6 +111,12 @@ The `tests/` directory also contains example projects for trying language-specif
 - Overlay system defined in flake.nix allows mixing packages from different channels
 - Custom plugin versions pinned via overlays
 - Renovate bot (`renovate.json`) automatically creates PRs for dependency updates
+- The nightly overlay pins its own Neovim source, so `nix flake update` alone leaves Neovim behind: also run `nix flake update neovim-nightly-overlay/neovim-src`
+- `patches/neovim/*.patch` are applied to `neovim-unwrapped` by an overlay in `flake.nix` (very-long-line fixes). If one stops applying after a nightly update, check whether upstream fixed it, then drop or rebase the patch
+
+### Large Files
+- Files over 1 MB get `vim.b.bigfile` in the `BufReadPre` gate in `flake.nix` (snacks `bigfile` also sets it for long-line files). Per-buffer scanners that walk the whole text must check it: smartcolumn, nvim-ufo's `provider_selector`, conform (`disable_autoformat`), smear-cursor
+- Over 1 MB `modeline` is off for the buffer: vim-sleuth parses modelines before it reads `b:sleuth_automatic`
 
 ### Custom Lua Setup
 Extra Lua configuration in `extraConfigLua` sets up safe directories for backups, swap files, and undo files outside of git repositories.
