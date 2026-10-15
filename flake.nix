@@ -2081,6 +2081,7 @@
               git-hooks = nvimTest "git-hooks";
               lazyload = nvimTest "lazyload";
               streamedit = nvimTest "streamedit";
+              streamfuzz = nvimTest "streamfuzz";
               streamnav = nvimTest "streamnav";
               streamrobust = nvimTest "streamrobust";
               # The package build runs the cargo tests (doCheck); this adds the Lua translator
