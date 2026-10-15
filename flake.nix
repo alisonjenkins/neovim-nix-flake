@@ -1917,6 +1917,7 @@
                 GIT_CONFIG_VALUE_0 = "false";
               };
               bigfile = nvimTest "bigfile";
+              cpatches = nvimTest "cpatches";
               git-async = nvimTest "git-async";
               git-hooks = nvimTest "git-hooks";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
