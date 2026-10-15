@@ -780,8 +780,40 @@
               })
 
               require('jj').setup({})
-              require('pipeline').setup({})
             end, 50)
+
+            -- pipeline.nvim's setup (remote lookup, two commands) costs 4-12 ms and only
+            -- :Pipeline and :GhActions use it, so run it on their first call. setup() reads the
+            -- git remotes of the current directory, so run it in the directory Neovim started in,
+            -- as the eager call did, even after a :cd.
+            do
+              local names = { "Pipeline", "GhActions" }
+              local start_dir = vim.uv.cwd()
+              vim.defer_fn(function() start_dir = vim.uv.cwd() end, 50)
+              local function load_pipeline()
+                for _, name in ipairs(names) do
+                  pcall(vim.api.nvim_del_user_command, name)
+                end
+                local current_dir = vim.uv.cwd()
+                local moved = start_dir and current_dir ~= start_dir and vim.uv.chdir(start_dir)
+                local ok, err = pcall(function() require('pipeline').setup({}) end)
+                if moved then vim.uv.chdir(current_dir) end
+                if not ok then error(err, 0) end
+              end
+              for _, name in ipairs(names) do
+                vim.api.nvim_create_user_command(name, function(opts)
+                  load_pipeline()
+                  vim.cmd({ cmd = name, args = opts.fargs })
+                end, {
+                  nargs = "?",
+                  complete = function(...)
+                    load_pipeline()
+                    local real = vim.api.nvim_get_commands({})[name]
+                    return real and type(real.complete) == "function" and real.complete(...) or {}
+                  end,
+                })
+              end
+            end
 
             -- Live-preview rename
             require("inc_rename").setup()
