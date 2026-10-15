@@ -1193,9 +1193,10 @@
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
             "lua/streamsearch_regex.lua".source = ./lua/streamsearch_regex.lua;
             "lua/streamview.lua".source = ./lua/streamview.lua;
+            "lua/streamview_fs.lua".source = ./lua/streamview_fs.lua;
             "lua/streamview_nav.lua".source = ./lua/streamview_nav.lua;
-            "lua/streamview_search.lua".source = ./lua/streamview_search.lua;
             "lua/streamview_save.lua".source = ./lua/streamview_save.lua;
+            "lua/streamview_search.lua".source = ./lua/streamview_search.lua;
             "lua/terraform-search.lua".source = ./lua/terraform-search.lua;
             "lua/terraform-tools.lua".source = ./lua/terraform-tools.lua;
             # Patched Python highlights query without "except*" keyword

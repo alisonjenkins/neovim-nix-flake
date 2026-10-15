@@ -1,7 +1,13 @@
 -- Saving for the stream viewer: stream the pieces into a temp file and rename it over the original,
 -- or patch the file where it is. Everything here is reached through streamview.write.
 local uv = vim.uv
+local fs = require("streamview_fs")
 local M = {}
+
+M.opts = {
+  -- unit of copying, hole checks and yielding to the editor
+  copy_block = 1024 * 1024,
+}
 
 -- streamview requires this module, so it is looked up when needed
 local function sv() return require("streamview") end
@@ -55,6 +61,116 @@ local function same_pieces(a, b)
     if a[i] ~= b[i] then return false end
   end
   return true
+end
+
+---------------------------------------------------------------------------------------------------
+-- Walking the text: the pieces are copied to a sink, and the holes of the file are not read
+---------------------------------------------------------------------------------------------------
+
+-- Bytes of data (not holes) in [from, to) of an open file, or nil when the file system cannot tell
+-- or the file has too many extents to count cheaply.
+local function data_bytes(fd, from, to)
+  local total, pos = 0, from
+  for _ = 1, 4096 do
+    if pos >= to then return total end
+    local d, derr = fs.seek_data(fd, pos)
+    if not d then return derr == "ENXIO" and total or nil end
+    if d >= to then return total end
+    local h = fs.seek_hole(fd, d)
+    if not h then return nil end
+    local stop = math.min(h, to)
+    total = total + (stop - d)
+    pos = stop
+  end
+  return nil
+end
+
+local function short_read(pos, got, want)
+  return string.format("short read at offset %d: got %d of %d bytes (was the file truncated?)", pos, got, want)
+end
+
+-- Copies file bytes [soff, soff + n) to logical position dpos of the sink. Holes are reported to
+-- sink.zero without being read, and so are blocks that are all zero; the rest goes to sink.data.
+local function emit_file(fd, soff, dpos, n, sink, tick)
+  local st = uv.fs_fstat(fd)
+  if not st or st.size < soff + n then return short_read(soff, st and math.max(st.size - soff, 0) or 0, n) end
+  local block = M.opts.copy_block
+  local left = n
+  while left > 0 do
+    local d, derr = fs.seek_data(fd, soff)
+    local stop
+    if not d then
+      if derr == "ENXIO" then
+        -- only a hole follows, unless the file has been cut short since the check above
+        local now = uv.fs_fstat(fd)
+        if not now or now.size < soff + left then return short_read(soff, 0, left) end
+        sink.zero(dpos, left)
+        return nil
+      elseif derr ~= "UNSUPPORTED" then
+        return "cannot find the data of the file: " .. tostring(derr)
+      end
+      d, stop = soff, soff + left
+    elseif d >= soff + left then
+      sink.zero(dpos, left)
+      return nil
+    end
+    if d > soff then
+      sink.zero(dpos, d - soff)
+      dpos, left, soff = dpos + (d - soff), left - (d - soff), d
+    end
+    if not stop then
+      local h = fs.seek_hole(fd, soff)
+      stop = math.min(h or math.huge, soff + left)
+    end
+    while soff < stop do
+      local len = math.min(block, stop - soff)
+      local data = uv.fs_read(fd, len, soff)
+      if not data or #data ~= len then return short_read(soff, data and #data or 0, len) end
+      local runs = fs.data_runs(data)
+      if #runs == 0 then
+        sink.zero(dpos, len)
+      elseif runs[1] == 0 and runs[2] == len then
+        sink.data(dpos, data)
+      else
+        local at = 0
+        for k = 1, #runs, 2 do
+          if runs[k] > at then sink.zero(dpos + at, runs[k] - at) end
+          sink.data(dpos + runs[k], data:sub(runs[k] + 1, runs[k + 1]))
+          at = runs[k + 1]
+        end
+        if at < len then sink.zero(dpos + at, len - at) end
+      end
+      soff, dpos, left = soff + len, dpos + len, left - len
+      tick(dpos)
+    end
+  end
+end
+
+-- Copies logical bytes [from, to) of the snapshot to the sink: sink.data(pos, text) and
+-- sink.zero(pos, len), in ascending order. Returns nil, or an error message.
+local function walk(snap, from, to, sink, tick)
+  local block = M.opts.copy_block
+  local pos = from
+  local i = snap:locate(from)
+  while pos < to do
+    local piece, start = snap.pieces[i], snap.starts[i]
+    if not piece then return short_read(pos, 0, to - pos) end
+    local b = math.min(to, start + piece.len)
+    if piece.str then
+      while pos < b do
+        local len = math.min(block, b - pos)
+        local from_str = piece.off + (pos - start)
+        sink.data(pos, piece.str:sub(from_str + 1, from_str + len))
+        pos = pos + len
+        tick(pos)
+      end
+    else
+      local err = emit_file(snap.fd, piece.off + (pos - start), pos, b - pos, sink, tick)
+      if err then return err end
+      pos = b
+    end
+    i = i + 1
+  end
 end
 
 -- Re-opens the saved file as the viewer's file. The edit history ends with the save.
@@ -124,7 +240,10 @@ function M.write(S, opts, done)
   end
 
   local dir = vim.fs.dirname(dest)
+  -- holes of the file stay holes in the copy, so only its data and the edits take room
   local need = r.size
+  local allocated = r.fd and data_bytes(r.fd, 0, r.file_size)
+  if allocated then need = math.min(need, allocated + r.added) end
   local free = sv().free_bytes(dir)
   if same and free and free < need then
     if not patchable(r) or opts.inplace == false then
@@ -167,25 +286,23 @@ function M.write(S, opts, done)
   end
 
   local snap = snapshot(r)
-  local chunk = snap.bs * 4
   internal.stop_follow(S)
   S.saving = true
   vim.bo[S.buf].modifiable = false
   local quit_win = quit and vim.api.nvim_get_current_win()
   local starting = true
   internal.run_job(S, "writing", snap.size, function(tick)
-    local pos = 0
-    while pos < snap.size do
-      local want = math.min(chunk, snap.size - pos)
-      local data = snap:get(pos, chunk)
-      if #data ~= want then
-        return nil, string.format("short read at offset %d: got %d of %d bytes (was the file truncated?)", pos, #data, want)
-      end
-      local ok, werr = write_all(fd, data, pos)
-      if not ok then return nil, "write failed: " .. tostring(werr) end
-      pos = pos + chunk
-      tick(math.min(pos, snap.size))
-    end
+    local sink = {
+      data = function(pos, text)
+        local ok, werr = write_all(fd, text, pos)
+        if not ok then error("write failed: " .. tostring(werr), 0) end
+      end,
+      zero = function() end, -- stays a hole
+    }
+    local err = walk(snap, 0, snap.size, sink, tick)
+    if err then return nil, err end
+    local grown, gerr = uv.fs_ftruncate(fd, snap.size)
+    if not grown then return nil, "cannot set the size of the copy: " .. tostring(gerr) end
     if same and r:changed_on_disk() and not opts.force then return nil, S.path .. " changed on disk while it was being saved" end
     local written = uv.fs_fstat(fd)
     if not written or written.size ~= snap.size then

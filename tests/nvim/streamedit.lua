@@ -347,8 +347,15 @@ local steps = {
     set_lines(0, 1, { "FIRST" })
     sv.head(S)
     local res
+    -- holes are skipped, so the save is as quick as the data: make every slice end at once
+    local real_hrtime, clock = uv.hrtime, 0
+    uv.hrtime = function()
+      clock = clock + 20e6
+      return clock
+    end
     sv.write(S, nil, function(ok, err) res = { ok = ok, err = err } end)
-    h.check(S.job ~= nil and S.job.label == "writing", "a running save is recorded on the viewer")
+    uv.hrtime = real_hrtime
+    h.check(S.job ~= nil and S.job.label:find("^writing") ~= nil, "a running save is recorded on the viewer")
     sv.cancel(S)
     eq(res and res.err, "cancelled", "cancelling a save reports it")
     eq(leftovers(tmp), {}, "and removes the temp file")

@@ -5,6 +5,7 @@ local h = dofile(os.getenv("TEST_DIR") .. "/harness.lua")
 local tmp = os.getenv("TMPDIR") or "/tmp"
 local uv = vim.uv
 local sv = require("streamview")
+local fs = require("streamview_fs")
 
 local function write(name, data)
   local path = tmp .. "/" .. name
@@ -24,6 +25,11 @@ end
 local function open(path)
   vim.cmd("StreamView! " .. vim.fn.fnameescape(path))
   return sv.state()
+end
+
+-- A move over far-apart lines is a job: wait for it
+local function settle(S)
+  vim.wait(120000, function() return S.job == nil end, 5)
 end
 
 local function save(S, opts)
@@ -61,6 +67,89 @@ local function slow_slices()
     return t
   end
   return function() uv.hrtime = real end
+end
+
+
+-- A sparse file of `size` bytes with the given { offset, text } regions; everything else is a hole.
+local function sparse_file(name, size, regions)
+  local path = tmp .. "/" .. name
+  local fd = assert(uv.fs_open(path, "w", 420))
+  assert(uv.fs_ftruncate(fd, size))
+  for _, region in ipairs(regions) do
+    assert(uv.fs_write(fd, region[2], region[1]))
+  end
+  uv.fs_close(fd)
+  return path
+end
+
+local function allocated(path) return uv.fs_stat(path).blocks * 512 end
+
+-- True when the file has exactly the regions and zeros everywhere else; returns the first
+-- difference otherwise.
+local function matches_regions(path, size, regions)
+  local st = uv.fs_stat(path)
+  if st.size ~= size then return false, "size " .. st.size .. " ~= " .. size end
+  local fd = assert(uv.fs_open(path, "r", 0))
+  local step = 4 * 1024 * 1024
+  for base = 0, size - 1, step do
+    local len = math.min(step, size - base)
+    local data = uv.fs_read(fd, len, base)
+    if not data or #data ~= len then return false, "short read at " .. base end
+    local expect = nil
+    for _, region in ipairs(regions) do
+      local from, to = math.max(region[1], base), math.min(region[1] + #region[2], base + len)
+      if from < to then
+        expect = expect or string.rep("\0", len)
+        expect = expect:sub(1, from - base) .. region[2]:sub(from - region[1] + 1, to - region[1]) .. expect:sub(to - base + 1)
+      end
+    end
+    if expect then
+      if data ~= expect then return false, "differs in the block at " .. base end
+    elseif not fs.is_zero(data) then
+      return false, "not zero in the block at " .. base
+    end
+  end
+  uv.fs_close(fd)
+  return true
+end
+
+-- A file of `size` bytes: random text with zero pages in it, so that holes are made and skipped.
+local function mixed_content(rnd, size)
+  local parts, n = {}, 0
+  while n < size do
+    local len = math.min(rnd(1, 20000), size - n)
+    if rnd(1, 4) == 1 then
+      parts[#parts + 1] = string.rep("\0", len)
+    else
+      local t = {}
+      for k = 1, len do
+        t[k] = string.char(rnd(1, 255))
+      end
+      parts[#parts + 1] = table.concat(t)
+    end
+    n = n + len
+  end
+  return table.concat(parts)
+end
+
+-- Random edits applied to the viewer's reader and to a string model. kind: "same" keeps every
+-- length, "tail" edits only the last 2%, "any" edits anywhere with any length.
+local function random_edits(S, rnd, model, kind, count)
+  for _ = 1, count do
+    local size = #model
+    local lo = kind == "tail" and math.floor(size * 0.98) or 0
+    local start = rnd(lo, math.max(size - 1, lo))
+    local len = rnd(0, math.min(300, size - start))
+    local text_len = kind == "same" and len or rnd(0, 400)
+    local t = {}
+    for k = 1, text_len do
+      t[k] = string.char(rnd(97, 122))
+    end
+    local text = table.concat(t)
+    S.r:apply({ { start = start, stop = start + len, text = text } })
+    model = model:sub(1, start) .. text .. model:sub(start + len + 1)
+  end
+  return model
 end
 
 sv.opts.block = 64
@@ -276,6 +365,82 @@ local steps = {
     h.check(vim.api.nvim_win_is_valid(win), "a failed save does not close the window")
     h.check(vim.bo[S.buf].modified, "and the buffer stays modified")
     vim.cmd("only")
+  end,
+
+  function()
+    -- S2: an atomic rewrite keeps the holes of a sparse file
+    local size = 256 * 1024 * 1024
+    local mid = math.floor(size * 0.6)
+    local regions = {
+      { 0, "head line\nsecond line\n" },
+      { mid - 1, "\nmiddle line\n" },
+      { size - 9, "\nlast ln\n" },
+    }
+    local path = sparse_file("sparse.bin", size, regions)
+    if allocated(path) > 1024 * 1024 then
+      h.check(true, "skipped: this file system does not keep holes")
+      return
+    end
+    local mid_new = "MIDDLE LINE EDITED AND LONGER"
+    local want_size = size + (#mid_new - #"middle line") + (#"LAST" - #"last ln")
+    local want = {
+      { 0, "head line\nsecond line\n" },
+      { mid - 1, "\n" .. mid_new .. "\n" },
+      { want_size - 6, "\nLAST\n" },
+    }
+    for _, mode in ipairs({ "seek", "no seek" }) do
+      local real_seek = fs.seek_data
+      if mode == "no seek" then fs.seek_data = function() return nil, "UNSUPPORTED" end end
+      path = sparse_file("sparse.bin", size, regions)
+      S = open(path)
+      sv.goto_offset(S, mid)
+      settle(S)
+      vim.api.nvim_buf_set_lines(0, 0, 1, false, { mid_new })
+      sv.tail(S)
+      settle(S)
+      local rows = vim.api.nvim_buf_line_count(0)
+      vim.api.nvim_buf_set_lines(0, rows - 1, rows, false, { "LAST" })
+      local res = save(S, { strategy = "atomic" })
+      fs.seek_data = real_seek
+      h.check(res.ok, mode .. ": the sparse file is saved", vim.inspect(res))
+      local ok, why = matches_regions(path, want_size, want)
+      h.check(ok, mode .. ": it has the edits and zeros everywhere else", tostring(why))
+      h.check(allocated(path) < 1024 * 1024, mode .. ": and is still sparse", allocated(path) .. " bytes allocated")
+      eq(leftovers(tmp), {}, mode .. ": and no temp file is left")
+      vim.cmd("bwipeout!")
+      os.remove(path)
+    end
+  end,
+
+  function()
+    -- the zero page finder, with and without the FFI
+    local z = string.rep("\0", 4096)
+    eq(fs.data_runs(""), {}, "an empty string has no data")
+    eq(fs.data_runs(z .. z), {}, "zero pages have no data")
+    eq(fs.data_runs("abc"), { 0, 3 }, "a short string is one run")
+    eq(fs.data_runs(z .. "\0\0ab\0" .. z), { 4098, 4100 }, "zeros around data are trimmed")
+    eq(fs.data_runs("a" .. z .. z .. "b"), { 0, 1, 8193, 8194 }, "zero pages split the runs")
+    eq(fs.data_runs(z .. z .. "x"), { 8192, 8193 }, "a run at the end")
+    h.check(fs.is_zero(z) and not fs.is_zero(z .. "x"), "is_zero tells zero from data")
+  end,
+
+  function()
+    -- every kind of edit set gives the bytes of the string model
+    for _, kind in ipairs({ "same", "tail", "any" }) do
+      for seed = 1, 6 do
+        local rnd = function(a, b) return math.random(a, b) end
+        math.randomseed(seed * 31 + #kind)
+        local content = mixed_content(rnd, rnd(1, 3 * 1024 * 1024))
+        local path = write("model-" .. kind .. ".bin", content)
+        vim.cmd("StreamView! " .. vim.fn.fnameescape(path))
+        S = sv.state()
+        local model = random_edits(S, rnd, content, kind, rnd(1, 12))
+        local res = save(S, { strategy = "atomic" })
+        h.check(res.ok and read(path) == model, kind .. " edits #" .. seed .. " (atomic) match the model", vim.inspect(res))
+        vim.cmd("bwipeout!")
+        os.remove(path)
+      end
+    end
   end,
 }
 
