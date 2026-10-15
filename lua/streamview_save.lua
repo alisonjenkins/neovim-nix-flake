@@ -8,6 +8,13 @@ local M = {}
 M.opts = {
   -- unit of copying, hole checks and yielding to the editor
   copy_block = 1024 * 1024,
+  -- A length-changing edit rewrites the file from the edit to the end. Done in place (behind a
+  -- journal) when that is at most this many bytes of data or this fraction of a full copy.
+  tail_bytes = 64 * 1024 * 1024,
+  tail_fraction = 0.05,
+  -- what to do with the journal of an interrupted save when a file is opened: "finish", "leave",
+  -- or nil to ask
+  recover = nil,
 }
 
 -- Functions the tests can set to stop a save at a named point
@@ -77,14 +84,38 @@ end
 -- Edits closer together than this are written as one range
 local COALESCE_GAP = 4096
 
--- The logical ranges that differ from the file when every edit kept the length, so that the changes
--- can be written over the file where they are; nil when some bytes moved. Also returns the number
--- of bytes in the ranges.
-local function changed_ranges(snap)
-  if snap.size ~= snap.file_size then return nil end
-  local ranges, bytes = {}, 0
-  for i, piece in ipairs(snap.pieces) do
-    local start = snap.starts[i]
+-- What the edits did to the file, from the pieces of a snapshot. Pieces of the file that sit where
+-- they were are unchanged; everything else has to be written:
+--   ranges   { from, to } pairs, ascending: the edit text that kept its place, then, from the first
+--            piece of the file that moved, everything to the end (the tail)
+--   tail     where the tail starts, nil when no piece of the file moved
+--   size, added (bytes of edit text), changed (bytes in the ranges before the tail)
+--   unchanged  the text is the file
+-- Edits closer together than COALESCE_GAP are one range.
+local function analyse(snap)
+  local pieces, starts = snap.pieces, snap.starts
+  local info = { size = snap.size, added = 0, changed = 0, ranges = {} }
+  local moved
+  for i, piece in ipairs(pieces) do
+    if piece.str then
+      info.added = info.added + piece.len
+    elseif not moved and piece.off ~= starts[i] then
+      moved = i
+    end
+  end
+  local limit = snap.size
+  if moved then
+    -- the text edited just before the first moved piece has to be written with it
+    while moved > 1 and pieces[moved - 1].str do
+      moved = moved - 1
+    end
+    info.tail = starts[moved]
+    limit = info.tail
+  end
+  local ranges = info.ranges
+  for i, piece in ipairs(pieces) do
+    local start = starts[i]
+    if start >= limit then break end
     if piece.str then
       local last = ranges[#ranges]
       if last and start - last[2] <= COALESCE_GAP then
@@ -92,14 +123,14 @@ local function changed_ranges(snap)
       else
         ranges[#ranges + 1] = { start, start + piece.len }
       end
-    elseif piece.off ~= start then
-      return nil
     end
   end
   for _, range in ipairs(ranges) do
-    bytes = bytes + range[2] - range[1]
+    info.changed = info.changed + range[2] - range[1]
   end
-  return ranges, bytes
+  if info.tail and info.tail < snap.size then ranges[#ranges + 1] = { info.tail, snap.size } end
+  info.unchanged = #ranges == 0 and snap.size == snap.file_size
+  return info
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -453,8 +484,9 @@ local function launch(S, ctx)
   end
 end
 
--- Patches the file where it is. o: snap, dest, ranges, bytes, journal (false: write straight into
--- the file, which a crash can leave half done), same, force, quit, finish.
+-- Patches the file where it is. o: snap, dest, ranges ({ from, to } logical ranges to write; the
+-- file is cut or extended to the size of the snapshot), bytes, journal (false: write straight into
+-- the file, which a crash can leave half done), label, same, force, quit, finish.
 local function start_inplace(S, o)
   local r, snap = S.r, o.snap
   local fd, err = uv.fs_open(o.dest, "r+", 0)
@@ -472,7 +504,7 @@ local function start_inplace(S, o)
     same = o.same,
     quit = o.quit,
     finish = o.finish,
-    label = "writing in place" .. (o.journal and "" or ", no journal"),
+    label = o.label,
     span = o.journal and 2 * o.bytes or o.bytes,
     body = function(tick)
       if not o.journal then
@@ -487,6 +519,8 @@ local function start_inplace(S, o)
           local werr = walk(snap, range[1], range[2], sink, tick)
           if werr then return nil, werr end
         end
+        local cut, cerr = uv.fs_ftruncate(fd, snap.size)
+        if not cut then return nil, "cannot set the size of the file: " .. tostring(cerr) end
         local synced, serr = uv.fs_fsync(fd)
         if not synced then return nil, "fsync failed: " .. tostring(serr) end
         return true
@@ -504,7 +538,7 @@ local function start_inplace(S, o)
       local done_bytes = 0
       for _, range in ipairs(o.ranges) do
         local base = done_bytes
-        local werr = walk(snap, range[1], range[2], sink, function(pos) tick(base + pos - range[1]) end)
+        local werr = walk(snap, range[1], range[2], sink, function(pos) tick(math.min(base + pos - range[1], o.bytes)) end)
         if werr then return nil, werr end
         done_bytes = done_bytes + range[2] - range[1]
       end
@@ -517,7 +551,7 @@ local function start_inplace(S, o)
       hook("committed")
       local reader, rerr = journal_read(j.path)
       if not reader then return nil, "cannot read back the journal: " .. tostring(rerr) end
-      local ok, aerr = journal_apply(reader, fd, function(pos) tick(math.min(done_bytes + pos, 2 * o.bytes)) end)
+      local ok, aerr = journal_apply(reader, fd, function(pos) tick(math.min(o.bytes + pos, 2 * o.bytes)) end)
       uv.fs_close(reader.fd)
       if not ok then return nil, aerr end
       applied = true
@@ -547,11 +581,172 @@ local function start_inplace(S, o)
   })
 end
 
+-- Creates the temp file for a copy with the mode, owner and extended attributes of the file it will
+-- replace. Returns its descriptor and path, or nil and why not (nothing is left behind).
+local function create_tmp(o)
+  local dir = vim.fs.dirname(o.dest)
+  local src = (o.same and o.snap.stat) or o.existing or o.snap.stat
+  local tmp = string.format("%s/.%s.streamview-%d.tmp", dir, vim.fs.basename(o.dest), uv.os_getpid())
+  local fd, err = uv.fs_open(tmp, "wx", 384)
+  if not fd then return nil, string.format("cannot create %s: %s (the file was not touched)", tmp, tostring(err)) end
+  local function abandon(msg)
+    uv.fs_close(fd)
+    uv.fs_unlink(tmp)
+    return nil, msg .. " (the file was not touched)"
+  end
+  local ok_mode, mode_err = uv.fs_fchmod(fd, bit.band(src.mode, 4095))
+  if not ok_mode then return abandon(string.format("cannot set the mode of %s: %s", tmp, tostring(mode_err))) end
+  local ok_own, own_err = uv.fs_fchown(fd, src.uid, src.gid)
+  if not ok_own then
+    if not o.force then
+      return abandon(string.format(
+        "cannot keep the owner %d:%d of %s: %s; use ! to save it as yourself", src.uid, src.gid, o.dest, tostring(own_err)
+      ))
+    end
+    vim.notify(string.format("Stream view: %s now belongs to you, not to %d:%d", o.dest, src.uid, src.gid), vim.log.levels.WARN)
+  end
+  -- ACLs, SELinux labels and user attributes live in extended attributes
+  local sfd = o.existing and uv.fs_open(o.dest, "r", 0)
+  if sfd then
+    local lost = fs.copy_xattrs(sfd, fd)
+    uv.fs_close(sfd)
+    if #lost > 0 then
+      local list = table.concat(lost, ", ")
+      if not o.force then
+        return abandon(string.format("cannot keep the extended attributes of %s (%s); use ! to save without them", o.dest, list))
+      end
+      vim.notify(string.format("Stream view: %s lost these extended attributes: %s", o.dest, list), vim.log.levels.WARN)
+    end
+  end
+  return fd, tmp
+end
+
+-- Writes a copy beside the file and renames it over the file. o: snap, dest, existing, ranges (nil:
+-- everything is written; else the copy starts as a reflink clone of the file and only these ranges
+-- are written), label, bytes, same, force, quit, finish. Returns "unsupported" when the clone
+-- cannot be made (nothing has been started then), nil otherwise.
+local function start_copy(S, o)
+  local r, snap = S.r, o.snap
+  local dir = vim.fs.dirname(o.dest)
+  local fd, tmp = create_tmp(o)
+  if not fd then return o.finish(false, tmp) end
+  if o.ranges then
+    local sfd = uv.fs_open(o.dest, "r", 0)
+    local cloned, cerr = false, "cannot open " .. o.dest
+    if sfd then
+      cloned, cerr = fs.clone(sfd, fd)
+      uv.fs_close(sfd)
+    end
+    if not cloned then
+      uv.fs_close(fd)
+      uv.fs_unlink(tmp)
+      return "unsupported", cerr
+    end
+  end
+
+  launch(S, {
+    snap = snap,
+    same = o.same,
+    quit = o.quit,
+    finish = o.finish,
+    label = o.label,
+    span = o.bytes,
+    body = function(tick)
+      local sink = {
+        data = function(pos, text)
+          local ok, werr = write_all(fd, text, pos)
+          if not ok then error("write failed: " .. tostring(werr), 0) end
+        end,
+        -- a fresh copy has holes already; a clone has the old data there
+        zero = function(pos, len)
+          if not o.ranges then return end
+          local ok, werr = zero_range(fd, pos, len)
+          if not ok then error("write failed: " .. tostring(werr), 0) end
+        end,
+      }
+      local done_bytes = 0
+      for _, range in ipairs(o.ranges or { { 0, snap.size } }) do
+        local base = done_bytes
+        local werr = walk(snap, range[1], range[2], sink, function(pos) tick(math.min(base + pos - range[1], o.bytes)) end)
+        if werr then return nil, werr end
+        done_bytes = done_bytes + range[2] - range[1]
+      end
+      local grown, gerr = uv.fs_ftruncate(fd, snap.size)
+      if not grown then return nil, "cannot set the size of the copy: " .. tostring(gerr) end
+      if o.same and r:changed_on_disk() and not o.force then return nil, S.path .. " changed on disk while it was being saved" end
+      local written = uv.fs_fstat(fd)
+      if not written or written.size ~= snap.size then
+        return nil, string.format("the copy has %s bytes, expected %d", written and written.size or "?", snap.size)
+      end
+      local synced, serr = uv.fs_fsync(fd)
+      if not synced then return nil, "fsync failed: " .. tostring(serr) end
+      uv.fs_close(fd)
+      fd = nil
+      local renamed, rerr = uv.fs_rename(tmp, o.dest)
+      if not renamed then return nil, string.format("cannot rename %s over %s: %s", tmp, o.dest, tostring(rerr)) end
+      tmp = nil
+      sync_dir(dir)
+      return true
+    end,
+    cleanup = function(ok, werr)
+      if fd then uv.fs_close(fd) end
+      if tmp then uv.fs_unlink(tmp) end
+      return ok, werr
+    end,
+  })
+end
+
+-- Which way to save. The cheapest that is safe for the file wins: a clone of the file with only the
+-- changes written (atomic, if the file system can clone), a patch in place when little is written
+-- (journaled, not atomic), else a full copy.
+--   e: strategy, same, existing, info (from analyse), need (bytes a full copy writes), tail (bytes
+--   the end of the file takes when a piece moved), keep_links, inplace (the option).
+-- Returns a plan { strategy, kind, why, bytes, ranges, fallback }.
+local function choose(e)
+  local info = e.info
+  local bytes = info.changed + e.tail
+  local function atomic(why)
+    return { strategy = "atomic", kind = "full", why = why, bytes = e.need }
+  end
+  local function patch(strategy, why)
+    return { strategy = strategy, kind = info.tail and "tail" or "ranges", why = why, bytes = bytes, ranges = info.ranges }
+  end
+  if not e.same or not e.existing or e.existing.type ~= "file" then return atomic("saving to another path") end
+  if e.strategy == "atomic" then return atomic("save_strategy = atomic") end
+  if e.strategy == "inplace" then return patch("inplace", "save_strategy = inplace") end
+  if e.strategy == "reflink" then return patch("reflink", "save_strategy = reflink") end
+  if e.keep_links then return patch("inplace", "the file has other hard links") end
+
+  local why
+  if not info.tail then
+    why = string.format("every edit kept its place, %d range(s)", #info.ranges)
+  else
+    why = string.format("the edits move the last %.1f%% of the file", info.size > 0 and 100 * (info.size - info.tail) / info.size or 100)
+  end
+  local small = not info.tail or e.tail <= math.max(M.opts.tail_bytes, M.opts.tail_fraction * e.need)
+  -- in place the bytes are written twice, to the journal and to the file
+  local worth = e.inplace ~= false and small and bytes * 2 < e.need
+  local plan = atomic(worth and why or "the edits move most of the file")
+  if worth then
+    plan = patch("inplace", why)
+    plan.fallback = atomic(why)
+  end
+  local clone = patch("reflink", worth and why or "the edits move most of the file")
+  clone.fallback = plan
+  return clone
+end
+
+
+local function describe(plan, human)
+  local what = ({ atomic = "atomic copy", inplace = "in place", reflink = "reflink copy" })[plan.strategy]
+  return string.format("%s (%s, ~%s)", what, plan.why, human(plan.bytes))
+end
+
 -- opts: path (default the viewed file), force (overwrite a file changed on disk or an existing
--- other file), strategy ("auto", "atomic" or "inplace"), inplace (true: patch in place without a
--- journal when there is no room for one, false: never patch in place, nil: ask), links ("keep" or
--- "break" for a file with other hard links, nil: ask). done(ok, err) runs when the save has
--- finished, failed or been cancelled.
+-- other file), strategy ("auto", "atomic", "inplace" or "reflink"), inplace (true: patch in place
+-- without a journal when there is no room for one, false: never patch in place, nil: ask), links
+-- ("keep" or "break" for a file with other hard links, nil: ask). done(ok, err) runs when the
+-- save has finished, failed or been cancelled.
 function M.write(S, opts, done)
   local internal = sv().internal
   local human = internal.human
@@ -565,6 +760,7 @@ function M.write(S, opts, done)
   -- a viewer that was closed (the buffer was wiped, or read again with :edit) must not write
   if S.closed then return finish(false, "the viewer was closed") end
   if S.job then return finish(false, "busy: " .. S.job.label) end
+  S.plan = nil
   internal.before_move(S)
   local r = S.r
   local target = opts.path or S.path
@@ -596,8 +792,8 @@ function M.write(S, opts, done)
   end
 
   local snap = snapshot(r)
-  local ranges, changed = changed_ranges(snap)
-  local strategy = opts.strategy or sv().opts.save_strategy or "auto"
+  local info = analyse(snap)
+  if same and info.unchanged and not r:changed_on_disk() then return finish(true) end
 
   -- A copy renamed over the file leaves the other names of a hard-linked file with the old text
   local keep_links = false
@@ -614,11 +810,8 @@ function M.write(S, opts, done)
       if not links then return finish(false, "not saved: " .. dest .. " has hard links") end
     end
     keep_links = links == "keep"
-    if keep_links and not (same and ranges) then
-      return finish(false, string.format(
-        "%s has %d hard links and the edits changed its length, so it cannot be patched in place; use links = \"break\" to detach this name",
-        dest, existing.nlink
-      ))
+    if keep_links and not same then
+      return finish(false, string.format("%s has %d hard links; use links = \"break\" to replace it", dest, existing.nlink))
     end
   end
 
@@ -627,117 +820,72 @@ function M.write(S, opts, done)
   local need = r.size
   local allocated = r.fd and data_bytes(r.fd, 0, r.file_size)
   if allocated then need = math.min(need, allocated + r.added) end
+  -- what moving the end of the file takes: its data, and the text edited in it
+  local tail = 0
+  if same and info.tail then
+    local old_tail = r.fd and data_bytes(r.fd, math.min(info.tail, r.file_size), r.file_size)
+    tail = (old_tail or math.max(r.file_size - info.tail, 0)) + math.max(info.added - info.changed, 0)
+  end
   local free = sv().free_bytes(dir)
 
-  local inplace = keep_links or (same and ranges ~= nil and strategy == "inplace" and opts.inplace ~= false)
-  local journal = true
-  if not inplace and same and free and free < need then
-    -- no room for a copy: the edits can still be written over the file if they kept the length
-    if not ranges or opts.inplace == false or strategy == "atomic" then
-      return finish(false, string.format(
+  local requested = opts.strategy or sv().opts.save_strategy or "auto"
+  local env = {
+    strategy = requested, same = same, existing = existing, info = info, need = need, tail = tail,
+    keep_links = keep_links, inplace = opts.inplace,
+  }
+  local plan = choose(env)
+
+  local function run(p)
+    -- no room for a copy: the edits can still be written over the file
+    if p.strategy == "atomic" and same and free and free < need then
+      local refuse = string.format(
         "not enough room in %s for a copy: need %s, %s free (nothing was written)", dir, human(need), human(free)
-      ))
+      )
+      if opts.inplace == false or requested == "atomic" then return finish(false, refuse) end
+      if info.tail and tail * 1.01 + 2 * HEADER > free then return finish(false, refuse) end
+      p = choose(vim.tbl_extend("force", env, { strategy = "inplace" }))
+      p.why = "no room for a copy"
     end
-    inplace = true
-  end
-  if strategy == "inplace" and not inplace then
-    return finish(false, "the edits changed the length of the file, so it cannot be patched in place (save_strategy = inplace)")
-  end
-  if inplace then
-    local jneed = changed * 1.01 + 2 * HEADER
-    if free and free < jneed then
-      -- without a journal a crash can leave the file half patched: only on request
-      local yes = opts.inplace
-      if yes == nil then
-        yes = vim.fn.confirm(
-          string.format("No room for a journal (%s free). Patch the file in place without it? A crash could leave it half written.", human(free)),
-          "&Patch in place\n&Cancel",
-          2
-        ) == 1
+    p.label = "writing " .. describe(p, human)
+    S.plan = p
+    if p.strategy == "inplace" then
+      local journal = true
+      local jneed = p.bytes * 1.01 + 2 * HEADER
+      if free and free < jneed then
+        -- without a journal a crash can leave the file half patched: only on request, and only
+        -- when the edits are in ranges
+        if info.tail then
+          return finish(false, string.format(
+            "not enough room in %s for the journal of the patch: need %s, %s free (nothing was written)", dir, human(jneed), human(free)
+          ))
+        end
+        local yes = opts.inplace
+        if yes == nil then
+          yes = vim.fn.confirm(
+            string.format("No room for a journal (%s free). Patch the file in place without it? A crash could leave it half written.", human(free)),
+            "&Patch in place\n&Cancel",
+            2
+          ) == 1
+        end
+        if not yes then return finish(false, "not saved: no room for a journal beside " .. dest) end
+        journal = false
       end
-      if not yes then return finish(false, "not saved: no room for a journal beside " .. dest) end
-      journal = false
+      return start_inplace(S, {
+        snap = snap, dest = dest, ranges = p.ranges, bytes = p.bytes, journal = journal, label = p.label,
+        same = same, force = opts.force, quit = quit, finish = finish,
+      })
     end
-    return start_inplace(S, {
-      snap = snap, dest = dest, ranges = ranges, bytes = changed, journal = journal,
+    local started, why = start_copy(S, {
+      snap = snap, dest = dest, existing = existing, ranges = p.strategy == "reflink" and p.ranges or nil,
+      bytes = p.strategy == "reflink" and p.bytes or snap.size, label = p.label,
       same = same, force = opts.force, quit = quit, finish = finish,
     })
-  end
-
-  local src = (same and r.stat) or existing or r.stat
-  local tmp = string.format("%s/.%s.streamview-%d.tmp", dir, vim.fs.basename(dest), uv.os_getpid())
-  local fd, err = uv.fs_open(tmp, "wx", 384)
-  if not fd then return finish(false, string.format("cannot create %s: %s (the file was not touched)", tmp, tostring(err))) end
-  local function abandon(msg)
-    uv.fs_close(fd)
-    uv.fs_unlink(tmp)
-    return finish(false, msg .. " (the file was not touched)")
-  end
-  local ok_mode, mode_err = uv.fs_fchmod(fd, bit.band(src.mode, 4095))
-  if not ok_mode then return abandon(string.format("cannot set the mode of %s: %s", tmp, tostring(mode_err))) end
-  local ok_own, own_err = uv.fs_fchown(fd, src.uid, src.gid)
-  if not ok_own then
-    if not opts.force then
-      return abandon(string.format(
-        "cannot keep the owner %d:%d of %s: %s; use ! to save it as yourself", src.uid, src.gid, dest, tostring(own_err)
-      ))
-    end
-    vim.notify(string.format("Stream view: %s now belongs to you, not to %d:%d", dest, src.uid, src.gid), vim.log.levels.WARN)
-  end
-  -- ACLs, SELinux labels and user attributes live in extended attributes
-  local sfd = existing and uv.fs_open(dest, "r", 0)
-  if sfd then
-    local lost = fs.copy_xattrs(sfd, fd)
-    uv.fs_close(sfd)
-    if #lost > 0 then
-      local list = table.concat(lost, ", ")
-      if not opts.force then
-        return abandon(string.format("cannot keep the extended attributes of %s (%s); use ! to save without them", dest, list))
-      end
-      vim.notify(string.format("Stream view: %s lost these extended attributes: %s", dest, list), vim.log.levels.WARN)
+    if started == "unsupported" then
+      if p.fallback and requested == "auto" then return run(p.fallback) end
+      return finish(false, string.format("%s cannot be cloned: %s (save_strategy = reflink)", dest, tostring(why)))
     end
   end
-
-  launch(S, {
-    snap = snap,
-    same = same,
-    quit = quit,
-    finish = finish,
-    label = "writing",
-    span = snap.size,
-    body = function(tick)
-      local sink = {
-        data = function(pos, text)
-          local ok, werr = write_all(fd, text, pos)
-          if not ok then error("write failed: " .. tostring(werr), 0) end
-        end,
-        zero = function() end, -- stays a hole
-      }
-      local werr = walk(snap, 0, snap.size, sink, tick)
-      if werr then return nil, werr end
-      local grown, gerr = uv.fs_ftruncate(fd, snap.size)
-      if not grown then return nil, "cannot set the size of the copy: " .. tostring(gerr) end
-      if same and r:changed_on_disk() and not opts.force then return nil, S.path .. " changed on disk while it was being saved" end
-      local written = uv.fs_fstat(fd)
-      if not written or written.size ~= snap.size then
-        return nil, string.format("the copy has %s bytes, expected %d", written and written.size or "?", snap.size)
-      end
-      local synced, serr = uv.fs_fsync(fd)
-      if not synced then return nil, "fsync failed: " .. tostring(serr) end
-      uv.fs_close(fd)
-      fd = nil
-      local renamed, rerr = uv.fs_rename(tmp, dest)
-      if not renamed then return nil, string.format("cannot rename %s over %s: %s", tmp, dest, tostring(rerr)) end
-      tmp = nil
-      sync_dir(dir)
-      return true
-    end,
-    cleanup = function(ok, werr)
-      if fd then uv.fs_close(fd) end
-      if tmp then uv.fs_unlink(tmp) end
-      return ok, werr
-    end,
-  })
+  run(plan)
 end
 
 -- Looks for a journal of an interrupted patch of the viewed file and offers to finish it. how:

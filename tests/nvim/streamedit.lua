@@ -307,6 +307,10 @@ local steps = {
     -- no room for a copy: patch in place only if every edit kept the length
     local real_free = sv.free_bytes
     sv.free_bytes = function() return 0 end
+    -- a reflink clone needs no room, so it would be used on a file system that has them
+    local fsmod = require("streamview_fs")
+    local real_clone = fsmod.clone
+    fsmod.clone = function() return nil, "EOPNOTSUPP" end
     local file = write("edit-patch.txt", "aaaa\nbbbb\ncccc\n")
     local before = uv.fs_stat(file)
     S = open(file)
@@ -331,6 +335,7 @@ local steps = {
     h.check(not res.ok and tostring(res.err):find("not enough room", 1, true) ~= nil, "inplace = false never patches", tostring(res.err))
     eq(read(file), "aaaa\nBBBB\ncccc\n", "and leaves the file untouched")
     sv.free_bytes = real_free
+    fsmod.clone = real_clone
   end,
 
   function()

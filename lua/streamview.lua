@@ -21,6 +21,10 @@ M.opts = {
   editable = not (vim.g.stream_viewer_readonly == true or vim.g.stream_viewer_readonly == 1),
   edit_warn = 256 * 1024 * 1024, -- bytes of edit text held in memory before a warning
   edit_max = 1024 * 1024 * 1024, -- bytes of edit text held in memory before edits are refused
+  -- how a save is written: "auto" picks the cheapest safe way, "atomic" always writes a full copy
+  -- and renames it, "inplace" patches the file where it is (behind a journal), "reflink" clones the
+  -- file and writes the changes
+  save_strategy = "auto",
   follow_ms = 500, -- how often follow mode polls the file size
   min_bytes = 256 * 1024 * 1024, -- floor of the size at which a file opens in the viewer
   cgroup_root = "/sys/fs/cgroup", -- where the memory limit of the process's cgroup is read
@@ -1661,7 +1665,8 @@ local function write_command(S, o)
   local path = o.args ~= "" and vim.fn.fnamemodify(vim.fs.normalize(o.args), ":p") or nil
   M.write(S, { path = path, force = o.bang }, function(ok, err)
     if ok then
-      vim.notify(err and ("Stream view: " .. err) or string.format("Stream view: wrote %s", human(S.r.size)), vim.log.levels.INFO)
+      local how = S.plan and S.plan.label and (", " .. S.plan.label:gsub("^writing ", "")) or ""
+      vim.notify(err and ("Stream view: " .. err) or string.format("Stream view: wrote %s%s", human(S.r.size), how), vim.log.levels.INFO)
     elseif err == "cancelled" then
       vim.notify("Stream view: save cancelled, the file was not touched", vim.log.levels.WARN)
     else
