@@ -1357,9 +1357,10 @@
             };
 
             combinePlugins = {
-              enable = false;
+              enable = true;
 
               standalonePlugins = with pkgs.vimPlugins; [
+                async-nvim
                 conform-nvim
                 copilot-lua
                 friendly-snippets
@@ -1369,8 +1370,14 @@
                 nvim-treesitter
                 nvim-treesitter-parsers.http
                 oil-nvim
+                promise-async
                 snacks-nvim
-              ];
+              ]
+              # nixpkgs merges these into one symlinkJoin with lndir, which tolerates the
+              # overlapping files (grammar repos ship queries too); the combined pack's
+              # buildEnv does not.
+              ++ pkgs.lib.attrValues pkgs.vimPlugins.nvim-treesitter.grammarPlugins
+              ++ pkgs.lib.attrValues pkgs.vimPlugins.nvim-treesitter.queries;
             };
           };
 
