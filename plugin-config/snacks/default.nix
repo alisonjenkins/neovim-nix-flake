@@ -27,16 +27,26 @@
             vim.b[ctx.buf].bigfile = true
             -- conform: skip format-on-save (trim_whitespace copies every line)
             vim.b[ctx.buf].disable_autoformat = true
-            -- smear-cursor animates every cursor jump and redraws on each move
-            local function smear(on)
+            -- smear-cursor animates every cursor jump and redraws on each move: switch it
+            -- off while a big buffer is current and put its previous state back after
+            -- (it may have been toggled off already).
+            local smear_was_enabled
+            local function smear(in_big_buffer)
               local ok, s = pcall(require, "smear_cursor")
-              if ok and s.enabled ~= on then s.enabled = on end
+              if not ok then return end
+              if in_big_buffer then
+                if smear_was_enabled == nil then smear_was_enabled = s.enabled end
+                if s.enabled then s.enabled = false end
+              elseif smear_was_enabled ~= nil then
+                s.enabled = smear_was_enabled
+                smear_was_enabled = nil
+              end
             end
             vim.api.nvim_create_autocmd({ "BufEnter", "BufLeave", "BufWipeout" }, {
               buffer = ctx.buf,
-              callback = function(ev) smear(ev.event == "BufLeave" or ev.event == "BufWipeout") end,
+              callback = function(ev) smear(ev.event == "BufEnter") end,
             })
-            if vim.api.nvim_get_current_buf() == ctx.buf then smear(false) end
+            if vim.api.nvim_get_current_buf() == ctx.buf then smear(true) end
             -- Hook FileType so we clear syntax/rendering AFTER filetype scripts run,
             -- not via vim.schedule which races against those scripts
             vim.api.nvim_create_autocmd("FileType", {
