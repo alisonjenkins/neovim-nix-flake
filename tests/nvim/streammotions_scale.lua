@@ -156,7 +156,7 @@ local function one_ops(f)
     { "scale1.search", { "/MARKER42<CR>" }, pos_is(f.marker), { 3, 30 } },
     { "scale1.search_back", { "$", "?MARKER42<CR>" }, pos_is(f.marker), { 3, 30 } },
     { "scale1.go", { K .. "go" }, pos_is(K - 1), { 1, 3 } },
-    { "scale1.gg_G", { K .. "l", "G" }, pos_is(0), { 1, 3 } },
+    { "scale1.gg_G", { K .. "l", "G" }, pos_is(K), { 1, 3 } }, -- the only line: G stays in its column
     {
       "scale1.xdel", { K .. "l", "x" },
       function(_, c) return c.exec(SIZE_AFTER_RENDER) == f.size - 1, "x did not delete one byte" end,

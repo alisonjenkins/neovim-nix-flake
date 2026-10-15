@@ -1120,20 +1120,43 @@ function M.scroll(S, n)
   end)
 end
 
+-- Where the cursor is in its line: its byte in the file, the line's start and the column. The keys gg,
+-- G and {N}G keep the column (Neovim's 'nostartofline'; they pass keep_col); a line that is shorter
+-- puts the cursor on its last character. The functions without it go to the start of the line.
+local function column_of(S)
+  local row = S.entries[S.row]
+  if not row then return { col = 0, abs = 0, ls = 0 } end
+  local abs = M.cursor_abs(S)
+  return { col = math.max(0, abs - row.off), abs = abs, ls = row.off }
+end
+
+-- Puts the cursor of a window that starts at the line `ls` where `keep` (from column_of) says, or at
+-- the start of the line when `keep` is nil. On the same line it stays where it is, also far inside a
+-- long one.
+local function keep_column(S, ls, keep)
+  S.slice_rel, S.col = 0, keep and keep.col or 0
+  if keep and ls == keep.ls then
+    S.goal_abs = keep.abs
+    S.slice_rel = slice_rel_for(ls, keep.abs)
+  end
+end
+
 -- Goes to line number `line` of the file (the last one if there are fewer). The first time in a big
 -- file it counts lines from the nearest checkpoint, as a job with progress; the checkpoints are
 -- kept (and saved), so the next jump is quick.
-function M.goto_line(S, line)
+function M.goto_line(S, line, keep_col)
   nav(S, function()
     if not before_move(S) then return end
     stop_follow(S)
+    local col = keep_col and column_of(S)
     local r = S.r
     r:refresh()
     r:index_load()
     local off, found = wait_scan(S, "counting lines", r.size, function(so) return r:line_offset(line, so) end)
     if not off then return end
     S.top_line = found
-    S.offset, S.row, S.slice_rel, S.col = off, 1, 0, 0
+    S.offset, S.row = off, 1
+    keep_column(S, off, col)
     r:index_save()
     M.render(S)
   end)
@@ -1192,24 +1215,30 @@ function M.half_page(S, dir, count)
   M.scroll(S, dir * (S.scroll_amount or math.max(1, math.floor(height_of(S) / 2))))
 end
 
-function M.head(S)
+function M.head(S, keep_col)
   nav(S, function()
     if not before_move(S) then return end
     stop_follow(S)
-    S.offset, S.row, S.slice_rel, S.col = 0, 1, 0, 0
+    local keep = keep_col and column_of(S)
+    S.offset, S.row = 0, 1
+    keep_column(S, 0, keep)
     M.render(S)
   end)
 end
 
-function M.tail(S)
+function M.tail(S, keep_col)
   nav(S, function()
     if not before_move(S) then return end
+    local col = keep_col and column_of(S)
     local r = S.r
     local size = r:refresh()
     local ls = 0
+    local last_ls = 0
+    local rows = 1 -- the lines from ls to the last one: the cursor is on the last of them
     if size > 0 then
       ls = wait_scan(S, "finding the start of the line", size, function(so) return r:line_start(size - 1, so) end)
       if not ls then return end
+      last_ls = ls
       for _ = 2, height_of(S) do
         if ls == 0 then break end
         local prev = wait_scan(S, "finding the start of the line", ls, function(so)
@@ -1218,9 +1247,12 @@ function M.tail(S)
         end)
         if not prev then return end
         ls = prev
+        rows = rows + 1
       end
     end
-    S.offset, S.row, S.slice_rel, S.col = ls, height_of(S), 0, 0
+    S.offset, S.row = ls, rows
+    -- the cursor goes to the last line, which is where the window ends
+    keep_column(S, last_ls, col)
     M.render(S)
   end)
 end
@@ -1904,10 +1936,10 @@ local function keymaps(S)
     end, "find a character")
   end
   map("gg", function()
-    if vim.v.count > 0 then M.goto_line(S, vim.v.count) else M.head(S) end
+    if vim.v.count > 0 then M.goto_line(S, vim.v.count, true) else M.head(S, true) end
   end, "start of file, or line {count}")
   map("G", function()
-    if vim.v.count > 0 then M.goto_line(S, vim.v.count) else M.tail(S) end
+    if vim.v.count > 0 then M.goto_line(S, vim.v.count, true) else M.tail(S, true) end
   end, "end of file, or line {count}")
   map("go", function() M.goto_abs(S, math.max(vim.v.count, 1) - 1) end, "byte {count} of the file")
   -- :123, :$ and :goto 123 are about the lines and bytes of the file, not the rows of the window
@@ -1915,7 +1947,7 @@ local function keymaps(S)
     if vim.fn.getcmdtype() ~= ":" then return "<CR>" end
     local line = vim.fn.getcmdline()
     local n = line:match("^%s*(%d+)%s*$")
-    if n then return "<C-u>StreamLine " .. n .. "<CR>" end
+    if n then return "<C-u>execute 'normal " .. n .. "G'<CR>" end
     if line:match("^%s*%$%s*$") then return "<C-u>normal G<CR>" end
     local byte = line:match("^%s*got?o?%s+(%d+)%s*$")
     if byte then return "<C-u>execute 'normal " .. byte .. "go'<CR>" end

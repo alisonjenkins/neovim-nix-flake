@@ -1262,6 +1262,15 @@ local steps = {
     vim.api.nvim_feedkeys(":echo 1\r", "mx", false)
     h.check(true, "other ex commands still run")
     sv.place(V, 0)
+    -- gg, G and {N}G keep the column ('nostartofline'), a shorter line puts the cursor at its end
+    sv.place(V, text:find("line 020", 1, true) - 1 + 3)
+    vim.api.nvim_feedkeys("150G", "mx", false)
+    eq(sv.cursor_offset(V), text:find("line 150", 1, true) - 1 + 3, "150G keeps the column of the cursor")
+    vim.api.nvim_feedkeys("gg", "mx", false)
+    eq(sv.cursor_offset(V), 3, "and so does gg")
+    vim.api.nvim_feedkeys("G", "mx", false)
+    eq(sv.cursor_offset(V), text:find("line 300", 1, true) - 1 + 3, "and G")
+    sv.place(V, 0)
     -- a failed f drops the keys typed after it, as Neovim does
     local before_text = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
     vim.api.nvim_feedkeys("f]x", "mx", false)
@@ -1293,6 +1302,16 @@ local steps = {
     h.check(L.slice_rel > 0, "by sliding the slice", tostring(L.slice_rel))
     h.check(sv.place(L, mid) and sv.cursor_offset(L) == mid, "and back to another byte of it")
     h.check(sv.place(L, 3) and sv.cursor_offset(L) == 3, "and to the first line")
+    -- the functions go to the start; the gg key keeps the column, a shorter line puts the cursor at its end
+    sv.place(L, far)
+    sv.head(L)
+    eq(sv.cursor_offset(L), 0, "head(S) goes to the first byte of the file")
+    sv.place(L, far)
+    vim.api.nvim_feedkeys("gg", "mx", false)
+    eq(sv.cursor_offset(L), #first - 2, "gg from far inside the long line goes to the end of the short first line")
+    sv.place(L, far)
+    sv.goto_line(L, 3)
+    eq(sv.cursor_offset(L), #first + line_len + 1, "goto_line(S, N) goes to the start of the line")
   end,
 }
 

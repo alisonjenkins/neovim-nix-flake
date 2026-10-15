@@ -688,7 +688,7 @@ scale("scale1.unmatched", "% on a ( that never closes", "Cursor stays; bounded s
 scale("scale1.search", "/MARKER42", "Exact landing.", "3 s / 30 s", 1)
 scale("scale1.search_back", "$ then ?MARKER42", "Exact landing backwards.", "3 s / 30 s", 2)
 scale("scale1.go", "{K}go", "Byte K exactly in the middle of the line.", "1 s / 3 s", 3)
-scale("scale1.gg_G", "{K}l then G", "G on a single line goes to byte 0.", "1 s / 3 s", 2)
+scale("scale1.gg_G", "{K}l then G", "G on a single line stays in its column (nostartofline).", "1 s / 3 s", 2)
 scale("scale1.xdel", "{K}l then x", "Deletes one byte (size -1), memory flat.", "2 s / 6 s", 2)
 scale("scale1.w", "1000000w (64 MB only)", "One million words on, 3 bytes each.", "3 s", 2)
 scale("scale1.e", "1000000e (64 MB only)", "One million word ends on.", "3 s", 3)
