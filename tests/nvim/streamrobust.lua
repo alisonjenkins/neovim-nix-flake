@@ -464,7 +464,7 @@ local steps = {
     end
     local res
     sv.write(S, {}, function(ok, err) res = { ok = ok, err = err } end)
-    vim.api.nvim_buf_set_lines(S.buf, 0, 3, false, { "ZZZZZZZZZZ" })
+    pcall(vim.api.nvim_buf_set_lines, S.buf, 0, 3, false, { "ZZZZZZZZZZ" })
     pcall(sv.scroll, S, 1)
     vim.wait(10000, function() return res ~= nil end, 5)
     uv.hrtime = real

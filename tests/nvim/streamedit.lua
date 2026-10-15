@@ -447,29 +447,25 @@ local steps = {
     end
     local res
     sv.write(S, nil, function(ok, err) res = { ok = ok, err = err } end)
-    h.check(S.job ~= nil and S.job.exclusive, "the save is running in slices")
-    set_lines(0, 3, { "ZZZZZZZZZZ" })
+    h.check(S.job ~= nil and S.job.label:find("writing", 1, true) ~= nil, "the save is running in slices")
+    h.check(not pcall(vim.api.nvim_buf_set_lines, 0, 0, 3, false, { "ZZZZZZZZZZ" }), "typing in the window is refused during a save")
     local offset = S.offset
-    sv.scroll(S, 1)
-    eq(S.offset, offset, "a move during a save is refused")
-    sv.undo(S)
-    sv.search(S, "L050", true, function() end)
-    h.check(S.job ~= nil and S.job.label:find("writing", 1, true) ~= nil, "and a search does not cancel the save")
-    h.check(#h.notes_matching("saving, wait") >= 3, "with a message")
+    local ok, err = pcall(sv.scroll, S, 1)
+    h.check(not ok and type(err) == "table" and err.blocked ~= nil, "a move during a save is refused")
+    eq(S.offset, offset, "and the window stays")
+    h.check(S.job ~= nil and S.job.label:find("writing", 1, true) ~= nil, "and the save goes on")
     vim.wait(5000, function() return res ~= nil end, 5)
     uv.hrtime = real_hrtime
     h.check(res and res.ok, "the save finishes", vim.inspect(res))
     lines[1] = "AAA"
     eq(read(path), text_of(lines), "the file has the text as it was when the save began")
-    eq(sv.lines(S)[1], "ZZZZZZZZZZ", "the text typed during the save is still in the window")
-    h.check(vim.bo.modified, "and the buffer is still modified")
-    sv.head(S)
+    h.check(not vim.bo.modified and vim.bo.modifiable, "the window is editable again and not modified")
+    set_lines(0, 3, { "ZZZZZZZZZZ" })
+    save(S)
     lines[1], lines[2], lines[3] = "ZZZZZZZZZZ", nil, nil
     local expect = { "ZZZZZZZZZZ" }
     for i = 4, 100 do expect[#expect + 1] = lines[i] or string.format("L%03d", i) end
-    eq(logical(S), text_of(expect), "and it becomes an edit of the saved file")
-    save(S)
-    eq(read(path), text_of(expect), "which saves")
+    eq(read(path), text_of(expect), "and a later edit saves")
   end,
 
   function()
@@ -601,8 +597,8 @@ local steps = {
 
     -- an owner that cannot be kept is reported
     local owned = write("perm/owned.txt", "one\ntwo\n")
-    local real_fchown = sv.fchown
-    sv.fchown = function() return nil, "EPERM: operation not permitted" end
+    local real_fchown = uv.fs_fchown
+    uv.fs_fchown = function() return nil, "EPERM: operation not permitted" end
     S = open(owned)
     set_lines(0, 1, { "ONE" })
     local res = save(S)
@@ -610,7 +606,7 @@ local steps = {
     eq(read(owned), "one\ntwo\n", "leaving the file untouched")
     eq(leftovers(dir), {}, "and no temp file")
     res = save(S, { force = true })
-    sv.fchown = real_fchown
+    uv.fs_fchown = real_fchown
     h.check(res.ok, "! saves with a new owner", tostring(res.err))
 
     -- :write on an unmodified viewer does no I/O
