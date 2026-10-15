@@ -40,7 +40,11 @@ local function save(S, opts)
 end
 
 local function eq(a, b, name)
-  h.check(vim.deep_equal(a, b), name, vim.inspect(a) .. " ~= " .. vim.inspect(b))
+  local function short(v)
+    local s = vim.inspect(v)
+    return #s > 200 and (s:sub(1, 200) .. "... (" .. #s .. " chars)") or s
+  end
+  h.check(vim.deep_equal(a, b), name, short(a) .. " ~= " .. short(b))
 end
 
 local function leftovers(dir)
@@ -499,6 +503,200 @@ local steps = {
     eq(read(second):sub(1, 7), "XXXXXX\n", "and the other name keeps the older text")
     vim.cmd("bwipeout!")
     os.remove(second)
+  end,
+
+  function()
+    -- S4a: a patch in place goes through a journal, in slices, and can be cancelled
+    local save_mod = require("streamview_save")
+    local content = numbered(6000)
+    local path = write("inplace.txt", content)
+    local ino = uv.fs_stat(path).ino
+    S = open(path)
+    local function at(text) return content:find(text, 1, true) - 1 end
+    local model = content
+    local function replace(offset, text)
+      S.r:apply({ { start = offset, stop = offset + #text, text = text } })
+      model = model:sub(1, offset) .. text .. model:sub(offset + #text + 1)
+    end
+    replace(at("line 3\n"), "LINE 3\n")
+    replace(at("line 2500\n"), "LINE 2500\n")
+    replace(at("line 5999\n"), "LINE 5999\n")
+    local journal = save_mod.journal_path(path)
+    local seen = {}
+    save_mod.hooks.journal_written = function() seen.journal = uv.fs_stat(journal) ~= nil and read(journal):sub(1, 20) end
+    local restore = slow_slices()
+    local res
+    sv.write(S, { strategy = "inplace" }, function(ok, err) res = { ok = ok, err = err } end)
+    h.check(res == nil and S.job and S.job.label:find("in place", 1, true), "an in-place save runs in slices", vim.inspect(S.job))
+    eq(read(path), content, "and does not touch the file before the journal is complete")
+    vim.wait(60000, function() return res ~= nil end, 5)
+    restore()
+    save_mod.hooks.journal_written = nil
+    h.check(res and res.ok, "it finishes", vim.inspect(res))
+    eq(read(path), model, "the file has the edits")
+    eq(uv.fs_stat(path).ino, ino, "in the same file")
+    eq(seen.journal, "STREAMVIEW-JOURNAL 1", "a journal was written first")
+    eq(uv.fs_stat(journal), nil, "and is removed afterwards")
+    eq(leftovers(tmp), {}, "no temp file")
+    vim.cmd("bwipeout!")
+
+    -- cancelling before the journal is complete leaves the file as it was
+    path = write("inplace-cancel.txt", content)
+    S = open(path)
+    replace(at("line 3\n"), "LINE 3\n")
+    restore = slow_slices()
+    res = nil
+    sv.write(S, { strategy = "inplace" }, function(ok, err) res = { ok = ok, err = err } end)
+    sv.cancel(S)
+    restore()
+    eq(res and res.err, "cancelled", "a cancelled in-place save reports it")
+    eq(read(path), content, "and the file is untouched")
+    eq(uv.fs_stat(save_mod.journal_path(path)), nil, "and no journal is left")
+    h.check(S.r.log_pos > 0, "and the edits are still held")
+    vim.cmd("bwipeout!")
+
+    -- cancelling once the journal is complete finishes the patch instead
+    path = write("inplace-late.txt", content)
+    S = open(path)
+    model = content
+    replace(at("line 3\n"), "LINE 3\n")
+    replace(at("line 2500\n"), "LINE 2500\n")
+    local committed = false
+    save_mod.hooks.committed = function() committed = true end
+    restore = slow_slices()
+    res = nil
+    sv.write(S, { strategy = "inplace" }, function(ok, err) res = { ok = ok, err = err } end)
+    vim.wait(60000, function() return committed end, 5)
+    h.check(res == nil, "the save is still running once the journal is complete")
+    sv.cancel(S)
+    restore()
+    save_mod.hooks.committed = nil
+    h.check(res and res.ok, "cancelling then finishes the save", vim.inspect(res))
+    eq(read(path), model, "so the file has all the edits")
+    eq(uv.fs_stat(save_mod.journal_path(path)), nil, "and the journal is gone")
+    vim.cmd("bwipeout!")
+  end,
+
+  function()
+    -- S4a: killed with SIGKILL at each step, the file is repaired to the bytes it should have
+    local save_mod = require("streamview_save")
+    local rows = {}
+    for i = 1, 8000 do
+      rows[i] = string.format("row %06d ..............\n", i)
+    end
+    local content = table.concat(rows)
+    local edits = { { 100, "XXXXXXXX" }, { 50000, "YYYYYYYY" }, { 120000, "ZZZZZZZZ" }, { 190000, "WWWWWWWW" } }
+    local model = content
+    for _, e in ipairs(edits) do
+      model = model:sub(1, e[1]) .. e[2] .. model:sub(e[1] + #e[2] + 1)
+    end
+    local function spawn(path, stop, after, edit_list, slow)
+      local marker = path .. ".marker"
+      os.remove(marker)
+      local env = vim.tbl_extend("force", vim.fn.environ(), {
+        SV_PATH = path,
+        SV_MARKER = marker,
+        SV_STOP = stop or "",
+        SV_AFTER = tostring(after or 0),
+        SV_EDITS = vim.json.encode(edit_list or edits),
+        SV_SLOW = slow and "1" or "0",
+      })
+      local child = vim.system({ os.getenv("NVIM_BIN"), "--headless", "-n", "-c", "luafile " .. os.getenv("TEST_DIR") .. "/streamsave-child.lua" }, { env = env })
+      return child, marker
+    end
+    local function kill(child, marker, what)
+      local ok = vim.wait(120000, function() return uv.fs_stat(marker) ~= nil end, 20)
+      child:kill(9)
+      local waited = child:wait()
+      h.check(ok and waited.signal == 9, what .. ": the child was killed in the middle of the save", vim.inspect(waited))
+    end
+    local function reopen_and_recover(path)
+      save_mod.opts.recover = "finish"
+      vim.cmd("StreamView! " .. vim.fn.fnameescape(path))
+      vim.wait(10000, function() return uv.fs_stat(save_mod.journal_path(path)) == nil end, 20)
+      vim.wait(100)
+      vim.cmd("bwipeout!")
+      save_mod.opts.recover = nil
+    end
+
+    -- before the journal is complete: the file was never touched
+    local path = write("crash-early.bin", content)
+    local child, marker = spawn(path, "journal_written")
+    kill(child, marker, "before the commit")
+    eq(read(path), content, "before the commit: the file is untouched")
+    local state = save_mod.journal_state(path)
+    h.check(state and not state.committed, "and the journal is not complete")
+    reopen_and_recover(path)
+    eq(read(path), content, "opening it again leaves the original")
+    eq(save_mod.journal_state(path), nil, "and removes the unfinished journal")
+
+    -- after the commit, before and in the middle of the patch, and before the journal is removed
+    for _, point in ipairs({ { "committed", 0 }, { "applied", 8192 + 30 }, { "patched", 0 } }) do
+      local name = point[1]
+      path = write("crash-" .. name .. ".bin", content)
+      child, marker = spawn(path, name, point[2])
+      kill(child, marker, name)
+      state = save_mod.journal_state(path)
+      h.check(state and state.committed, name .. ": the journal is complete")
+      if name == "committed" then eq(read(path), content, name .. ": and the file is not patched yet") end
+      if name == "applied" then
+        local now = read(path)
+        h.check(now ~= content and now ~= model, name .. ": the file is half patched")
+      end
+      reopen_and_recover(path)
+      eq(read(path), model, name .. ": opening it finishes the patch, byte for byte")
+      eq(save_mod.journal_state(path), nil, name .. ": and removes the journal")
+      eq(leftovers(tmp), {}, name .. ": with no temp file")
+    end
+
+    -- a journal that is left alone stops a save until it is finished
+    path = write("crash-leave.bin", content)
+    child, marker = spawn(path, "committed")
+    kill(child, marker, "leave")
+    save_mod.opts.recover = "leave"
+    S = open(path)
+    vim.wait(500)
+    save_mod.opts.recover = nil
+    h.check(save_mod.journal_state(path) ~= nil, "a journal that is left is still there")
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "A NEW EDIT" })
+    local res = save(S, { strategy = "atomic" })
+    h.check(not res.ok and res.err:find("interrupted", 1, true), "saving is refused while it is", vim.inspect(res))
+    eq(read(path), content, "and the file is untouched")
+    vim.cmd("bwipeout!")
+    os.remove(save_mod.journal_path(path))
+
+    -- killed at random moments, the file is the old text or the new, never something between
+    math.randomseed(11)
+    local results = { old = 0, new = 0 }
+    local many = {}
+    local big_model = {}
+    for i = 1, 8000 do
+      big_model[i] = string.format("row %06d ..............\n", i)
+    end
+    local big = table.concat(big_model)
+    local wide = big:rep(20) -- 4.6 MB, edited 300 times
+    local wide_model = wide
+    for k = 1, 300 do
+      local offset = k * 13000 + 7
+      many[k] = { offset, "EDIT" .. string.format("%04d", k) }
+      wide_model = wide_model:sub(1, offset) .. many[k][2] .. wide_model:sub(offset + 9)
+    end
+    for round = 1, 10 do
+      path = write("crash-random.bin", wide)
+      child, marker = spawn(path, nil, nil, many, true)
+      vim.wait(120000, function() return uv.fs_stat(marker) ~= nil end, 2)
+      vim.wait(math.random(0, 1500))
+      child:kill(9)
+      child:wait()
+      reopen_and_recover(path)
+      local got = read(path)
+      local whole = got == wide or got == wide_model
+      h.check(whole, "random kill " .. round .. ": the file is whole after recovery")
+      results[got == wide_model and "new" or "old"] = results[got == wide_model and "new" or "old"] + 1
+      eq(leftovers(tmp), {}, "random kill " .. round .. ": with no temp file")
+      eq(save_mod.journal_state(path), nil, "random kill " .. round .. ": and no journal")
+    end
+    io.stdout:write(string.format("      random kills ended old=%d new=%d\n", results.old, results.new))
   end,
 
   function()
