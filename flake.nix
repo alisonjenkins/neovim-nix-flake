@@ -665,6 +665,20 @@
               end,
             })
 
+            -- 'incsearch' and 'inccommand' rescan the buffer after every key typed in a
+            -- / or :s command line: one full scan per key, ~120 ms at 100 MB and over
+            -- a second at 1 GB. Both are global, so switch them as buffers are entered.
+            do
+              local incsearch, inccommand = vim.o.incsearch, vim.o.inccommand
+              vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+                callback = function(ev)
+                  local big = vim.b[ev.buf].bigfile
+                  vim.o.incsearch = incsearch and not big
+                  vim.o.inccommand = big and "" or inccommand
+                end,
+              })
+            end
+
             -- :LspLogTail — open the last 2 MB of the LSP log in a scratch buffer.
             -- The full log can grow to several GB; this avoids loading the whole file.
             vim.api.nvim_create_user_command("LspLogTail", function()
