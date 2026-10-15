@@ -8,7 +8,8 @@ M.opts = {
   block = 256 * 1024, -- read unit; at most two blocks of file data are held at a time
   line_cap = 64 * 1024, -- bytes of one line shown at once; the rest is reached by horizontal paging
   segment = 16 * 1024 * 1024, -- longest line scanned; a longer one is split at multiples of this
-  editable = false, -- may the window be edited (changes are held as pieces until saved)
+  -- may the window be edited (changes are held as pieces until saved)
+  editable = not (vim.g.stream_viewer_readonly == true or vim.g.stream_viewer_readonly == 1),
   edit_warn = 256 * 1024 * 1024, -- bytes of edit text held in memory before a warning
   edit_max = 1024 * 1024 * 1024, -- bytes of edit text held in memory before edits are refused
   follow_ms = 500, -- how often follow mode polls the file size
@@ -720,6 +721,7 @@ function M.winbar()
     string.format("%d / %d (%s)", S.offset, size, human(size)),
     string.format("%.1f%%", size > 0 and S.offset / size * 100 or 100),
   }
+  if vim.bo[S.buf].modified then parts[#parts + 1] = "[+]" end
   if S.col > 0 then parts[#parts + 1] = "col +" .. S.col end
   if S.follow then parts[#parts + 1] = "FOLLOW" end
   local job = S.job
@@ -873,6 +875,166 @@ function M.prompt_search(S, forward)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Saving: stream the pieces into a temp file and rename it over the original
+---------------------------------------------------------------------------------------------------
+
+-- Free bytes on the file system of `dir`; replaced in tests.
+function M.free_bytes(dir)
+  local st = uv.fs_statfs(dir)
+  return st and st.bavail * st.bsize or nil
+end
+
+-- True when every edit replaced text by text of the same length, so the changes can be written over
+-- the file where they are.
+local function patchable(r)
+  if r.size ~= r.file_size then return false end
+  for i, piece in ipairs(r.pieces) do
+    if not piece.str and piece.off ~= r.starts[i] then return false end
+  end
+  return true
+end
+
+local function write_all(fd, data, pos)
+  local done = 0
+  while done < #data do
+    local n, err = uv.fs_write(fd, done == 0 and data or data:sub(done + 1), pos + done)
+    if not n then return nil, err end
+    done = done + n
+  end
+  return true
+end
+
+-- Re-opens the saved file as the viewer's file. The edit history ends with the save.
+local function reopen(S)
+  local r, err = M.open_reader(S.path)
+  if not r then return nil, err end
+  S.r:close()
+  S.r = r
+  S.offset = r.size == 0 and 0 or r:seg_start(math.min(S.offset, r.size - 1))
+  S.match = nil
+  draw(S)
+  return true
+end
+
+local function patch_in_place(S, dest)
+  local r = S.r
+  local fd, err = uv.fs_open(dest, "r+", 0)
+  if not fd then return nil, err end
+  for i, piece in ipairs(r.pieces) do
+    if piece.str then
+      local ok, werr = write_all(fd, piece.str:sub(piece.off + 1, piece.off + piece.len), r.starts[i])
+      if not ok then
+        uv.fs_close(fd)
+        return nil, werr
+      end
+    end
+  end
+  uv.fs_fsync(fd)
+  uv.fs_close(fd)
+  return reopen(S)
+end
+
+-- opts: path (default the viewed file), force (overwrite a file changed on disk or an existing
+-- other file), inplace (true: patch in place when there is no room for a copy, false: refuse,
+-- nil: ask). done(ok, err) runs when the save has finished, failed or been cancelled.
+function M.write(S, opts, done)
+  opts = opts or {}
+  local function finish(ok, err)
+    if done then done(ok, err) end
+  end
+  if S.job then return finish(false, "busy: " .. S.job.label) end
+  before_move(S)
+  local r = S.r
+  local target = opts.path or S.path
+  local dest = uv.fs_realpath(target) or vim.fn.fnamemodify(target, ":p")
+  local same = dest == (uv.fs_realpath(S.path) or S.path)
+  local existing = uv.fs_stat(dest)
+
+  if same and not opts.force and r:changed_on_disk() then
+    return finish(false, S.path .. " changed on disk since it was opened; use ! to overwrite it")
+  end
+  if not same and existing and not opts.force then
+    return finish(false, dest .. " exists; use ! to overwrite it")
+  end
+
+  local dir = vim.fs.dirname(dest)
+  local need = r.size
+  local free = M.free_bytes(dir)
+  if same and free and free < need then
+    if not patchable(r) or opts.inplace == false then
+      return finish(false, string.format(
+        "not enough room in %s for a copy: need %s, %s free (nothing was written)", dir, human(need), human(free)
+      ))
+    end
+    local yes = opts.inplace
+    if yes == nil then
+      yes = vim.fn.confirm(
+        string.format("Not enough room for a copy (%s free, %s needed). Patch the file in place? It is not atomic.", human(free), human(need)),
+        "&Patch in place\n&Cancel",
+        2
+      ) == 1
+    end
+    if not yes then return finish(false, "not saved: no room for a copy") end
+    local ok, err = patch_in_place(S, dest)
+    return finish(ok, err)
+  end
+
+  local src = (same and r.stat) or existing or r.stat
+  local tmp = string.format("%s/.%s.streamview-%d.tmp", dir, vim.fs.basename(dest), uv.os_getpid())
+  local fd, err = uv.fs_open(tmp, "wx", 384)
+  if not fd then return finish(false, string.format("cannot create %s: %s (the file was not touched)", tmp, tostring(err))) end
+  uv.fs_fchmod(fd, bit.band(src.mode, 4095))
+  pcall(uv.fs_fchown, fd, src.uid, src.gid)
+
+  local chunk = r.bs * 4
+  run_job(S, "writing", r.size, function(tick)
+    local pos = 0
+    while pos < r.size do
+      local ok, werr = write_all(fd, r:get(pos, chunk), pos)
+      if not ok then return nil, "write failed: " .. tostring(werr) end
+      pos = pos + chunk
+      tick(math.min(pos, r.size))
+    end
+    if same and r:changed_on_disk() and not opts.force then return nil, S.path .. " changed on disk while it was being saved" end
+    local synced, serr = uv.fs_fsync(fd)
+    if not synced then return nil, "fsync failed: " .. tostring(serr) end
+    uv.fs_close(fd)
+    fd = nil
+    local renamed, rerr = uv.fs_rename(tmp, dest)
+    if not renamed then return nil, string.format("cannot rename %s over %s: %s", tmp, dest, tostring(rerr)) end
+    tmp = nil
+    local dfd = uv.fs_open(dir, "r", 0)
+    if dfd then
+      uv.fs_fsync(dfd)
+      uv.fs_close(dfd)
+    end
+    return true
+  end, function(ok, werr)
+    if fd then uv.fs_close(fd) end
+    if tmp then uv.fs_unlink(tmp) end
+    if not ok then return finish(false, werr) end
+    if same then
+      local reopened, oerr = reopen(S)
+      if not reopened then return finish(false, "saved, but cannot reopen: " .. tostring(oerr)) end
+    end
+    finish(true)
+  end)
+end
+
+local function write_command(S, o)
+  local path = o.args ~= "" and vim.fn.fnamemodify(vim.fs.normalize(o.args), ":p") or nil
+  M.write(S, { path = path, force = o.bang }, function(ok, err)
+    if ok then
+      vim.notify(string.format("Stream view: wrote %s", human(S.r.size)), vim.log.levels.INFO)
+    elseif err == "cancelled" then
+      vim.notify("Stream view: save cancelled, the file was not touched", vim.log.levels.WARN)
+    else
+      vim.notify("Stream view: " .. tostring(err), vim.log.levels.ERROR)
+    end
+  end)
+end
+
+---------------------------------------------------------------------------------------------------
 -- Attaching to a buffer
 ---------------------------------------------------------------------------------------------------
 
@@ -982,7 +1144,12 @@ function M.attach(buf, path)
     vim.api.nvim_create_autocmd("BufWriteCmd", {
       group = group,
       buffer = buf,
-      callback = function() vim.notify("Stream view: saving is not available yet", vim.log.levels.ERROR) end,
+      callback = function(ev)
+        local name = vim.api.nvim_buf_get_name(buf)
+        local target = vim.fn.fnamemodify(ev.file, ":p")
+        local same = ev.file == name or target == name or ev.file == "stream://" .. S.path
+        write_command(S, { args = same and "" or target, bang = vim.v.cmdbang == 1 })
+      end,
     })
   end
   vim.api.nvim_create_autocmd({ "TextChanged", "InsertLeave" }, {
@@ -1122,6 +1289,15 @@ function M.setup()
     if err then vim.notify("StreamGoto: " .. err, vim.log.levels.ERROR) end
   end, { nargs = 1, desc = "Stream view: jump to a byte offset or a percentage (60%)" })
 
+  vim.api.nvim_create_user_command("StreamWrite", function(o)
+    local S = current_state()
+    if S then write_command(S, o) end
+  end, {
+    nargs = "?",
+    bang = true,
+    complete = "file",
+    desc = "Stream view: save the edits (to [path]); ! overwrites a file changed on disk or an existing path",
+  })
   vim.api.nvim_create_user_command("StreamFollow", function()
     local S = current_state()
     if S then M.toggle_follow(S) end

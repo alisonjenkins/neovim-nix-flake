@@ -33,6 +33,7 @@ end
 
 sv.opts.block = 4096
 sv.opts.follow_ms = 50
+sv.opts.editable = false -- the editable viewer is covered by streamedit.lua
 
 local parts, starts, pos = {}, {}, 0
 local count = 60000
@@ -322,7 +323,7 @@ local steps = {
       numbered,
     }, { timeout = 60000 }):wait()
     h.check(res.code == 0, "nvim <big file> starts", tostring(res.stderr))
-    eq(vim.fn.readfile(out), { "nofile", "true", "1" }, "nvim <big file> opens the viewer instead of reading the file")
+    eq(vim.fn.readfile(out), { "acwrite", "true", "1" }, "nvim <big file> opens the (editable) viewer instead of reading the file")
   end,
 }
 
