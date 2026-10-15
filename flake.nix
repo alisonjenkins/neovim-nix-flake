@@ -2075,6 +2075,7 @@
               git-async = nvimTest "git-async";
               git-hooks = nvimTest "git-hooks";
               lazyload = nvimTest "lazyload";
+              streamview = nvimTest "streamview";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
                   nativeBuildInputs = [ pkgs.luajit ];

@@ -31,7 +31,7 @@ echo x >file.txt
 
 status=0
 TEST_DIR=$test_dir REAL_GIT=$real_git BASH_BIN=$bash_bin \
-  FAKE_GIT_BIN=$work/bin FAKE_GIT_STATE=$work/fake-git-state \
+  NVIM_BIN=$nvim FAKE_GIT_BIN=$work/bin FAKE_GIT_STATE=$work/fake-git-state \
   timeout 300 "$nvim" --headless -c "luafile $test" || status=$?
 echo "nvim exited with status $status"
 exit "$status"
