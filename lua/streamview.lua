@@ -328,8 +328,9 @@ function Reader:find_nl_back(before, low)
   end
 end
 
-require("streamview_nav").setup(M.opts)
-require("streamview_nav").install(Reader)
+local Nav = require("streamview_nav")
+Nav.setup(M.opts)
+Nav.install(Reader)
 
 local function human(n)
   local units = { "B", "KiB", "MiB", "GiB", "TiB", "PiB" }
@@ -1060,6 +1061,122 @@ function M.goto_offset(S, spec)
   return target
 end
 
+
+-- Puts the cursor on byte `abs`: in the slice if it is there, else by sliding the slice along the
+-- cursor's line, else (another line) by going to it.
+local function place(S, abs)
+  local row = S.entries[S.row]
+  local win = win_of(S)
+  if not (row and win) then return end
+  if abs >= row.from and (abs < row.to or (abs == row.to and not row.ropen)) then
+    S.col = abs - row.from
+    vim.api.nvim_win_set_cursor(win, { S.row, S.col })
+    M.check_slice(S)
+  elseif abs >= row.off and (row.e == nil or abs <= row.e) then
+    S.goal_abs = abs
+    S.slice_rel = slice_rel_for(row.off, abs)
+    M.render(S)
+  else
+    M.goto_abs(S, abs)
+  end
+end
+
+local function hmove_abs(S, key, n, arg)
+  nav(S, function()
+    if not before_move(S) then return end
+    sync_row(S)
+    local row = S.entries[S.row]
+    if not row then return end
+    local r = S.r
+    local e = { r = r, pos = M.cursor_abs(S), ls = row.off }
+    local function scan(label, f) return wait_scan(S, label, r.size, function(so) return f(so) end) end
+    local target, why
+    if key == "l" then
+      target, why = scan("moving right", function(so) return Nav.right(e, n, so) end)
+    elseif key == "h" then
+      target, why = scan("moving left", function(so) return Nav.left(e, n, so) end)
+    elseif key == "w" or key == "W" then
+      target, why = scan("finding the next word", function(so) return Nav.word_forward(e, n, key == "W", so) end)
+    elseif key == "e" or key == "E" then
+      target, why = scan("finding the end of the word", function(so) return Nav.word_end(e, n, key == "E", so) end)
+    elseif key == "b" or key == "B" then
+      target, why = scan("finding the start of the word", function(so) return Nav.word_back(e, n, key == "B", so) end)
+    elseif key == "ge" or key == "gE" then
+      target, why = scan("finding the end of the word", function(so) return Nav.word_end_back(e, n, key == "gE", so) end)
+    elseif key == "0" then
+      target = row.off
+    elseif key == "^" then
+      target, why = scan("finding the first word", function(so) return Nav.first_nonblank(e, so) end)
+    elseif key == "$" then
+      local ls, le = row.off, row.e
+      if not le then
+        le = scan("finding the end of the line", function(so) return r:line_end(ls, so) end)
+        if not le then return end
+      end
+      -- 3$ is the end of the line two lines down; it fails on the last line
+      if n > 1 and le + 1 >= r.size then return end
+      for _ = 2, n do
+        if le + 1 >= r.size then break end
+        ls = le + 1
+        le = scan("finding the end of the line", function(so) return r:line_end(ls, so) end)
+        if not le then return end
+      end
+      local last = le
+      if le > ls and le < r.size and r:get(le - 1, 1) == "\r" then last = le - 1 end
+      target = last > ls and r:align_down(last - 1) or ls
+    elseif key == "|" then
+      local le = row.e or scan("finding the end of the line", function(so) return r:line_end(row.off, so) end)
+      if not le then return end
+      local want = row.off + n - 1
+      target = want >= le and (le > row.off and r:align_down(le - 1) or row.off) or r:align_down(want)
+    elseif key == "f" or key == "F" or key == "t" or key == "T" or key == ";" or key == "," then
+      local last = S.last_find
+      local ch, forward, till, again
+      if key == ";" or key == "," then
+        if not last then return end
+        ch, till, again = last.ch, last.till, true
+        forward = (key == ";") == last.forward
+      else
+        ch, forward, till, again = arg, key == "f" or key == "t", key == "t" or key == "T", false
+        S.last_find = { ch = ch, forward = forward, till = till }
+      end
+      local miss_key = string.format("%d|%s|%s", row.off, ch, forward and "f" or "b")
+      local miss = S.miss and S.miss[miss_key]
+      if n == 1 and not till and miss and miss.gen == r.gen and (forward and e.pos >= miss.bound or not forward and e.pos <= miss.bound) then
+        return
+      end
+      target, why = scan("looking for a character", function(so) return Nav.find_char(e, ch, n, forward, till, again, so) end)
+      if not target and why == "fail" and n == 1 and not till then
+        S.miss = S.miss or {}
+        S.miss[miss_key] = { gen = r.gen, bound = e.pos }
+      end
+    end
+    if target then place(S, target) end
+  end)
+end
+
+-- Horizontal motions along the cursor's line. They work in absolute bytes, so they never stop at the
+-- edge of the slice: inside the slice a plain l or h is Neovim's, anything else (or a motion that
+-- reaches an edge of the slice that is not the line's own) is worked out on the file.
+function M.hmove(S, key, count, arg)
+  local n = math.max(count or 0, 1)
+  if (key == "l" or key == "h") and not S.job then
+    sync_row(S)
+    local row = S.entries[S.row]
+    local win = win_of(S)
+    if row and win then
+      local before = vim.api.nvim_win_get_cursor(win)
+      vim.cmd(("noautocmd normal! %d%s"):format(n, key))
+      local after = vim.api.nvim_win_get_cursor(win)
+      local len = #(vim.api.nvim_buf_get_lines(S.buf, after[1] - 1, after[1], false)[1] or "")
+      local at_edge = (key == "l" and row.ropen and len - after[2] <= 8) or (key == "h" and row.lopen and after[2] <= 8)
+      if not at_edge then return M.check_slice(S) end
+      vim.api.nvim_win_set_cursor(win, before)
+    end
+  end
+  hmove_abs(S, key, n, arg)
+end
+
 -- The cursor row, and the slice of it in the buffer, follow the cursor: entering another row makes
 -- that one the cursor row, and a cursor near an edge of the slice that is not the line's own moves
 -- the slice. Safe to call at any time; it does nothing when the cursor is well inside.
@@ -1345,6 +1462,32 @@ local function keymaps(S)
   map("<PageDown>", function() M.page(S, 1) end, "page down")
   map("<C-b>", function() M.page(S, -1) end, "page up")
   map("<PageUp>", function() M.page(S, -1) end, "page up")
+  for _, key in ipairs({ "l", "h", "w", "W", "b", "B", "e", "E", "^", "$", "|", ";", ",", "ge", "gE" }) do
+    map(key, function() M.hmove(S, key, vim.v.count) end, "motion " .. key)
+  end
+  map("<Right>", function() M.hmove(S, "l", vim.v.count) end, "right")
+  map("<Left>", function() M.hmove(S, "h", vim.v.count) end, "left")
+  map("<End>", function() M.hmove(S, "$", vim.v.count) end, "end of the line")
+  map("<Home>", function() M.hmove(S, "0", 0) end, "start of the line")
+  -- 0 is a digit of a count when one is typed
+  vim.keymap.set("n", "0", function()
+    if vim.v.count > 0 then return "0" end
+    vim.schedule(function() M.hmove(S, "0", 0) end)
+    return ""
+  end, { buffer = S.buf, nowait = true, silent = true, expr = true, desc = "Stream view: start of the line" })
+  for _, key in ipairs({ "f", "F", "t", "T" }) do
+    map(key, function()
+      local count = vim.v.count
+      local ch = vim.fn.getcharstr()
+      if ch == "" then return end
+      if ch == "	" then -- <C-k>: a digraph
+        ch = vim.fn.digraph_get(vim.fn.getcharstr() .. vim.fn.getcharstr())
+      elseif ch == "" then -- <C-v>: the next character as it is
+        ch = vim.fn.getcharstr()
+      end
+      if ch ~= "" then M.hmove(S, key, count, ch) end
+    end, "find a character")
+  end
   map("gg", function() M.head(S) end, "start of file")
   map("G", function() M.tail(S) end, "end of file")
   if S.editable then

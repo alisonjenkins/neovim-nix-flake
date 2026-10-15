@@ -92,6 +92,95 @@ end
 sv.opts.block = 256 * 1024
 sv.opts.editable = true
 
+-- Random motions on the viewer against Neovim's own on a normal buffer with the same text. The
+-- slice is small and the scan budget too, so the motions cross slice edges and some take a job.
+local function motion_trials(name, lines, keys, trials, counts, chars)
+  local saved = { sv.opts.slice, sv.opts.sync_scan }
+  sv.opts.slice, sv.opts.sync_scan = 4096, 64 * 1024
+  local text = table.concat(lines, "\n") .. "\n"
+  local path = write(name, text)
+  local starts = {}
+  local pos = 0
+  for i, l in ipairs(lines) do
+    starts[i] = pos
+    pos = pos + #l + 1
+  end
+  local function to_lc(abs)
+    for i = #starts, 1, -1 do
+      if abs >= starts[i] then return i, abs - starts[i] end
+    end
+  end
+
+  vim.cmd("only")
+  vim.cmd("new")
+  local oracle = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_lines(oracle, 0, -1, false, lines)
+  local owin = vim.api.nvim_get_current_win()
+  vim.cmd("wincmd j")
+  local function native(abs, keys_)
+    local line, col = to_lc(abs)
+    vim.api.nvim_win_set_cursor(owin, { line, col })
+    vim.api.nvim_win_call(owin, function() vim.cmd("noautocmd normal " .. keys_) end)
+    local c = vim.api.nvim_win_get_cursor(owin)
+    return starts[c[1]] + c[2]
+  end
+
+  local V = open(path)
+  local mismatches, total = {}, 0
+  local long = {}
+  for i, l in ipairs(lines) do
+    if #l > 1000 then long[#long + 1] = i end
+  end
+  for trial = 1, trials do
+    local line_no = math.random(3) == 1 and math.random(#lines) or long[math.random(#long)]
+    local abs = starts[line_no] + (#lines[line_no] > 0 and math.random(0, #lines[line_no] - 1) or 0)
+    abs = V.r:align_down(abs)
+    sv.goto_abs(V, abs)
+    settle(V)
+    local key = keys[math.random(#keys)]
+    local count = counts[math.random(#counts)]
+    local ch = chars[math.random(#chars)]
+    if key == "0" or key == "^" then count = 0 end
+    local before = sv.cursor_abs(V)
+    local mkeys, arg = (count > 0 and count or "") .. key, nil
+    if key == "f" or key == "F" or key == "t" or key == "T" then
+      arg = ch
+      mkeys = mkeys .. ch
+    elseif key == "|" then
+      count = count == 0 and 1 or count
+      mkeys = count .. "|"
+    end
+    local want = native(before, mkeys)
+    sv.hmove(V, key, count, arg)
+    settle(V)
+    local got = sv.cursor_abs(V)
+    total = total + 1
+    if got ~= want then
+      local line, col = to_lc(before)
+      mismatches[#mismatches + 1] = string.format("%s from %d (line %d col %d, after %q): got %d want %d", mkeys, before, line, col, text:sub(math.max(1, before - 20), before + 1), got, want)
+    end
+    if (key == "f" or key == "F" or key == "t" or key == "T") and trial % 2 == 0 then
+      local rep = math.random(2) == 1 and ";" or ","
+      local line, col = to_lc(want)
+      vim.api.nvim_win_set_cursor(owin, { line, col })
+      vim.api.nvim_win_call(owin, function() vim.cmd("noautocmd normal " .. rep) end)
+      local c = vim.api.nvim_win_get_cursor(owin)
+      local want2 = starts[c[1]] + c[2]
+      sv.goto_abs(V, got)
+      settle(V)
+      sv.hmove(V, rep, 0)
+      settle(V)
+      local got2 = sv.cursor_abs(V)
+      total = total + 1
+      if got2 ~= want2 then
+        mismatches[#mismatches + 1] = string.format("%s%s from %d: got %d want %d", mkeys, rep, got, got2, want2)
+      end
+    end
+  end
+  sv.opts.slice, sv.opts.sync_scan = unpack(saved)
+  return total, mismatches
+end
+
 local S
 local first = "first line\n"
 local line_len = 64 * MB
@@ -352,6 +441,36 @@ local steps = {
     timer:close()
     h.check(peak - base < 300, string.format("process memory stayed bounded (+%.0f MB)", peak - base))
     sv.opts.sync_scan = saved
+  end,
+
+
+  function()
+    math.randomseed(5)
+    local alphabet = { "a", "b", "c", "d", "e", "foo", "bar", "x1", "Z", "_", "-", ".", ",", ";", ":", "(", ")", " ", " ", " ", "  ", "ab", "cd" }
+    local function words(n)
+      local t = {}
+      for i = 1, n do t[i] = alphabet[math.random(#alphabet)] end
+      return table.concat(t)
+    end
+    local lines = { "short line, with words", words(30000), "", "  indented (words) here;", words(8000), "last" }
+    local keys = { "l", "h", "w", "W", "b", "B", "e", "E", "ge", "gE", "0", "^", "$", "|", "f", "F", "t", "T" }
+    local total, mismatches = motion_trials("motions.txt", lines, keys, 1200, { 0, 0, 1, 2, 3, 7, 40, 300, 5000 }, { "a", "o", " ", "(", "x", ";" })
+    h.check(#mismatches == 0, string.format("%d random motions agree with Neovim's own, across slice edges", total), table.concat(vim.list_slice(mismatches, 1, 6), "\n      "))
+  end,
+
+  function()
+    -- the same with multibyte characters (2, 3 and 4 bytes), for the motions that count characters
+    math.randomseed(9)
+    local alphabet = { "a", "\195\169", "\226\130\172", "\240\159\152\128", "b", " ", "foo", "\195\169\195\168", ",", "x", "\226\130\172\226\130\172", " " }
+    local function words(n)
+      local t = {}
+      for i = 1, n do t[i] = alphabet[math.random(#alphabet)] end
+      return table.concat(t)
+    end
+    local lines = { "caf\195\169 au lait", words(12000), "", words(5000), "fin" }
+    local keys = { "l", "h", "0", "$", "f", "F", "t", "T" }
+    local total, mismatches = motion_trials("motions-utf8.txt", lines, keys, 600, { 0, 0, 1, 2, 3, 7, 40, 300, 3000 }, { "\195\169", "\226\130\172", "\240\159\152\128", "a", " ", "\195\168" })
+    h.check(#mismatches == 0, string.format("%d random multibyte motions agree with Neovim's own", total), table.concat(vim.list_slice(mismatches, 1, 6), "\n      "))
   end,
 }
 
