@@ -1827,6 +1827,17 @@
                       (forkPatch { pr = 2; rev = "52d4128e6116d0847470db94871518dc4ce715e2"; hash = "sha256-kNA0H72kXWV+VHe/urKewR+21HNJCDEuZf/cFdLVW8M="; })
                       # alisonjenkins/neovim#3: skip runs of printable ASCII when measuring columns
                       (forkPatch { pr = 3; rev = "0f20305d52a3236ca4cea076ceb3afef6c5e4f09"; hash = "sha256-SE29PByNgZcDhKQqnnFwdxxge+73htrqOSHaGUl+XT4="; })
+                      # alisonjenkins/neovim#4: faster runtime path scans (glob, 'runtimepath', script lookup); apply in this order
+                      (forkPatch { pr = 4; rev = "b78d5f2e7a6fe1dab6673fcfb2654b97aaad0380"; hash = "sha256-Gr2JBfbssOdwj96WATpn7/L1NuJcNZS6v8rbB7Z8awE="; })
+                      (forkPatch { pr = 4; rev = "a1cd1f46953bdc36b72c5ab46f19c9cb91dee915"; hash = "sha256-SD04n+I1etEyQVcBzObWepZDGcS9URJ9u8PjJc36zG0="; })
+                      (forkPatch { pr = 4; rev = "c3434f5d454724060e9d0674cc73dfe04dc44fde"; hash = "sha256-aspwbAuGac+RTjfeLj84QNlKWEta8/RgdIPjn7HJSlw="; })
+                      (forkPatch { pr = 4; rev = "1c5bc08932fefc84d03fa3bff0cd93794e75cd63"; hash = "sha256-LfhejeeUG03+DWOYi5cTvWae7FGuG90UI+ToCK7ojxU="; })
+                      (forkPatch { pr = 4; rev = "a81ba08e37d6580908f6ba0827dc1601e253f7ff"; hash = "sha256-aVrKzyQN10B23QxrjFcOJO0405dRj8BTWfY4qoVNBrM="; })
+                      (forkPatch { pr = 4; rev = "7112b550fa4c4c35c68e8d65ced08d42278c3e47"; hash = "sha256-/x9V9KgqvGgrkLghNSNdNMHlz1lihEI8zctZ/+ymPwM="; })
+                      (forkPatch { pr = 4; rev = "7d6a47d16f99eebb860b61b35ec519cc5863e5b7"; hash = "sha256-e9+cTjEiulB6+4+v+NgKp/75zJB31uNt0WixjtYuWfc="; })
+                      (forkPatch { pr = 4; rev = "3ad158a57d63b5dc1d224f9f3062d460346e0712"; hash = "sha256-XlZgWrIs+uMC4xG0wN1N0EY8Bfxbx/6OELITGEKu5pc="; })
+                      (forkPatch { pr = 4; rev = "9997d7e585d54b8214f4ed707fa4f5ac51ad645f"; hash = "sha256-MZRTlKq8w42mQUW4z9DUSPQH8gYblI5Ep7z4J6AsAYw="; })
+                      (forkPatch { pr = 4; rev = "fb9cca1537e950ac62bc8ec2b120c055d42173ed"; hash = "sha256-/FVc7b0f0L16ctezPgZPR78xZNFNVVNDRGOnnxQPnm8="; })
                     ];
                   });
                 })
