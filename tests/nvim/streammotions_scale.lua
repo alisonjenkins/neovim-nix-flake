@@ -208,7 +208,7 @@ local function cancel_probe(f)
   local id = "scale.cancel" .. SUFFIX
   local c = L.spawn("viewer")
   assert(c:call("open", { f.path, {}, { block = 4096 } }))
-  c:call("start_keys", { "/ZZZZ<CR>" })
+  c:call("start_keys", { "/ZZZZ\\zs<CR>" }) -- \zs: not for the helper, which would finish a 2 GB file at once
   vim.wait(500)
   local st = c:call("status", {})
   if not st.job then
