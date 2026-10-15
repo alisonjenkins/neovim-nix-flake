@@ -2,10 +2,11 @@
 -- role "oracle" is a stock Neovim that loads the file whole; role "viewer" runs the same keys
 -- in the stream viewer. Both answer with the same snapshot so the driver can compare them.
 --
--- Seams the viewer is expected to offer (the fallback below reads its internals today):
+-- Seams the viewer offers:
 --   sv.cursor_offset(S)  -> absolute byte offset of the cursor
 --   sv.place(S, byte)    -> puts the cursor on the absolute byte offset, returns true
--- and S.job must be non-nil while a background scan/save runs.
+-- and S.job is non-nil while a background scan/save runs. Other positions (a visual anchor, a mark)
+-- are worked out from the rows: S.entries[lnum].from + the byte column.
 local SM = {}
 _G.SM = SM
 local uv = vim.uv
@@ -48,8 +49,8 @@ local function abs_of(lnum, col)
   if sv.cursor_offset and lnum == cur[1] and col == cur[2] then return sv.cursor_offset(S) end
   local ent = S.entries[lnum]
   if not ent then return -2 end
-  local prefix = S.col > 0 and 3 or 0
-  return ent.off + S.col + math.max(col - prefix, 0)
+  -- a row holds the bytes [from, to) of the file as they are
+  return ent.from + col
 end
 
 local function cursor_abs()
