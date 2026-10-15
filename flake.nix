@@ -784,19 +784,36 @@
 
             -- Defer non-critical plugin setups to speed up startup
             vim.defer_fn(function()
-              -- Claude Code integration (WebSocket MCP protocol)
-              require('claudecode').setup({
-                log_level = "warn",
-                terminal = {
-                  provider = "external",
-                  provider_opts = {
-                    external_terminal_cmd = "tmux split-window -h -l 40%% '%s'",
-                  },
-                },
-              })
-
               require('jj').setup({})
             end, 50)
+
+            -- claudecode.nvim (WebSocket MCP protocol) is an opt plugin: its plugin/ file would run
+            -- setup() during startup. setup() starts the server and its ~/.claude/ide lock file, which
+            -- a `claude` launched in another pane needs to find, so it loads in the last deferred
+            -- stage; the commands load it earlier if one is used first.
+            require('lz.n').load({
+              {
+                "claudecode.nvim",
+                event = "User DeferredStage3",
+                cmd = {
+                  "ClaudeCode", "ClaudeCodeAdd", "ClaudeCodeClose", "ClaudeCodeCloseAllDiffs",
+                  "ClaudeCodeDiffAccept", "ClaudeCodeDiffDeny", "ClaudeCodeFocus", "ClaudeCodeOpen",
+                  "ClaudeCodeSelectModel", "ClaudeCodeSend", "ClaudeCodeStart", "ClaudeCodeStatus",
+                  "ClaudeCodeStop", "ClaudeCodeTreeAdd",
+                },
+                after = function()
+                  require('claudecode').setup({
+                    log_level = "warn",
+                    terminal = {
+                      provider = "external",
+                      provider_opts = {
+                        external_terminal_cmd = "tmux split-window -h -l 40%% '%s'",
+                      },
+                    },
+                  })
+                end,
+              },
+            })
 
             -- pipeline.nvim's setup (remote lookup, two commands) costs 4-12 ms and only
             -- :Pipeline and :GhActions use it, so run it on their first call. setup() reads the
@@ -1233,7 +1250,10 @@
             blink-cmp-env
             blink-cmp-spell
             blink-emoji-nvim
-            claudecode-nvim
+            {
+              plugin = claudecode-nvim;
+              optional = true;
+            }
             inc-rename-nvim
             pkgs.stable.vimPlugins.peek-nvim
             perfanno-nvim

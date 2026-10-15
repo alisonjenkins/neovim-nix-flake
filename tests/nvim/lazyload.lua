@@ -22,6 +22,16 @@ local steps = {
     h.check(vim.fn.exists(":Pipeline") == 2, ":Pipeline exists before pipeline.nvim is loaded")
     h.check(vim.fn.exists(":GhActions") == 2, ":GhActions exists before pipeline.nvim is loaded")
     h.check(package.loaded["pipeline"] == nil, "pipeline.nvim is not loaded at startup")
+    h.check(vim.fn.exists(":ClaudeCode") == 2, ":ClaudeCode exists")
+    h.check(package.loaded["claudecode"] ~= nil, "claudecode.nvim is loaded by the third deferred stage")
+    local state = package.loaded["claudecode"] and package.loaded["claudecode"].state
+    h.check(state and state.server ~= nil, "claudecode's server is running without any :ClaudeCode command")
+  end,
+
+  function()
+    local ok, err = pcall(vim.cmd, "ClaudeCodeStatus")
+    h.check(ok, ":ClaudeCodeStatus runs", tostring(err))
+    h.check(vim.fn.exists(":ClaudeCodeSend") == 2, ":ClaudeCodeSend is the real command after loading")
   end,
 
   function()
