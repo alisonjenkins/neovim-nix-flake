@@ -463,6 +463,37 @@ local steps = {
   end,
 
   function()
+    -- the file grows (another process appends) while edits are held, undone or redone
+    local base = {}
+    for i = 1, 10 do base[i] = string.format("L%03d", i) end
+    local path = write("edit-grow.txt", text_of(base))
+    S = open(path)
+    set_lines(0, 1, { "EDITED" })
+    sv.scroll(S, 0)
+    sv.undo(S)
+    local f = io.open(path, "ab")
+    f:write("APPENDED1\nAPPENDED2\n")
+    f:close()
+    sv.scroll(S, 0)
+    eq(S.r.size, #text_of(base) + #"APPENDED1\nAPPENDED2\n", "the appended bytes are part of the text")
+    sv.redo(S)
+    base[1] = "EDITED"
+    eq(logical(S), text_of(base) .. "APPENDED1\nAPPENDED2\n", "a redo after the growth still applies, and the appended lines stay")
+    -- an edit near the end, then more growth
+    sv.tail(S)
+    local rows = #sv.lines(S)
+    set_lines(rows - 1, rows, { "APPENDED2 edited" })
+    f = io.open(path, "ab")
+    f:write("APPENDED3\n")
+    f:close()
+    sv.scroll(S, 0)
+    eq(logical(S), text_of(base) .. "APPENDED1\nAPPENDED2 edited\nAPPENDED3\n", "an edit at the end stays valid when more is appended")
+    local res = save(S)
+    h.check(res.ok, "and the file saves", tostring(res.err))
+    eq(read(path), text_of(base) .. "APPENDED1\nAPPENDED2 edited\nAPPENDED3\n", "with every appended line and the edits")
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)

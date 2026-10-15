@@ -108,18 +108,24 @@ function Reader:rebuild()
   self.nonl = {}
 end
 
--- Follows the file as it grows, unless there are edits (then the file is only reported as changed).
+-- Follows the file as it grows: appended bytes become a piece after the logical end, so edits made
+-- so far, and the ones that can still be redone, stay valid. A file changed any other way cannot be
+-- followed while there are edits; it is then reported by changed_on_disk and left alone.
 function Reader:refresh()
   local st = self.fd and uv.fs_fstat(self.fd)
   if not st then return self.size end
   local mtime = mtime_of(st)
-  if st.size ~= self.file_size or mtime ~= self.mtime then
-    if self:pristine() then
-      self.file_size, self.mtime, self.stat = st.size, mtime, st
-      self.pieces = file_pieces(st.size)
-      self:rebuild()
-    end
+  if st.size == self.file_size and mtime == self.mtime then return self.size end
+  local clean = self:pristine() and #self.log == 0
+  if st.size > self.file_size and not clean then
+    self.pieces[#self.pieces + 1] = { off = self.file_size, len = st.size - self.file_size }
+  elseif clean then
+    self.pieces = file_pieces(st.size)
+  else
+    return self.size
   end
+  self.file_size, self.mtime, self.stat = st.size, mtime, st
+  self:rebuild()
   return self.size
 end
 
