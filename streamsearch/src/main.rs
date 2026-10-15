@@ -49,7 +49,7 @@ fn main() -> ExitCode {
     let fd = stdout.as_raw_fd();
     let mut out = BufWriter::new(stdout.lock());
     match scan::run(&cfg, &matcher, &file, meta.len(), &mut out, Some(fd)) {
-        Ok(o) if o.matches > 0 || o.output_closed => ExitCode::from(EXIT_FOUND),
+        Ok(o) if cfg.count || o.matches > 0 || o.output_closed => ExitCode::from(EXIT_FOUND),
         Ok(_) => ExitCode::from(EXIT_NONE),
         Err(e) => fail(&e.to_string()),
     }

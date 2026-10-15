@@ -71,6 +71,17 @@ impl Matcher {
         }
     }
 
+    /// The byte, when the pattern is exactly one literal byte.
+    pub fn single_byte(&self) -> Option<u8> {
+        match self {
+            Self::Memmem(f) => match f.needle() {
+                [b] => Some(*b),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Leftmost match starting at or after `at`. Look-behind and anchors see
     /// the bytes before `at`.
     pub fn find_at(&self, hay: &[u8], at: usize) -> Result<Option<(usize, usize)>, EngineError> {
@@ -113,6 +124,9 @@ mod tests {
             case,
             backward: false,
             from: None,
+            to: None,
+            nth: None,
+            count: false,
             limit: 0,
             overlap: DEFAULT_OVERLAP,
             threads: 1,

@@ -36,6 +36,12 @@ pub struct Config {
     pub case: Case,
     pub backward: bool,
     pub from: Option<u64>,
+    /// Forward: exclusive end of the searched range. Backward: inclusive floor.
+    pub to: Option<u64>,
+    /// Emit only the N-th match counting from `from` in search order.
+    pub nth: Option<u64>,
+    /// Print the number of matches in the range instead of the matches.
+    pub count: bool,
     /// 0 means unlimited.
     pub limit: u64,
     pub overlap: usize,
@@ -55,7 +61,7 @@ pub enum CliError {
 
 pub const USAGE: &str =
     "usage: streamsearch [--fixed|--regex|--pcre] [--ignore-case|--smart-case] [--backward]
-                    [--from OFFSET] [--limit N] [--max-match-bytes N] [--threads N]
+                    [--from OFFSET] [--to OFFSET] [--limit N] [--nth N] [--count] [--max-match-bytes N] [--threads N]
                     [--index auto|off] [--progress-ms N] [--chunk-bytes N] PATTERN FILE
 stdout: one JSON object per match {\"start\":N,\"end\":M} (byte offsets, search order)
 stderr: progress {\"scanned\":N,\"total\":T}; exit 0 found, 1 none, 2 error";
@@ -81,6 +87,9 @@ where
     let mut case = Case::Sensitive;
     let mut backward = false;
     let mut from = None;
+    let mut to = None;
+    let mut nth = None;
+    let mut count = false;
     let mut limit = 0u64;
     let mut overlap = DEFAULT_OVERLAP;
     let mut threads = default_threads();
@@ -122,6 +131,15 @@ where
             "-i" | "--ignore-case" => case = Case::Ignore,
             "-S" | "--smart-case" => case = Case::Smart,
             "-b" | "--backward" => backward = true,
+            "--to" => to = Some(parse_num("--to", &value("--to")?)?),
+            "--count" => count = true,
+            "--nth" => {
+                let n: u64 = parse_num("--nth", &value("--nth")?)?;
+                if n == 0 {
+                    return Err(CliError::Usage("--nth: must be at least 1".into()));
+                }
+                nth = Some(n);
+            }
             "--from" => from = Some(parse_num("--from", &value("--from")?)?),
             "--limit" => limit = parse_num("--limit", &value("--limit")?)?,
             "--max-match-bytes" => {
@@ -163,11 +181,17 @@ where
     if pattern.is_empty() {
         return Err(CliError::Usage("PATTERN must not be empty".into()));
     }
+    if count && nth.is_some() {
+        return Err(CliError::Usage("--count and --nth are exclusive".into()));
+    }
     Ok(Config {
         syntax,
         case,
         backward,
         from,
+        to,
+        nth,
+        count,
         limit,
         overlap,
         threads,
