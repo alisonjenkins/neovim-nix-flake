@@ -664,16 +664,12 @@ local function is_too_big(path)
   return st ~= nil and st.type == "file" and st.size > M.threshold()
 end
 
--- Replaces the read of a not yet loaded buffer by the viewer when the file is too big.
-local function intercept(buf)
-  if vim.bo[buf].buftype ~= "" or vim.api.nvim_buf_is_loaded(buf) then return end
-  local name = vim.api.nvim_buf_get_name(buf)
-  if name == "" or name:find("^%a[%w+.-]*://") or not is_too_big(name) then return end
-  vim.api.nvim_create_autocmd("BufReadCmd", {
-    buffer = buf,
+-- A BufReadCmd autocmd replaces the read of the buffer, so the file is never loaded.
+local function take_over_read(name, where)
+  vim.api.nvim_create_autocmd("BufReadCmd", vim.tbl_extend("error", where, {
     once = true,
-    callback = function()
-      local S, err = M.attach(buf, name)
+    callback = function(ev)
+      local S, err = M.attach(ev.buf, name)
       if not S then
         vim.notify("Stream view: " .. tostring(err), vim.log.levels.ERROR)
         return
@@ -683,18 +679,33 @@ local function intercept(buf)
         vim.log.levels.WARN
       )
     end,
-  })
+  }))
 end
 
+local function intercept(buf)
+  if vim.bo[buf].buftype ~= "" or vim.api.nvim_buf_is_loaded(buf) then return end
+  local name = vim.api.nvim_buf_get_name(buf)
+  if name == "" or name:find("^%a[%w+.-]*://") or not is_too_big(name) then return end
+  take_over_read(name, { buffer = buf })
+end
+
+-- Not expand(): 'wildignore' makes it return "" for a name like *.log or *.bin
 local function open_command(o)
-  local path = o.args ~= "" and vim.fn.fnamemodify(vim.fn.expand(o.args), ":p")
+  local path = o.args ~= "" and vim.fn.fnamemodify(vim.fs.normalize(o.args), ":p")
     or vim.api.nvim_buf_get_name(0)
   if path == "" then
     vim.notify("StreamView: no file", vim.log.levels.ERROR)
     return
   end
+  local name = "stream://" .. path
+  for existing in pairs(states) do
+    if vim.api.nvim_buf_get_name(existing) == name then
+      vim.cmd((o.bang and "buffer! " or "buffer ") .. existing)
+      return
+    end
+  end
   local buf = vim.api.nvim_create_buf(true, true)
-  vim.api.nvim_buf_set_name(buf, "stream://" .. path)
+  vim.api.nvim_buf_set_name(buf, name)
   local ok, err = pcall(vim.cmd, (o.bang and "buffer! " or "buffer ") .. buf)
   if not ok then
     vim.api.nvim_buf_delete(buf, { force = true })
@@ -720,9 +731,12 @@ function M.setup()
     group = group,
     callback = function(ev) intercept(ev.buf) end,
   })
-  -- Buffers for the files named on the command line exist before this runs
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    intercept(buf)
+  -- Files named on the command line get their buffers after this runs, without BufNew
+  for _, arg in ipairs(vim.fn.argv()) do
+    local path = vim.fn.fnamemodify(arg, ":p")
+    if is_too_big(path) then
+      take_over_read(path, { group = group, pattern = vim.fn.escape(path, "\\*?[]{},") })
+    end
   end
 
   vim.api.nvim_create_user_command("StreamView", open_command, {
