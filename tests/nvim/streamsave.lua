@@ -730,6 +730,31 @@ local steps = {
   end,
 
   function()
+    -- S4c: long data extents are copied inside the kernel, with the same bytes as a plain copy
+    local save_mod = require("streamview_save")
+    local real_copy, calls = fs.copy_range, 0
+    fs.copy_range = function(...)
+      calls = calls + 1
+      return real_copy(...)
+    end
+    local block, kernel = save_mod.opts.copy_block, save_mod.opts.kernel_block
+    save_mod.opts.copy_block, save_mod.opts.kernel_block = 64 * 1024, 256 * 1024
+    local rnd = function(a, b) return math.random(a, b) end
+    math.randomseed(5)
+    local content = mixed_content(rnd, 3 * 1024 * 1024)
+    local path = write("kernel.bin", content)
+    vim.cmd("StreamView! " .. vim.fn.fnameescape(path))
+    S = sv.state()
+    local model = random_edits(S, rnd, content, "any", 6)
+    local res = save(S, { strategy = "atomic" })
+    save_mod.opts.copy_block, save_mod.opts.kernel_block = block, kernel
+    fs.copy_range = real_copy
+    h.check(res.ok and read(path) == model, "a save through copy_file_range gives the model's bytes", vim.inspect(res))
+    h.check(calls > 0, "and used it", tostring(calls))
+    vim.cmd("bwipeout!")
+  end,
+
+  function()
     -- the zero page finder, with and without the FFI
     local z = string.rep("\0", 4096)
     eq(fs.data_runs(""), {}, "an empty string has no data")

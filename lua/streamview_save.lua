@@ -8,6 +8,8 @@ local M = {}
 M.opts = {
   -- unit of copying, hole checks and yielding to the editor
   copy_block = 1024 * 1024,
+  -- unit of a copy inside the kernel (copy_file_range); 8 MiB was the fastest of 1 to 1024 MiB
+  kernel_block = 8 * 1024 * 1024,
   -- A length-changing edit rewrites the file from the edit to the end. Done in place (behind a
   -- journal) when that is at most this many bytes of data or this fraction of a full copy.
   tail_bytes = 64 * 1024 * 1024,
@@ -169,6 +171,7 @@ local function emit_file(fd, soff, dpos, n, sink, tick)
   while left > 0 do
     local d, derr = fs.seek_data(fd, soff)
     local stop
+    local exact = d ~= nil -- the file system told where the data is, so zero pages inside it are rare
     if not d then
       if derr == "ENXIO" then
         -- only a hole follows, unless the file has been cut short since the check above
@@ -193,6 +196,18 @@ local function emit_file(fd, soff, dpos, n, sink, tick)
       stop = math.min(h or math.huge, soff + left)
     end
     while soff < stop do
+      if exact and sink.copy and stop - soff >= block then
+        local len = math.min(M.opts.kernel_block, stop - soff)
+        local copied = sink.copy(fd, soff, dpos, len)
+        if copied == 0 then return short_read(soff, 0, len) end
+        if copied then
+          soff, dpos, left = soff + copied, dpos + copied, left - copied
+          tick(dpos)
+          goto continue
+        end
+        sink.copy = nil -- EXDEV, ENOSYS ...: read and write instead
+      end
+      do
       local len = math.min(block, stop - soff)
       local data = uv.fs_read(fd, len, soff)
       if not data or #data ~= len then return short_read(soff, data and #data or 0, len) end
@@ -212,6 +227,8 @@ local function emit_file(fd, soff, dpos, n, sink, tick)
       end
       soff, dpos, left = soff + len, dpos + len, left - len
       tick(dpos)
+      end
+      ::continue::
     end
   end
 end
@@ -657,6 +674,7 @@ local function start_copy(S, o)
           local ok, werr = write_all(fd, text, pos)
           if not ok then error("write failed: " .. tostring(werr), 0) end
         end,
+        copy = function(src, soff, pos, len) return (fs.copy_range(src, soff, fd, pos, len)) end,
         -- a fresh copy has holes already; a clone has the old data there
         zero = function(pos, len)
           if not o.ranges then return end
