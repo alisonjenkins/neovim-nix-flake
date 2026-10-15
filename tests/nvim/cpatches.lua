@@ -414,6 +414,83 @@ local function check_measures(opts, nlines, seed)
   h.check(fails == 0, name .. ": " .. nlines .. " generated lines measure as the reference (" .. screen_cells .. " screen cells compared)")
 end
 
+-- ascii_print_run() works in 4096-byte chunks, so runs that end at, just before and just after a
+-- chunk edge, with a different lead in front, must still measure right. A run is a count here:
+-- widths are arithmetic, not a table per character.
+local function check_long_runs(label)
+  local TS = 8
+  local leads = { { "", 0 }, { "\t", 8 }, { "\xe5\xad\x97", 2 }, { "\1", 2 } }
+  local terms = { -- text, cells at a given column, whether it attaches to the run's last character
+    { "", function() return 0 end },
+    { "\t", function(col) return TS - col % TS end },
+    { "\2", function() return 2 end },
+    { "\x7f", function() return 2 end },
+    { "\xe4\xb8\xad", function() return 2 end },
+    { "\xff", function() return 4 end },
+    { "\xcc\x81", function() return 0 end, true },
+  }
+  local lens = { 4094, 4095, 4096, 4097, 4098, 8190, 8191, 8192, 8193, 8194, 20000 }
+  local pattern = "abcdefgh"
+  setup_window({ ts = TS })
+  local fails, compared, lines = 0, 0, 0
+  for _, len in ipairs(lens) do
+    local run = string.rep(pattern, math.ceil(len / 8)):sub(1, len)
+    for _, lead in ipairs(leads) do
+      for _, term in ipairs(terms) do
+        lines = lines + 1
+        local text = lead[1] .. run .. term[1]
+        local lw = lead[2]
+        local total = lw + len + term[2](lw + len)
+        local function fail(what, got, want)
+          fails = fails + 1
+          if fails <= 5 then
+            h.check(false, string.format("%s: %s (run %d, lead %q, term %q)", label, what, len, lead[1], term[1]),
+              string.format("got %s, want %s", got, want))
+          end
+        end
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { text })
+        local sdw = vim.fn.strdisplaywidth(text)
+        if sdw ~= total then fail("strdisplaywidth", sdw, total) end
+        vim.fn.cursor(1, #text + 1)
+        local vc = vim.fn.virtcol("$")
+        if vc ~= total + 1 then fail("virtcol('$')", vc, total + 1) end
+        -- the run's last character (with its combining mark, if any) and the chunk edges
+        local edges = { len, 4095, 4096, 4097, 8192 }
+        for _, e in ipairs(edges) do
+          if e <= len then
+            vim.fn.cursor(1, #lead[1] + e)
+            local v = vim.fn.virtcol(".")
+            if v ~= lw + e then fail("virtcol('.') at run character " .. e, v, lw + e) end
+          end
+        end
+        for _, want_left in ipairs({ 4095, 4096, 4097, 8192 }) do
+          if want_left < total - 1 then
+            vim.cmd("normal! 0")
+            vim.fn.winrestview({ leftcol = 0 })
+            vim.cmd("normal! " .. want_left .. "zl")
+            vim.cmd("redraw")
+            local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+            if want_left <= total - 100 and info.leftcol ~= want_left then fail("leftcol after zl", info.leftcol, want_left) end
+            for s = 2, info.width - info.textoff - 1 do
+              local i = info.leftcol + s - lw -- index into the run
+              if i >= 1 and i < len then -- the last character may carry a combining mark
+                local got = vim.fn.screenstring(info.winrow, info.wincol + info.textoff + s - 1)
+                local want = pattern:sub((i - 1) % 8 + 1, (i - 1) % 8 + 1)
+                compared = compared + 1
+                if got ~= want then
+                  fail(string.format("screen cell %d at leftcol %d", s, want_left), vim.inspect(got), vim.inspect(want))
+                  break
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  h.check(fails == 0, label .. ": " .. lines .. " lines with long ASCII runs measure as the reference (" .. compared .. " screen cells compared)")
+end
+
 local function measure_steps()
   local modes = {
     { label = "plain", ts = 8 },
@@ -426,6 +503,7 @@ local function measure_steps()
   for i, m in ipairs(modes) do
     steps[#steps + 1] = function() check_measures(m, 450, 1000 + i) end
   end
+  steps[#steps + 1] = function() check_long_runs("runs of 4094..20000 bytes") end
   return steps
 end
 
