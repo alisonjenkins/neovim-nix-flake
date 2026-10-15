@@ -1234,7 +1234,10 @@ local steps = {
     for i = 1, 300 do lines[i] = string.format("line %03d \195\169x", i) end
     local text = table.concat(lines, "\n") .. "\n"
     local V = open(write("place.txt", text))
-    eq(sv.cursor_offset, sv.cursor_abs, "cursor_offset is the cursor's absolute byte")
+    -- the window's cursor may have been moved by a key the viewer does not know: read it first
+    sv.place(V, 0)
+    vim.api.nvim_win_set_cursor(0, { 3, 2 })
+    eq(sv.cursor_offset(V), V.entries[3].off + 2, "cursor_offset follows the window's cursor")
     local at = text:find("line 150", 1, true) - 1 + 3
     h.check(sv.place(V, at), "place reports that the cursor is on the byte")
     eq(sv.cursor_offset(V), at, "in a short line")

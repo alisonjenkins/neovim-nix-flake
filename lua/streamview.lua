@@ -1080,8 +1080,12 @@ function M.goto_abs(S, abs, match, after)
   end)
 end
 
--- Absolute byte offset of the cursor in the file, also inside a slice of a long line.
-M.cursor_offset = M.cursor_abs
+-- Absolute byte offset of the cursor in the file, also inside a slice of a long line. It reads the
+-- window's cursor first: a key that moved it (a block yank, say) has not told the viewer yet.
+function M.cursor_offset(S)
+  sync_row(S)
+  return M.cursor_abs(S)
+end
 
 -- Puts the cursor on the byte `abs` of the file, as the first row of the window (a jump into a long
 -- line slides the slice there), and waits for the scan that needs. Returns true when the cursor is
