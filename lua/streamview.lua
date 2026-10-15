@@ -8,6 +8,9 @@ M.opts = {
   block = 256 * 1024, -- read unit; at most two blocks of file data are held at a time
   line_cap = 64 * 1024, -- bytes of one line shown at once; the rest is reached by horizontal paging
   segment = 16 * 1024 * 1024, -- longest line scanned; a longer one is split at multiples of this
+  editable = false, -- may the window be edited (changes are held as pieces until saved)
+  edit_warn = 256 * 1024 * 1024, -- bytes of edit text held in memory before a warning
+  edit_max = 1024 * 1024 * 1024, -- bytes of edit text held in memory before edits are refused
   follow_ms = 500, -- how often follow mode polls the file size
   min_bytes = 256 * 1024 * 1024, -- floor of the size at which a file opens in the viewer
 }
@@ -336,25 +339,38 @@ local function cut_partial_tail(s)
   return s
 end
 
--- Returns the displayed text and the number of prefix bytes before the file's bytes.
+-- Returns the displayed text, the number of prefix bytes before the file's bytes, whether the text
+-- is the whole line byte for byte (so it can be edited), and whether a "\r" was cut off its end.
 local function line_text(r, ent, col, cap)
   local len = ent.e - ent.off
   local want = math.min(len - col, cap)
   local more = len - col - want
-  local text = ""
+  local text, cr = "", false
+  local plain = col == 0 and more <= 0 and (ent.term or ent.e >= r.size)
   if want > 0 then
     text = r:get(ent.off + col, want)
     if more > 0 then
       text = cut_partial_tail(text)
     elseif ent.term and text:sub(-1) == "\r" then
-      text = text:sub(1, -2)
+      text, cr = text:sub(1, -2), true
     end
     if col > 0 then text = text:gsub("^[\128-\191]?[\128-\191]?[\128-\191]?", "") end
-    text = text:gsub("%z", NUL_SYMBOL)
+    local nuls
+    text, nuls = text:gsub("%z", NUL_SYMBOL)
+    if nuls > 0 then plain = false end
   end
   local prefix = col > 0 and ELLIPSIS or ""
   if more > 0 then text = text .. string.format("%s[+%d bytes]", ELLIPSIS, more) end
-  return prefix .. text, #prefix
+  return prefix .. text, #prefix, plain, cr
+end
+
+local function human(n)
+  local units = { "B", "KiB", "MiB", "GiB", "TiB", "PiB" }
+  local i = 1
+  while n >= 1024 and i < #units do
+    n, i = n / 1024, i + 1
+  end
+  return i == 1 and string.format("%d B", n) or string.format("%.1f %s", n, units[i])
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -375,20 +391,24 @@ local function height_of(S)
   return win and vim.api.nvim_win_get_height(win) or math.max(vim.o.lines - 3, 1)
 end
 
-function M.render(S)
+local function draw(S)
   S.r:refresh()
   local ents, nxt = S.r:window(S.offset, height_of(S))
   S.entries, S.nxt = ents, nxt
-  local lines, prefixes = {}, {}
+  local lines, prefixes, plain, cr = {}, {}, {}, {}
   for i, ent in ipairs(ents) do
-    lines[i], prefixes[i] = line_text(S.r, ent, S.col, M.opts.line_cap)
+    lines[i], prefixes[i], plain[i], cr[i] = line_text(S.r, ent, S.col, M.opts.line_cap)
   end
   if #lines == 0 then lines[1] = "" end
+  S.shown, S.plain, S.cr = lines, plain, cr
 
+  -- Setting the lines is not an edit: drop the buffer's own undo history with it
+  vim.bo[S.buf].undolevels = -1
   vim.bo[S.buf].modifiable = true
   vim.api.nvim_buf_set_lines(S.buf, 0, -1, false, lines)
-  vim.bo[S.buf].modifiable = false
-  vim.bo[S.buf].modified = false
+  vim.bo[S.buf].modifiable = S.editable
+  vim.bo[S.buf].undolevels = S.editable and 1000 or -1
+  vim.bo[S.buf].modified = S.r.log_pos > 0
 
   vim.api.nvim_buf_clear_namespace(S.buf, NS, 0, -1)
   local m = S.match
@@ -412,6 +432,154 @@ function M.render(S)
   end
 end
 
+---------------------------------------------------------------------------------------------------
+-- Editing: the window's lines are diffed against what was shown and become piece table edits
+---------------------------------------------------------------------------------------------------
+
+local function sync_row(S)
+  local win = win_of(S)
+  if win then S.row = vim.api.nvim_win_get_cursor(win)[1] end
+end
+
+-- Piece table edits for the lines in the buffer, or nil and the reason they cannot be made.
+local function pending_edits(S, cur)
+  local ents, r = S.entries, S.r
+  if #ents == 0 then
+    if #cur == 1 and cur[1] == "" then return {} end
+    return { { start = 0, stop = 0, text = table.concat(cur, "\n") .. "\n" } }
+  end
+  local hunks = vim.diff(
+    table.concat(S.shown, "\n") .. "\n",
+    table.concat(cur, "\n") .. "\n",
+    { result_type = "indices" }
+  )
+  local last = ents[#ents]
+  local no_final_newline = not last.term and last.nxt >= r.size
+  local edits = {}
+  for h = #hunks, 1, -1 do
+    local sa, ca, sb, cb = unpack(hunks[h])
+    for i = sa, sa + ca - 1 do
+      if not S.plain[i] then
+        return nil, string.format("line %d is shown cut or altered (long, NUL bytes or not a whole line): it cannot be edited", i)
+      end
+    end
+    local start, stop
+    if ca > 0 then
+      start, stop = ents[sa].off, ents[sa + ca - 1].nxt
+    elseif sa == 0 then
+      start = ents[1].off
+      stop = start
+    else
+      start = ents[sa].nxt
+      stop = start
+    end
+    local eol = S.cr[math.max(sa, 1)] and "\r\n" or "\n"
+    local text = ""
+    if cb > 0 then
+      text = table.concat(cur, eol, sb, sb + cb - 1) .. eol
+      if no_final_newline and stop >= r.size then
+        text = text:sub(1, -#eol - 1)
+        if ca == 0 then text = "\n" .. text end
+      end
+    end
+    edits[#edits + 1] = { start = start, stop = stop, text = text }
+  end
+  return edits
+end
+
+local function window_lines(S) return vim.api.nvim_buf_get_lines(S.buf, 0, -1, false) end
+
+local function is_pending(S)
+  return S.editable and S.shown ~= nil and not vim.deep_equal(window_lines(S), S.shown)
+end
+
+-- Turns the changes made in the window into one undoable edit. Returns true when the window
+-- must be drawn again (an edit was made, or a change was discarded).
+local function apply_pending(S)
+  if not is_pending(S) then return false end
+  local edits, err = pending_edits(S, window_lines(S))
+  if edits then
+    local bytes = 0
+    for _, e in ipairs(edits) do
+      bytes = bytes + #e.text
+    end
+    if S.r.added + bytes > M.opts.edit_max then
+      err = string.format("more than %s of edits are held in memory, save first", human(M.opts.edit_max))
+    end
+  end
+  if err then
+    vim.notify("Stream view: " .. err .. "; the change was discarded", vim.log.levels.ERROR)
+    return true
+  end
+  if #edits == 0 then return false end
+  S.r:apply(edits)
+  S.match = nil
+  if S.r.added >= M.opts.edit_warn and not S.warned then
+    S.warned = true
+    vim.notify(string.format("Stream view: %s of edits are held in memory, save soon", human(S.r.added)), vim.log.levels.WARN)
+  end
+  return true
+end
+
+function M.render(S)
+  apply_pending(S)
+  draw(S)
+end
+
+-- Runs first in every movement: the edits made in the window must be in the piece table before
+-- offsets are computed from it.
+local function before_move(S)
+  sync_row(S)
+  if apply_pending(S) then draw(S) end
+end
+
+-- Keeps the modified flag right and takes back an edit to a line that is not shown whole.
+local function check_pending(S)
+  if not S.editable or S.closed then return end
+  if is_pending(S) then
+    local edits, err = pending_edits(S, window_lines(S))
+    if not edits then
+      pcall(vim.cmd, "silent undo")
+      if not pending_edits(S, window_lines(S)) then draw(S) end
+      vim.notify("Stream view: " .. err .. "; the change was undone", vim.log.levels.ERROR)
+    end
+  end
+  vim.bo[S.buf].modified = is_pending(S) or S.r.log_pos > 0
+end
+
+-- Shows the window at a logical offset, e.g. where an undo changed the text.
+local function show_at(S, at)
+  local size = S.r.size
+  S.offset = size == 0 and 0 or S.r:seg_start(math.min(at, size - 1))
+  S.row = 1
+  S.match = nil
+  draw(S)
+end
+
+-- Undo first takes back what is typed in the window, then the edits made earlier wherever they are.
+function M.undo(S)
+  sync_row(S)
+  if is_pending(S) then
+    pcall(vim.cmd, "silent undo")
+    return check_pending(S)
+  end
+  local at = S.r:undo()
+  if not at then return vim.notify("Already at the oldest change", vim.log.levels.INFO) end
+  show_at(S, at)
+end
+
+function M.redo(S)
+  sync_row(S)
+  local tree = vim.api.nvim_buf_call(S.buf, vim.fn.undotree)
+  if tree.seq_cur < tree.seq_last then
+    pcall(vim.cmd, "silent redo")
+    return check_pending(S)
+  end
+  local at = S.r:redo()
+  if not at then return vim.notify("Already at the newest change", vim.log.levels.INFO) end
+  show_at(S, at)
+end
+
 local function stop_follow(S)
   if not S.follow then return end
   S.follow:stop()
@@ -421,6 +589,7 @@ local function stop_follow(S)
 end
 
 function M.scroll(S, n)
+  before_move(S)
   stop_follow(S)
   local size = S.r:refresh()
   if n > 0 then
@@ -440,18 +609,22 @@ end
 
 -- Moves the cursor; the window scrolls only when the cursor is at its edge.
 function M.move(S, n)
-  local rows = #S.entries
+  sync_row(S)
+  local rows = vim.api.nvim_buf_line_count(S.buf)
   local row = S.row + n
+  local function put_cursor(r)
+    S.row = r
+    local win = win_of(S)
+    if win then vim.api.nvim_win_set_cursor(win, { r, 0 }) end
+  end
   if row > rows then
-    S.row = rows
+    put_cursor(rows)
     M.scroll(S, row - rows)
   elseif row < 1 then
-    S.row = 1
+    put_cursor(1)
     M.scroll(S, row - 1)
   else
-    S.row = row
-    local win = win_of(S)
-    if win then vim.api.nvim_win_set_cursor(win, { row, 0 }) end
+    put_cursor(row)
   end
 end
 
@@ -464,12 +637,14 @@ function M.half_page(S, dir)
 end
 
 function M.head(S)
+  before_move(S)
   stop_follow(S)
   S.offset, S.row = 0, 1
   M.render(S)
 end
 
 function M.tail(S)
+  before_move(S)
   S.r:refresh()
   S.offset = S.r:tail_offset(height_of(S))
   S.row = height_of(S)
@@ -478,6 +653,7 @@ end
 
 -- spec: a byte offset (number or "1234"), or a percentage ("60%", "12.5%")
 function M.goto_offset(S, spec)
+  before_move(S)
   stop_follow(S)
   local size = S.r:refresh()
   local target
@@ -503,7 +679,7 @@ function M.toggle_follow(S, on)
   if on == nil then on = not S.follow end
   if not on then return stop_follow(S) end
   if S.follow then return end
-  M.tail(S)
+  M.tail(S) -- also puts pending edits in the piece table
   local last = S.r.size
   local timer = assert(uv.new_timer())
   S.follow = timer
@@ -523,6 +699,7 @@ function M.toggle_follow(S, on)
 end
 
 function M.hscroll(S, dir)
+  before_move(S)
   local longest = 0
   for _, ent in ipairs(S.entries) do
     longest = math.max(longest, ent.e - ent.off)
@@ -532,15 +709,6 @@ function M.hscroll(S, dir)
 end
 
 function M.lines(S) return vim.api.nvim_buf_get_lines(S.buf, 0, -1, false) end
-
-local function human(n)
-  local units = { "B", "KiB", "MiB", "GiB", "TiB", "PiB" }
-  local i = 1
-  while n >= 1024 and i < #units do
-    n, i = n / 1024, i + 1
-  end
-  return i == 1 and string.format("%d B", n) or string.format("%.1f %s", n, units[i])
-end
 
 function M.winbar()
   local S = states[vim.api.nvim_win_get_buf(vim.g.statusline_winid or 0)]
@@ -652,6 +820,7 @@ end
 function M.search(S, pat, forward, done)
   M.cancel(S)
   stop_follow(S)
+  before_move(S)
   if pat == "" or #pat >= S.r.bs then
     if done then done(nil, "the pattern must be 1 to " .. (S.r.bs - 1) .. " bytes") end
     return
@@ -725,6 +894,10 @@ local function keymaps(S)
   map("G", function() M.tail(S) end, "end of file")
   map("zL", function() M.hscroll(S, 1) end, "page right within long lines")
   map("zH", function() M.hscroll(S, -1) end, "page left within long lines")
+  if S.editable then
+    map("u", function() for _ = 1, vim.v.count1 do M.undo(S) end end, "undo (across windows)")
+    map("<C-r>", function() for _ = 1, vim.v.count1 do M.redo(S) end end, "redo (across windows)")
+  end
   map("/", function() M.prompt_search(S, true) end, "search forward (literal text)")
   map("?", function() M.prompt_search(S, false) end, "search backward (literal text)")
   map("n", function() M.search_again(S, false) end, "next match")
@@ -740,11 +913,12 @@ local function keymaps(S)
   end, "jump to {count} percent")
 end
 
-local function setup_buffer_options(buf)
+local function setup_buffer_options(buf, editable)
   vim.b[buf].bigfile = true
   vim.b[buf].sleuth_automatic = 0
   local bo = vim.bo[buf]
-  bo.buftype = "nofile"
+  -- acwrite is the buffer type that can be modified without being a file Neovim writes itself
+  bo.buftype = editable and "acwrite" or "nofile"
   bo.bufhidden = "wipe"
   bo.swapfile = false
   bo.undolevels = -1
@@ -783,9 +957,19 @@ function M.attach(buf, path)
   if states[buf] then close(states[buf]) end
   local r, err = M.open_reader(path)
   if not r then return nil, err end
-  local S = { buf = buf, path = path, r = r, offset = 0, col = 0, row = 1, entries = {}, nxt = 0 }
+  local S = {
+    buf = buf,
+    path = path,
+    r = r,
+    offset = 0,
+    col = 0,
+    row = 1,
+    entries = {},
+    nxt = 0,
+    editable = M.opts.editable,
+  }
   states[buf] = S
-  setup_buffer_options(buf)
+  setup_buffer_options(buf, S.editable)
   keymaps(S)
 
   local group = vim.api.nvim_create_augroup("streamview-" .. buf, { clear = true })
@@ -793,6 +977,18 @@ function M.attach(buf, path)
     group = group,
     buffer = buf,
     callback = function() close(S) end,
+  })
+  if S.editable then
+    vim.api.nvim_create_autocmd("BufWriteCmd", {
+      group = group,
+      buffer = buf,
+      callback = function() vim.notify("Stream view: saving is not available yet", vim.log.levels.ERROR) end,
+    })
+  end
+  vim.api.nvim_create_autocmd({ "TextChanged", "InsertLeave" }, {
+    group = group,
+    buffer = buf,
+    callback = function() check_pending(S) end,
   })
   vim.api.nvim_create_autocmd("BufWinEnter", {
     group = group,
