@@ -1254,7 +1254,16 @@
             blink-cmp-spell
             blink-emoji-nvim
             {
-              plugin = claudecode-nvim;
+              # nixpkgs lags: its 2026-04-27 snapshot still lists Opus 4.1 and Sonnet 4.5 in :ClaudeCodeSelectModel
+              plugin = claudecode-nvim.overrideAttrs (_: {
+                version = "0.3.0-unstable-2026-06-25";
+                src = pkgs.fetchFromGitHub {
+                  owner = "coder";
+                  repo = "claudecode.nvim";
+                  rev = "2390c6e45c4789072c293ac69de051d169668b29";
+                  hash = "sha256-oMBPSRQFDmJ9Lq+ZP8vFMHaocm4sPX3D/orVMNwVXuM=";
+                };
+              });
               optional = true;
             }
             inc-rename-nvim
