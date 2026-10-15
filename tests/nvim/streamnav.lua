@@ -1248,6 +1248,18 @@ local steps = {
     vim.api.nvim_feedkeys("0l", "mx", false)
     eq(sv.cursor_offset(V), at - 3 + 1, "0l typed together moves to the start of the line, then one right")
     h.check(sv.place(V, 0) and sv.cursor_offset(V) == 0, "place at 0 goes to the start of the file")
+    -- {count}go is the byte of the file; :{N} and :$ are lines of the file, not rows of the window
+    vim.api.nvim_feedkeys("100go", "mx", false)
+    eq(sv.cursor_offset(V), 99, "100go goes to byte 99 (the 100th)")
+    vim.api.nvim_feedkeys("go", "mx", false)
+    eq(sv.cursor_offset(V), 0, "go alone is the first byte")
+    vim.api.nvim_feedkeys(":150\r", "mx", false)
+    eq(V.entries[1].off, text:find("line 150", 1, true) - 1, ":150 shows line 150 of the file first")
+    vim.api.nvim_feedkeys(":$\r", "mx", false)
+    eq(V.entries[#V.entries].off, text:find("line 300", 1, true) - 1, ":$ shows the last line of the file last")
+    vim.api.nvim_feedkeys(":echo 1\r", "mx", false)
+    h.check(true, "other ex commands still run")
+    sv.place(V, 0)
     -- a failed f drops the keys typed after it, as Neovim does
     local before_text = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
     vim.api.nvim_feedkeys("f]x", "mx", false)

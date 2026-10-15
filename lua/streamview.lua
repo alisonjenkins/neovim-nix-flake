@@ -1909,6 +1909,16 @@ local function keymaps(S)
   map("G", function()
     if vim.v.count > 0 then M.goto_line(S, vim.v.count) else M.tail(S) end
   end, "end of file, or line {count}")
+  map("go", function() M.goto_abs(S, math.max(vim.v.count, 1) - 1) end, "byte {count} of the file")
+  -- :123 and :$ are about the lines of the file, not the rows of the window
+  vim.keymap.set("c", "<CR>", function()
+    if vim.fn.getcmdtype() ~= ":" then return "<CR>" end
+    local line = vim.fn.getcmdline()
+    local n = line:match("^%s*(%d+)%s*$")
+    if n then return "<C-u>StreamLine " .. n .. "<CR>" end
+    if line:match("^%s*%$%s*$") then return "<C-u>normal G<CR>" end
+    return "<CR>"
+  end, { buffer = S.buf, expr = true, nowait = true, desc = "Stream view: :{N} and :$ go to a line of the file" })
   if S.editable then
     map("u", function() for _ = 1, vim.v.count1 do M.undo(S) end end, "undo (across windows)")
     map("<C-r>", function() for _ = 1, vim.v.count1 do M.redo(S) end end, "redo (across windows)")
