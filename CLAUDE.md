@@ -76,7 +76,7 @@ keymaps = [ ]
 **Key Development Features:**
 - DAP debugging support for multiple languages
 - Treesitter for syntax highlighting
-- AI assistance via Avante, CodeCompanion, and Copilot
+- AI assistance via claudecode.nvim (primary, `<leader>ac*`) and sidekick.nvim (`<leader>as*`). The avante, codecompanion and copilot-lua configs in `plugin-config/` are not imported, so those plugins are off; copilot inline completion is off until AI completion is revisited
 - HTTP client via Kulala
 - Database tools via vim-dadbod
 - Git integration via Fugitive and custom keymaps
@@ -102,6 +102,7 @@ The `tests/` directory also contains example projects for trying language-specif
 - Some plugins are explicitly excluded from combining via `standalonePlugins`
 - Startup events: `DeferredUIEnter` (lz.n) loads the light deferred plugins; `User DeferredStage2` (fired 10 ms later from `extraConfigLuaPre`) loads modicator, smear-cursor and fidget, and `User DeferredStage3` (10 ms after that) loads neotest, so the batch does not block for ~30 ms. Headless tests fire all three (`tests/nvim/harness.lua`). pipeline.nvim loads on its first `:Pipeline`/`:GhActions`, in the directory Neovim started in
 - Do not lazy-load a plugin on `cmd`/`keys` if another start plugin lists it as a dependency (neotest is one of the adapters' dependencies): its `plugin/` files run at startup and define the real command, so the lz.n stub never loads it and `setup()` never runs. Use an event; `tests/nvim/lazyload.lua` checks neotest
+- claudecode.nvim is an opt plugin (`optional = true`) that lz.n loads in `User DeferredStage3` (or on its first `:ClaudeCode*` command), because its `plugin/` file would run `setup()` during startup. `setup()` starts the server and the `~/.claude/ide` lock file that a separately launched `claude` connects to, so it must not wait for a command. Both it and sidekick use tmux only when `$TMUX` is set. `claude` comes from `extraPackages`. Neovim's own autoread watcher reloads files an agent rewrites; `lazyload.lua` pins that
 - `combinePlugins` keeps treesitter grammars/queries and the `async` pair (promise-async, async.nvim) out of the pack: their files overlap and `buildEnv` rejects that
 - `packpath` is trimmed to entries holding `pack`/`start`/`opt` directories in `extraConfigLuaPre`
 - **AV Optimization**: See `DEFENDER_OPTIMIZATION.md` for Microsoft Defender and anti-virus specific optimizations
