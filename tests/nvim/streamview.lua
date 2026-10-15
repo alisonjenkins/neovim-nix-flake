@@ -390,6 +390,53 @@ local steps = {
   end,
 
   function()
+    -- the threshold follows the cgroup limit, and small files do not cost a /proc read
+    local root = tmp .. "/cg"
+    vim.fn.mkdir(root .. "/a/b", "p")
+    local function put(path, text) write(path:gsub("^" .. vim.pesc(tmp .. "/"), ""), text) end
+    put(root .. "/a/memory.max", "4000000000\n")
+    put(root .. "/a/memory.current", "1000000000\n")
+    put(root .. "/a/b/memory.max", "max\n")
+    put(root .. "/a/b/memory.current", "500000000\n")
+    write("cg/proc-cgroup", "0::/a/b\n")
+    local saved = { sv.opts.cgroup_root, sv.opts.proc_cgroup }
+    sv.opts.cgroup_root, sv.opts.proc_cgroup = root, tmp .. "/cg/proc-cgroup"
+    local avail = sv.available_memory()
+    h.check(avail and avail <= 3000000000, "the cgroup headroom (4 GB limit, 1 GB used) caps the available memory", tostring(avail))
+    write("cg/v1-cgroup", "4:memory:/m\n")
+    vim.fn.mkdir(root .. "/memory/m", "p")
+    put(root .. "/memory/m/memory.limit_in_bytes", "2000000000\n")
+    put(root .. "/memory/m/memory.usage_in_bytes", "500000000\n")
+    sv.opts.proc_cgroup = tmp .. "/cg/v1-cgroup"
+    eq(math.min(sv.available_memory(), 1500000000), sv.available_memory(), "a v1 limit counts too")
+    put(root .. "/memory/m/memory.limit_in_bytes", "9223372036854771712\n")
+    sv.opts.proc_cgroup = tmp .. "/cg/none-cgroup" -- no cgroup entry: what the machine has free
+    local free = sv.available_memory()
+    sv.opts.proc_cgroup = tmp .. "/cg/v1-cgroup"
+    eq(sv.available_memory(), free, "and 'no limit' does not cap it")
+    sv.opts.cgroup_root, sv.opts.proc_cgroup = unpack(saved)
+
+    local meminfo_reads = 0
+    local real_open = io.open
+    io.open = function(path, ...)
+      if path == "/proc/meminfo" then meminfo_reads = meminfo_reads + 1 end
+      return real_open(path, ...)
+    end
+    vim.fn.bufadd(write("small-edit.txt", "small\n"))
+    eq(meminfo_reads, 0, "opening a small file does not read /proc/meminfo")
+    local big = tmp .. "/big-sparse.bin"
+    local fd = assert(uv.fs_open(big, "w", 420))
+    uv.fs_ftruncate(fd, sv.opts.min_bytes + 4096)
+    uv.fs_close(fd)
+    vim.g.stream_viewer_min_bytes = nil
+    vim.fn.bufadd(big)
+    io.open = real_open
+    h.check(meminfo_reads > 0, "a file past the floor does")
+    os.remove(big)
+    vim.g.stream_viewer_min_bytes = 50
+  end,
+
+  function()
     -- walking back over a long line again costs nothing; edits drop what was learned
     local path = tmp .. "/longline-sparse.bin"
     local fd = assert(uv.fs_open(path, "w", 420))

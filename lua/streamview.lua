@@ -14,6 +14,8 @@ M.opts = {
   edit_max = 1024 * 1024 * 1024, -- bytes of edit text held in memory before edits are refused
   follow_ms = 500, -- how often follow mode polls the file size
   min_bytes = 256 * 1024 * 1024, -- floor of the size at which a file opens in the viewer
+  cgroup_root = "/sys/fs/cgroup", -- where the memory limit of the process's cgroup is read
+  proc_cgroup = "/proc/self/cgroup",
 }
 
 local NS = vim.api.nvim_create_namespace("streamview")
@@ -1365,12 +1367,56 @@ end
 -- Opening: automatically for files too big for memory, or on request
 ---------------------------------------------------------------------------------------------------
 
-local function mem_available()
-  local f = io.open("/proc/meminfo", "r")
+local function read_number(path)
+  local f = io.open(path, "r")
   if not f then return nil end
-  local kb = f:read("*a"):match("MemAvailable:%s*(%d+)%s*kB")
+  local text = f:read("*a")
   f:close()
-  return kb and tonumber(kb) * 1024
+  return tonumber(text:match("^%s*(%d+)%s*$"))
+end
+
+-- Memory left under the tightest memory limit of the process's cgroup (v2 or v1), or nil.
+local function cgroup_headroom()
+  local f = io.open(M.opts.proc_cgroup, "r")
+  if not f then return nil end
+  local text = f:read("*a")
+  f:close()
+  local best
+  local function consider(dir, limit_file, usage_file)
+    while dir and dir ~= "" do
+      local limit = read_number(M.opts.cgroup_root .. dir .. "/" .. limit_file)
+      local usage = read_number(M.opts.cgroup_root .. dir .. "/" .. usage_file)
+      -- v1 reports "no limit" as a number close to 2^63
+      if limit and usage and limit < 2 ^ 60 then best = math.min(best or math.huge, limit - usage) end
+      if dir == "/" then break end
+      dir = dir:match("^(.*)/[^/]*$")
+      if dir == "" then dir = "/" end
+    end
+  end
+  local v2 = text:match("\n?0::(/[^\n]*)")
+  if v2 then consider(v2, "memory.max", "memory.current") end
+  local v1 = text:match("\n?%d+:[^:\n]*memory[^:\n]*:(/[^\n]*)")
+  if v1 then
+    local saved = M.opts.cgroup_root
+    M.opts.cgroup_root = saved .. "/memory"
+    consider(v1, "memory.limit_in_bytes", "memory.usage_in_bytes")
+    M.opts.cgroup_root = saved
+  end
+  return best
+end
+
+-- Memory a new file could take: what the machine has available, or what the cgroup allows if less.
+function M.available_memory()
+  local f = io.open("/proc/meminfo", "r")
+  local avail
+  if f then
+    local kb = f:read("*a"):match("MemAvailable:%s*(%d+)%s*kB")
+    f:close()
+    avail = kb and tonumber(kb) * 1024
+  end
+  local cgroup = cgroup_headroom()
+  if avail and cgroup then return math.min(avail, cgroup) end
+  return avail or cgroup
 end
 
 -- vim.g.stream_viewer_min_bytes overrides; otherwise half of the available memory, at least
@@ -1378,12 +1424,15 @@ end
 function M.threshold()
   local override = vim.g.stream_viewer_min_bytes
   if type(override) == "number" then return override end
-  return math.max(M.opts.min_bytes, (mem_available() or 0) / 2)
+  return math.max(M.opts.min_bytes, (M.available_memory() or 0) / 2)
 end
 
 local function is_too_big(path)
   local st = uv.fs_stat(path)
-  return st ~= nil and st.type == "file" and st.size > M.threshold()
+  if not st or st.type ~= "file" then return false end
+  -- Most files are small: do not read /proc and /sys for each of them
+  if type(vim.g.stream_viewer_min_bytes) ~= "number" and st.size <= M.opts.min_bytes then return false end
+  return st.size > M.threshold()
 end
 
 -- A BufReadCmd autocmd replaces the read of the buffer, so the file is never loaded.
