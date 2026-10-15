@@ -2,7 +2,9 @@
   neotest = {
     enable = true;
 
-    lazyLoad.settings.event = [ "DeferredUIEnter" ];
+    # Not on :Neotest: neotest is a dependency of the adapter plugins, so its plugin/ files
+    # define :Neotest at startup and the lazy-load command stub never runs setup().
+    lazyLoad.settings.event = [ "User DeferredStage3" ];
 
     adapters = {
       bash.enable = true;

@@ -215,6 +215,24 @@
                 end,
               })
             end
+
+            -- The plugins that wait for DeferredUIEnter loaded in one blocking batch. The
+            -- heavier ones wait for these later events, 10 ms apart, so input and redraws
+            -- run in between.
+            do
+              local chain = { "DeferredUIEnter", "DeferredStage2", "DeferredStage3" }
+              for i = 1, #chain - 1 do
+                vim.api.nvim_create_autocmd("User", {
+                  pattern = chain[i],
+                  once = true,
+                  callback = function()
+                    vim.defer_fn(function()
+                      vim.api.nvim_exec_autocmds("User", { pattern = chain[i + 1] })
+                    end, 10)
+                  end,
+                })
+              end
+            end
           '';
 
           extraConfigLua = ''
@@ -1394,7 +1412,7 @@
             earthly.enable = true;
             fidget = {
               enable = true;
-              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+              lazyLoad.settings.event = [ "User DeferredStage2" ];
             };
             friendly-snippets.enable = true;
             fugitive.enable = true;
@@ -1457,7 +1475,7 @@
             sleuth.enable = true;
             smear-cursor = {
               enable = true;
-              lazyLoad.settings.event = [ "DeferredUIEnter" ];
+              lazyLoad.settings.event = [ "User DeferredStage2" ];
             };
             specs.enable = false;
             startify.enable = false;

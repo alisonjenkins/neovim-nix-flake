@@ -54,6 +54,8 @@ end
 function M.run(steps, total_timeout_ms)
   -- A headless run has no UI, so UIEnter never fires and deferred plugins stay unloaded.
   vim.api.nvim_exec_autocmds("User", { pattern = "DeferredUIEnter" })
+  vim.api.nvim_exec_autocmds("User", { pattern = "DeferredStage2" })
+  vim.api.nvim_exec_autocmds("User", { pattern = "DeferredStage3" })
 
   vim.defer_fn(function()
     M.check(false, "suite finished within " .. total_timeout_ms .. " ms")

@@ -2,6 +2,6 @@
   modicator = {
     enable = true;
 
-    lazyLoad.settings.event = [ "DeferredUIEnter" ];
+    lazyLoad.settings.event = [ "User DeferredStage2" ];
   };
 }
