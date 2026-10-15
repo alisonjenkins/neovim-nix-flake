@@ -164,6 +164,20 @@ fn read_window(
     })
 }
 
+/// Occurrences of `byte`. The inner sum stays in a u8 (at most 255 terms) so
+/// the compiler can vectorise it with byte-wide compares and a horizontal add.
+fn count_byte(hay: &[u8], byte: u8) -> u64 {
+    const LANE_SPAN: usize = 255;
+    hay.chunks(LANE_SPAN)
+        .map(|part| {
+            let n = part
+                .iter()
+                .fold(0u8, |acc, &b| acc.wrapping_add(u8::from(b == byte)));
+            u64::from(n)
+        })
+        .fold(0u64, u64::saturating_add)
+}
+
 /// One-byte pattern: the owned range is the whole window.
 fn scan_byte(
     ctx: &ScanCtx<'_>,
@@ -175,9 +189,8 @@ fn scan_byte(
     let filled = read_window(ctx, lo, up, buf)?;
     let hay = buf.get(..filled).unwrap_or_default();
     if !ctx.collect {
-        let count = hay.iter().filter(|&&b| b == byte).count();
         return Ok(ChunkOut {
-            count: count as u64,
+            count: count_byte(hay, byte),
             hits: Vec::new(),
         });
     }
