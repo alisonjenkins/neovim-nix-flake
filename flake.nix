@@ -1211,6 +1211,7 @@
                 # lldb
                 (python3.withPackages (python-pkgs: [ python-pkgs.pylatexenc ]))
                 black
+                claude-code
                 cowsay
                 curl
                 stable.deno
