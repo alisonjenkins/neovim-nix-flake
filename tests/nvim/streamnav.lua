@@ -1145,11 +1145,22 @@ local steps = {
     res = run("FAIL", true)
     h.check(res.pos == nil and tostring(res.err):find("something went wrong", 1, true) ~= nil, "an error (exit 2) carries the helper's message", vim.inspect(res))
 
-    -- a regex the translator cannot give the helper stays with the slower engine
+    -- a Vim regex goes to the helper translated
     local before = #calls()
+    sv.goto_abs(V, 0)
+    settle(V)
     res = run("row 1\\d\\d NEEDLE", true)
-    eq(#calls(), before, "without a translator a regex is searched in Lua")
+    eq(#calls(), before + 1, "a regex the translator can express goes through the helper")
+    h.check(calls()[#calls()]:find("--regex\t", 1, true) and calls()[#calls()]:find("row 1[0-9][0-9] NEEDLE", 1, true), "as --regex with the translated pattern", calls()[#calls()])
     eq(res.pos, find_all("row 100 NEEDLE")[1], "and found")
+
+    -- one it cannot express stays with the slower engine
+    before = #calls()
+    sv.goto_abs(V, 0)
+    settle(V)
+    res = run("row \\zs1\\d\\d NEEDLE", true)
+    eq(#calls(), before, "a regex the translator refuses is searched in Lua")
+    eq(res.pos, find_all("row 100 NEEDLE")[1] + #"row ", "and found")
 
     -- cancel kills the helper and tells it was cancelled
     local cancelled

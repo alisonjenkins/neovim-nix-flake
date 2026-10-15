@@ -1191,6 +1191,7 @@
 
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
+            "lua/streamsearch_regex.lua".source = ./lua/streamsearch_regex.lua;
             "lua/streamview.lua".source = ./lua/streamview.lua;
             "lua/streamview_nav.lua".source = ./lua/streamview_nav.lua;
             "lua/streamview_search.lua".source = ./lua/streamview_search.lua;
@@ -1243,6 +1244,7 @@
                 shfmt
                 sqlite
                 stable.tectonic
+                (callPackage ./streamsearch/package.nix { })
                 stylua
                 terraform
                 tfsec
@@ -1689,6 +1691,7 @@
         let
           nixvimLib = nixvim.lib.${system};
           nixvim' = nixvim.legacyPackages.${system};
+          streamsearch = pkgs.callPackage ./streamsearch/package.nix { };
           nvim = nixvim'.makeNixvimWithModule {
             inherit pkgs;
             module = config;
@@ -2079,6 +2082,16 @@
               lazyload = nvimTest "lazyload";
               streamedit = nvimTest "streamedit";
               streamnav = nvimTest "streamnav";
+              # The package build runs the cargo tests (doCheck); this adds the Lua translator
+              # tests, which also drive the built binary.
+              streamsearch = pkgs.runCommand "streamsearch-test"
+                {
+                  nativeBuildInputs = [ pkgs.luajit ];
+                  STREAMSEARCH_BIN = "${streamsearch}/bin/streamsearch";
+                } ''
+                luajit ${./.}/tests/lua/test_streamsearch_regex.lua
+                touch $out
+              '';
               streamview = nvimTest "streamview";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
@@ -2093,6 +2106,7 @@
             default = nvim;
             nvim = nvim;
             lspmux = pkgs.lspmux;
+            inherit streamsearch;
           };
 
           # Export LSP wrappers for external consumers (Claude Code, etc.)

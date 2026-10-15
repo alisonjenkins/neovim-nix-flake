@@ -226,7 +226,7 @@ local steps = {
     local S = open(path)
     sv.opts.block = 4096
     local res
-    sv.search(S, "never there", true, function(pos, err) res = { pos = pos, err = err } end)
+    sv.search(S, "never there\\zs", true, function(pos, err) res = { pos = pos, err = err } end)
     h.check(S.job ~= nil, "a running search is recorded on the viewer")
     vim.wait(50)
     sv.cancel(S)
