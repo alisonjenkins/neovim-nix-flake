@@ -567,6 +567,60 @@ local steps = {
   end,
 
   function()
+    -- permissions are not bypassed, and nothing is written when there is nothing to write
+    local dir = tmp .. "/perm"
+    vim.fn.mkdir(dir, "p")
+    local file = write("perm/ro.txt", "one\ntwo\n")
+    uv.fs_chmod(file, 292) -- 0444
+    local probe = io.open(file, "ab")
+    if probe then
+      probe:close()
+      h.check(true, "file permissions are not enforced here (running as root): read-only case skipped")
+    else
+      S = open(file)
+      set_lines(0, 1, { "ONE" })
+      local res = save(S)
+      h.check(not res.ok and tostring(res.err):find("read-only", 1, true) ~= nil, "a read-only file is not saved without !", tostring(res.err))
+      eq(read(file), "one\ntwo\n", "and is untouched")
+      eq(leftovers(dir), {}, "with no temp file")
+      res = save(S, { force = true })
+      h.check(res.ok, "! saves it", tostring(res.err))
+      eq(read(file), "ONE\ntwo\n", "with the edit")
+      eq(bit.band(uv.fs_stat(file).mode, 511), 292, "and the read-only mode kept")
+    end
+
+    -- an owner that cannot be kept is reported
+    local owned = write("perm/owned.txt", "one\ntwo\n")
+    local real_fchown = sv.fchown
+    sv.fchown = function() return nil, "EPERM: operation not permitted" end
+    S = open(owned)
+    set_lines(0, 1, { "ONE" })
+    local res = save(S)
+    h.check(not res.ok and tostring(res.err):find("owner", 1, true) ~= nil, "a save that cannot keep the owner fails", tostring(res.err))
+    eq(read(owned), "one\ntwo\n", "leaving the file untouched")
+    eq(leftovers(dir), {}, "and no temp file")
+    res = save(S, { force = true })
+    sv.fchown = real_fchown
+    h.check(res.ok, "! saves with a new owner", tostring(res.err))
+
+    -- :write on an unmodified viewer does no I/O
+    local plain = write("perm/plain.txt", "one\ntwo\n")
+    S = open(plain)
+    local before = uv.fs_stat(plain)
+    local writes = 0
+    local real_write = uv.fs_write
+    uv.fs_write = function(...)
+      writes = writes + 1
+      return real_write(...)
+    end
+    res = save(S)
+    uv.fs_write = real_write
+    h.check(res.ok, "an unmodified viewer saves", tostring(res.err))
+    eq(writes, 0, "without writing a byte")
+    eq(uv.fs_stat(plain).ino, before.ino, "and without replacing the file")
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)

@@ -1002,6 +1002,9 @@ function M.free_bytes(dir)
   return st and st.bavail * st.bsize or nil
 end
 
+-- Gives the new file its owner; replaced in tests.
+function M.fchown(fd, uid, gid) return uv.fs_fchown(fd, uid, gid) end
+
 -- True when every edit replaced text by text of the same length, so the changes can be written over
 -- the file where they are.
 local function patchable(r)
@@ -1086,6 +1089,10 @@ function M.write(S, opts, done)
   local same = dest == (uv.fs_realpath(S.path) or S.path)
   local existing = uv.fs_stat(dest)
 
+  if same and S.r:pristine() then return finish(true, "no changes to write") end
+  if same and not opts.force and existing and not uv.fs_access(dest, "W") then
+    return finish(false, dest .. " is read-only; use ! to write it anyway")
+  end
   if same and not opts.force and r:changed_on_disk() then
     return finish(false, S.path .. " changed on disk since it was opened; use ! to overwrite it")
   end
@@ -1119,8 +1126,17 @@ function M.write(S, opts, done)
   local tmp = string.format("%s/.%s.streamview-%d.tmp", dir, vim.fs.basename(dest), uv.os_getpid())
   local fd, err = uv.fs_open(tmp, "wx", 384)
   if not fd then return finish(false, string.format("cannot create %s: %s (the file was not touched)", tmp, tostring(err))) end
-  uv.fs_fchmod(fd, bit.band(src.mode, 4095))
-  pcall(uv.fs_fchown, fd, src.uid, src.gid)
+  local function abort(msg)
+    uv.fs_close(fd)
+    uv.fs_unlink(tmp)
+    return finish(false, msg .. " (the file was not touched)")
+  end
+  local mode_ok, mode_err = uv.fs_fchmod(fd, bit.band(src.mode, 4095))
+  if not mode_ok then return abort("cannot set the mode: " .. tostring(mode_err)) end
+  local owner_ok, owner_err = M.fchown(fd, src.uid, src.gid)
+  if not owner_ok and not opts.force then
+    return abort(string.format("cannot keep the owner %d:%d: %s; use ! to save with a new owner", src.uid, src.gid, tostring(owner_err)))
+  end
 
   local chunk = r.bs * 4
   run_job(S, "writing", r.size, function(tick)
@@ -1161,7 +1177,7 @@ local function write_command(S, o)
   local path = o.args ~= "" and vim.fn.fnamemodify(vim.fs.normalize(o.args), ":p") or nil
   M.write(S, { path = path, force = o.bang }, function(ok, err)
     if ok then
-      vim.notify(string.format("Stream view: wrote %s", human(S.r.size)), vim.log.levels.INFO)
+      vim.notify(err and ("Stream view: " .. err) or string.format("Stream view: wrote %s", human(S.r.size)), vim.log.levels.INFO)
     elseif err == "cancelled" then
       vim.notify("Stream view: save cancelled, the file was not touched", vim.log.levels.WARN)
     else
