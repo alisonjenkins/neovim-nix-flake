@@ -51,6 +51,7 @@ function M.open_reader(path)
     bs = M.opts.block,
     seg = M.opts.segment,
     cache = {}, -- most recent first: { index, data }
+    cuts = {}, -- segment boundary -> where the segment really ends
     -- The logical file is these pieces in order. A piece is bytes of the file ({ off, len }) or of
     -- an edit's text ({ str, off, len }); unedited regions are never copied into memory.
     pieces = file_pieces(st.size),
@@ -87,6 +88,7 @@ function Reader:rebuild()
   end
   self.size = pos
   self.cache = {}
+  self.cuts = {}
 end
 
 -- Follows the file as it grows, unless there are edits (then the file is only reported as changed).
@@ -284,10 +286,50 @@ function Reader:find_nl_back(before, low)
   end
 end
 
--- Lines are cut at "\n" or at multiples of the segment size, so a line never needs more than one
--- segment of scanning in either direction, and the cuts depend only on the file contents.
+-- Start and length of the valid UTF-8 character that has bytes on both sides of `pos`, or nil when
+-- `pos` is at a character boundary (or among bytes that do not form a character).
+function Reader:straddle(pos)
+  if pos <= 0 or pos >= self.size then return nil end
+  local from = math.max(0, pos - 3)
+  local s = self:get(from, pos - from + 1)
+  local at = #s
+  local b = s:byte(at)
+  if not b or b < 0x80 or b >= 0xC0 then return nil end
+  for k = at - 1, 1, -1 do
+    local c = s:byte(k)
+    if c >= 0xC2 and c <= 0xF4 then
+      local need = c >= 0xF0 and 4 or c >= 0xE0 and 3 or 2
+      if k + need > at then return from + k - 1, need end
+      return nil
+    elseif c < 0x80 or c >= 0xC0 then
+      return nil
+    end
+  end
+end
+
+-- Where the segment that ends at the multiple `boundary` of the segment size really ends: before a
+-- character that straddles it, so no line is cut inside a UTF-8 character.
+function Reader:cut_at(boundary)
+  if boundary >= self.size then return self.size end
+  local hit = self.cuts[boundary]
+  if hit then return hit end
+  local cut = self:straddle(boundary) or boundary
+  self.cuts[boundary] = cut
+  return cut
+end
+
+-- Segment number holding `off`, its first byte and the end of the segment (where the next starts).
+function Reader:segment(off)
+  local k = math.floor(off / self.seg)
+  if off < self.size and (k + 1) * self.seg < self.size and off >= self:cut_at((k + 1) * self.seg) then k = k + 1 end
+  local start = k == 0 and 0 or self:cut_at(k * self.seg)
+  return k, start, math.min(self.size, self:cut_at((k + 1) * self.seg))
+end
+
+-- Lines are cut at "\n" or at the segment edges, so a line never needs more than one segment of
+-- scanning in either direction, and the cuts depend only on the file contents.
 function Reader:seg_start(off)
-  local floor = off - off % self.seg
+  local _, floor = self:segment(off)
   local nl = self:find_nl_back(off, floor)
   return nl and nl + 1 or floor
 end
@@ -295,7 +337,7 @@ end
 -- Returns the offset where the line ends (its "\n", or the cut), the start of the next line,
 -- and whether a "\n" ended it.
 function Reader:seg_end(start)
-  local limit = math.min(self.size, start - start % self.seg + self.seg)
+  local _, _, limit = self:segment(start)
   local nl = self:find_nl(start, limit)
   if nl then return nl, nl + 1, true end
   return limit, limit, false
@@ -348,20 +390,28 @@ local function line_text(r, ent, col, cap)
   local more = len - col - want
   local text, cr = "", false
   local plain = col == 0 and more <= 0 and (ent.term or ent.e >= r.size)
+  local hidden = 0 -- bytes right of the shown text
   if want > 0 then
-    text = r:get(ent.off + col, want)
+    local from = ent.off + col
+    -- Start and end the text on character boundaries; bytes that are not a character stay bytes
+    local lead, need = r:straddle(from)
+    if lead and col > 0 then
+      local skip = lead + need - from
+      from, want = from + skip, want - skip
+    end
+    text = r:get(from, math.max(want, 0))
     if more > 0 then
       text = cut_partial_tail(text)
     elseif ent.term and text:sub(-1) == "\r" then
       text, cr = text:sub(1, -2), true
     end
-    if col > 0 then text = text:gsub("^[\128-\191]?[\128-\191]?[\128-\191]?", "") end
+    hidden = ent.e - (from + #text)
     local nuls
     text, nuls = text:gsub("%z", NUL_SYMBOL)
     if nuls > 0 then plain = false end
   end
   local prefix = col > 0 and ELLIPSIS or ""
-  if more > 0 then text = text .. string.format("%s[+%d bytes]", ELLIPSIS, more) end
+  if hidden > 0 and more > 0 then text = text .. string.format("%s[+%d bytes]", ELLIPSIS, hidden) end
   return prefix .. text, #prefix, plain, cr
 end
 

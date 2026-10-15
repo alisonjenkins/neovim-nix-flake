@@ -325,6 +325,69 @@ local steps = {
     h.check(res.code == 0, "nvim <big file> starts", tostring(res.stderr))
     eq(vim.fn.readfile(out), { "acwrite", "true", "1" }, "nvim <big file> opens the (editable) viewer instead of reading the file")
   end,
+  function()
+    -- no displayed line starts or ends inside a UTF-8 character
+    local function valid_utf8(s)
+      local i = 1
+      while i <= #s do
+        local b = s:byte(i)
+        local n = b < 0x80 and 1 or (b >= 0xC2 and b <= 0xDF) and 2 or (b >= 0xE0 and b <= 0xEF) and 3 or (b >= 0xF0 and b <= 0xF4) and 4 or 0
+        if n == 0 then return false end
+        for k = 1, n - 1 do
+          local c = s:byte(i + k)
+          if not c or c < 0x80 or c > 0xBF then return false end
+        end
+        i = i + n
+      end
+      return true
+    end
+    local chars = { [2] = "\195\169", [3] = "\226\130\172", [4] = "\240\159\152\128" }
+    for w = 2, 4 do
+      for _, p in ipairs({ 65535, 65536 - (w - 1) }) do
+        local line = string.rep("a", p) .. chars[w] .. string.rep("b", 100) .. "\n"
+        local S = open(write("cap" .. w .. "-" .. p .. ".txt", line))
+        local shown = sv.lines(S)[1]
+        local body, hidden = shown:match("^(.-)\226\128\166%[%+(%d+) bytes%]$")
+        h.check(body ~= nil and valid_utf8(body), w .. "-byte character at " .. p .. ": the cap leaves valid UTF-8")
+        eq(body and #body, p, w .. "-byte character at " .. p .. ": the character is left out whole")
+        eq(tonumber(hidden), w + 100, w .. "-byte character at " .. p .. ": the marker counts the bytes not shown")
+      end
+    end
+
+    -- segment edges: 2-, 3- and 4-byte characters over the edges, then bytes that are no character
+    sv.opts.block, sv.opts.segment = 256, 4096
+    local text = string.rep("a", 4095) .. chars[2] .. string.rep("a", 4094) .. chars[3] .. string.rep("a", 4092) .. chars[4]
+      .. string.rep("a", 4094) .. "\128\128" .. string.rep("a", 100)
+    local S = open(write("segments.txt", text))
+    sv.opts.block, sv.opts.segment = 4096, 16 * 1024 * 1024
+    sv.opts.line_cap = 1024 * 1024
+    local starts = {}
+    for i = 1, 5 do
+      starts[i] = S.offset
+      sv.scroll(S, 1)
+    end
+    eq(starts, { 0, 4095, 8191, 12286, 16384 }, "segments are cut before a character that straddles the edge")
+    local rebuilt = {}
+    for i = 1, #S.entries do
+      local ent = S.entries[i]
+      rebuilt[i] = S.r:get(ent.off, ent.e - ent.off)
+    end
+    eq(table.concat(rebuilt), text:sub(S.entries[1].off + 1), "and the pieces add up to the file")
+    sv.head(S)
+    local shown = sv.lines(S)
+    h.check(valid_utf8(shown[1]) and valid_utf8(shown[2]) and valid_utf8(shown[3]) and valid_utf8(shown[4]), "every piece with a character over an edge is valid UTF-8")
+    h.check(not valid_utf8(shown[5]), "bytes that form no character stay bytes at the edge")
+    local back = {}
+    sv.tail(S)
+    for i = 1, 4 do
+      sv.scroll(S, -1)
+      back[i] = S.offset
+    end
+    h.check(S.offset == 0 or S.offset == 4095, "backward steps use the same cuts", vim.inspect(S.offset))
+    sv.goto_offset(S, 8192)
+    eq(S.offset, 8191, "a jump to the middle of a straddling character lands on the piece that holds it")
+    sv.opts.line_cap = 64 * 1024
+  end,
 }
 
 h.run(steps, 240000)
