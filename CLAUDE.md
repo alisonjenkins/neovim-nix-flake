@@ -88,7 +88,7 @@ Automated tests run as flake checks (`nix flake check`, and in CI):
 - `checks.default` - nixvim startup check; fails on any startup error or evaluation warning
 - `checks.treefmt` - formatting (`nix fmt` fixes it)
 - `checks.terraform-tools` - `tests/lua/test_terraform_tools.lua` under luajit
-- `checks.bigfile`, `checks.cpatches`, `checks.git-async`, `checks.git-hooks` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them
+- `checks.bigfile`, `checks.cpatches`, `checks.git-async`, `checks.git-hooks`, `checks.lazyload` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them
 
 The `tests/` directory also contains example projects for trying language-specific features by hand:
 - `tests/python/` - Python project with nox testing setup

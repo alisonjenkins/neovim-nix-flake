@@ -2008,6 +2008,7 @@
               cpatches = nvimTest "cpatches";
               git-async = nvimTest "git-async";
               git-hooks = nvimTest "git-hooks";
+              lazyload = nvimTest "lazyload";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
                   nativeBuildInputs = [ pkgs.luajit ];
