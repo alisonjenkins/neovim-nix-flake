@@ -1192,6 +1192,7 @@
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
             "lua/streamview.lua".source = ./lua/streamview.lua;
+            "lua/streamview_nav.lua".source = ./lua/streamview_nav.lua;
             "lua/terraform-search.lua".source = ./lua/terraform-search.lua;
             "lua/terraform-tools.lua".source = ./lua/terraform-tools.lua;
             # Patched Python highlights query without "except*" keyword
@@ -2076,6 +2077,7 @@
               git-hooks = nvimTest "git-hooks";
               lazyload = nvimTest "lazyload";
               streamedit = nvimTest "streamedit";
+              streamnav = nvimTest "streamnav";
               streamview = nvimTest "streamview";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {

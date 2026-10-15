@@ -50,6 +50,11 @@ local function save(S, opts)
   return res or { ok = false, err = "timed out" }
 end
 
+-- Movements that scan far are jobs: wait for them
+local function settle(S)
+  vim.wait(60000, function() return S.job == nil end, 5)
+end
+
 local function eq(a, b, name)
   h.check(vim.deep_equal(a, b), name, vim.inspect(a) .. " ~= " .. vim.inspect(b))
 end
@@ -237,15 +242,16 @@ local steps = {
     S = open(write("edit-long.txt", long))
     set_lines(0, 1, { "changed" })
     sv.scroll(S, 1)
-    eq(logical(S), long, "an edit to a line shown cut is discarded")
-    h.check(#h.notes_matching("cannot be edited") > 0, "with a message")
+    eq(logical(S), "changed\nshort\n", "a line of 70000 bytes is edited")
     S = open(write("edit-nul.txt", "ok\nhas\0nul\nend\n"))
     set_lines(1, 2, { "changed" })
     sv.head(S)
-    eq(logical(S), "ok\nhas\0nul\nend\n", "an edit to a line with NUL bytes is discarded")
+    eq(logical(S), "ok\nchanged\nend\n", "a line with NUL bytes is edited")
+    S = open(write("edit-nul2.txt", "ok\nhas\0nul\nend\n"))
+    eq(sv.lines(S)[2], "has\0nul", "the NUL byte is shown as it is")
     set_lines(0, 1, { "OK" })
     sv.head(S)
-    eq(logical(S), "OK\nhas\0nul\nend\n", "its neighbours can be edited")
+    eq(logical(S), "OK\nhas\0nul\nend\n", "and kept when its neighbours are edited")
     vim.cmd("StreamView! " .. vim.fn.fnameescape(numbered))
   end,
 
@@ -393,10 +399,12 @@ local steps = {
     eq(res.pos, at + 1, "the marker is found")
     set_lines(0, 1, { "MARKER LINE AT SIXTY PERCENT" }) -- same length
     sv.tail(S)
+    settle(S)
     local l = sv.lines(S)
     eq(l[#l], "last line", "tail still works with an edit held")
     set_lines(#l - 1, #l, { "LAST LINE" })
     sv.goto_offset(S, "60%")
+    settle(S)
     eq(#S.r.pieces <= 7, true, "the edits cost a few pieces, not the file: " .. #S.r.pieces)
     eq(S.r:get(at + 1, 28), "MARKER LINE AT SIXTY PERCENT", "the edit is visible at its offset")
     eq(S.r.size, size, "and the size did not change")

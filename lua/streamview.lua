@@ -6,8 +6,14 @@ local M = {}
 
 M.opts = {
   block = 256 * 1024, -- read unit; at most two blocks of file data are held at a time
-  line_cap = 64 * 1024, -- bytes of one line shown at once; the rest is reached by horizontal paging
-  segment = 16 * 1024 * 1024, -- longest line scanned; a longer one is split at multiples of this
+  slice = 2 * 1024 * 1024, -- bytes of a line in the buffer around the cursor; a longer line slides through it
+  slice_hyst = 0.2, -- the slice moves when the cursor gets this close to an edge that is not the line's
+  head = 64 * 1024, -- bytes shown of the lines the cursor is not on, when the window would be too big
+  window_budget = 16 * 1024 * 1024, -- bytes of text in all the rows of the window
+  sync_scan = 32 * 1024 * 1024, -- bytes scanned for a line end before the scan goes to a job with progress
+  scan_chunk = 4 * 1024 * 1024, -- bytes read at a time when scanning for newlines
+  fact_min = 64 * 1024, -- scanned stretches shorter than this are not remembered
+  max_facts = 4096, -- remembered stretches per file
   -- may the window be edited (changes are held as pieces until saved)
   editable = not (vim.g.stream_viewer_readonly == true or vim.g.stream_viewer_readonly == 1),
   edit_warn = 256 * 1024 * 1024, -- bytes of edit text held in memory before a warning
@@ -51,10 +57,9 @@ function M.open_reader(path)
     size = st.size, -- logical size: the file with the edits applied
     mtime = mtime_of(st),
     bs = M.opts.block,
-    seg = M.opts.segment,
     cache = {}, -- most recent first: { index, data }
-    cuts = {}, -- segment boundary -> where the segment really ends
-    nonl = {}, -- segment number -> { from, to }: a stretch known to hold no "\n"
+    free = {}, -- stretches known to hold no "\n" (see streamview_nav)
+    gen = 0, -- changes with every edit, so a scan that outlives one can tell
     -- The logical file is these pieces in order. A piece is bytes of the file ({ off, len }) or of
     -- an edit's text ({ str, off, len }); unedited regions are never copied into memory.
     pieces = file_pieces(st.size),
@@ -81,7 +86,7 @@ function Reader:snapshot()
   end
   snap.fd = fd
   snap.pieces, snap.starts = { unpack(self.pieces) }, { unpack(self.starts) }
-  snap.cache, snap.cuts, snap.nonl, snap.log, snap.log_pos = {}, {}, {}, {}, 0
+  snap.cache, snap.free, snap.log, snap.log_pos = {}, {}, {}, 0
   return snap
 end
 
@@ -106,8 +111,8 @@ function Reader:rebuild()
   end
   self.size = pos
   self.cache = {}
-  self.cuts = {}
-  self.nonl = {}
+  self.free = {}
+  self.gen = (self.gen or 0) + 1
 end
 
 -- Follows the file as it grows: appended bytes become a piece after the logical end, so edits made
@@ -231,10 +236,9 @@ function Reader:redo()
   return group.at
 end
 
--- Reads the logical bytes of block `index` from the pieces.
-function Reader:load(index)
-  local lo = index * self.bs
-  local hi = math.min(self.size, lo + self.bs)
+-- Reads the logical bytes [lo, hi) from the pieces (fewer if the file turns out shorter).
+function Reader:raw(lo, hi)
+  hi = math.min(self.size, hi)
   if hi <= lo or not self.fd then return "" end
   local pieces = self.pieces
   if #pieces == 1 and not pieces[1].str then return uv.fs_read(self.fd, hi - lo, pieces[1].off + lo) or "" end
@@ -258,6 +262,10 @@ function Reader:load(index)
   return table.concat(parts)
 end
 
+function Reader:load(index)
+  return self:raw(index * self.bs, index * self.bs + self.bs)
+end
+
 function Reader:block(index)
   for i, hit in ipairs(self.cache) do
     if hit[1] == index then
@@ -274,6 +282,7 @@ end
 function Reader:get(off, len)
   len = math.min(len, self.size - off)
   if len <= 0 then return "" end
+  if len > self.bs then return self:raw(off, off + len) end
   local parts, pos, stop = {}, off, off + len
   while pos < stop do
     local index = math.floor(pos / self.bs)
@@ -319,161 +328,8 @@ function Reader:find_nl_back(before, low)
   end
 end
 
--- Start and length of the valid UTF-8 character that has bytes on both sides of `pos`, or nil when
--- `pos` is at a character boundary (or among bytes that do not form a character).
-function Reader:straddle(pos)
-  if pos <= 0 or pos >= self.size then return nil end
-  local from = math.max(0, pos - 3)
-  local s = self:get(from, pos - from + 1)
-  local at = #s
-  local b = s:byte(at)
-  if not b or b < 0x80 or b >= 0xC0 then return nil end
-  for k = at - 1, 1, -1 do
-    local c = s:byte(k)
-    if c >= 0xC2 and c <= 0xF4 then
-      local need = c >= 0xF0 and 4 or c >= 0xE0 and 3 or 2
-      if k + need > at then return from + k - 1, need end
-      return nil
-    elseif c < 0x80 or c >= 0xC0 then
-      return nil
-    end
-  end
-end
-
--- Where the segment that ends at the multiple `boundary` of the segment size really ends: before a
--- character that straddles it, so no line is cut inside a UTF-8 character.
-function Reader:cut_at(boundary)
-  if boundary >= self.size then return self.size end
-  local hit = self.cuts[boundary]
-  if hit then return hit end
-  local cut = self:straddle(boundary) or boundary
-  self.cuts[boundary] = cut
-  return cut
-end
-
--- Segment number holding `off`, its first byte and the end of the segment (where the next starts).
-function Reader:segment(off)
-  local k = math.floor(off / self.seg)
-  if off < self.size and (k + 1) * self.seg < self.size and off >= self:cut_at((k + 1) * self.seg) then k = k + 1 end
-  local start = k == 0 and 0 or self:cut_at(k * self.seg)
-  return k, start, math.min(self.size, self:cut_at((k + 1) * self.seg))
-end
-
--- A line of many MB has to be scanned to find that it has no "\n" in a segment; remember it, so that
--- walking over the same stretch again (k, <C-b>) costs nothing. One stretch per segment is kept.
-function Reader:is_nonl(k, from, to)
-  local known = self.nonl[k]
-  return known ~= nil and known[1] <= from and known[2] >= to
-end
-
-function Reader:note_nonl(k, from, to)
-  local known = self.nonl[k]
-  if known and known[1] <= to and from <= known[2] then
-    known[1], known[2] = math.min(known[1], from), math.max(known[2], to)
-    return
-  end
-  self.nonl_count = (self.nonl_count or 0) + 1
-  if self.nonl_count > 4096 then
-    self.nonl, self.nonl_count = {}, 1
-  end
-  self.nonl[k] = { from, to }
-end
-
--- Lines are cut at "\n" or at the segment edges, so a line never needs more than one segment of
--- scanning in either direction, and the cuts depend only on the file contents.
-function Reader:seg_start(off)
-  local k, floor = self:segment(off)
-  if self:is_nonl(k, floor, off) then return floor end
-  local nl = self:find_nl_back(off, floor)
-  if nl then return nl + 1 end
-  -- the byte at `off` is part of the line too: a walk back from the next segment starts on its last byte
-  self:note_nonl(k, floor, self:get(off, 1) == "\n" and off or off + 1)
-  return floor
-end
-
--- Returns the offset where the line ends (its "\n", or the cut), the start of the next line,
--- and whether a "\n" ended it.
-function Reader:seg_end(start)
-  local k, _, limit = self:segment(start)
-  if self:is_nonl(k, start, limit) then return limit, limit, false end
-  local nl = self:find_nl(start, limit)
-  if nl then return nl, nl + 1, true end
-  self:note_nonl(k, start, limit)
-  return limit, limit, false
-end
-
-function Reader:window(start, count)
-  local out, pos = {}, start
-  while #out < count and pos < self.size do
-    local e, nxt, term = self:seg_end(pos)
-    out[#out + 1] = { off = pos, e = e, nxt = nxt, term = term }
-    pos = nxt
-  end
-  return out, pos
-end
-
--- Offset of the first line of the last `count` lines.
-function Reader:tail_offset(count)
-  if self.size == 0 then return 0 end
-  local pos = self:seg_start(self.size - 1)
-  for _ = 2, count do
-    if pos == 0 then break end
-    pos = self:seg_start(pos - 1)
-  end
-  return pos
-end
-
----------------------------------------------------------------------------------------------------
--- Text of one line
----------------------------------------------------------------------------------------------------
-
--- Drops a multibyte character cut off at the end of `s`.
-local function cut_partial_tail(s)
-  local n = #s
-  for k = 1, math.min(3, n) do
-    local b = s:byte(n - k + 1)
-    if b < 0x80 then return s end
-    if b >= 0xC0 then
-      local need = b >= 0xF0 and 4 or b >= 0xE0 and 3 or 2
-      return k < need and s:sub(1, n - k) or s
-    end
-  end
-  return s
-end
-
--- Returns the displayed text, the number of prefix bytes before the file's bytes, whether the text
--- is the whole line byte for byte (so it can be edited), and whether a "\r" was cut off its end.
-local function line_text(r, ent, col, cap)
-  local len = ent.e - ent.off
-  local want = math.min(len - col, cap)
-  local more = len - col - want
-  local text, cr = "", false
-  local plain = col == 0 and more <= 0 and (ent.term or ent.e >= r.size)
-    and (ent.off == 0 or r:get(ent.off - 1, 1) == "\n")
-  local hidden = 0 -- bytes right of the shown text
-  if want > 0 then
-    local from = ent.off + col
-    -- Start and end the text on character boundaries; bytes that are not a character stay bytes
-    local lead, need = r:straddle(from)
-    if lead and col > 0 then
-      local skip = lead + need - from
-      from, want = from + skip, want - skip
-    end
-    text = r:get(from, math.max(want, 0))
-    if more > 0 then
-      text = cut_partial_tail(text)
-    elseif ent.term and text:sub(-1) == "\r" then
-      text, cr = text:sub(1, -2), true
-    end
-    hidden = ent.e - (from + #text)
-    local nuls
-    text, nuls = text:gsub("%z", NUL_SYMBOL)
-    if nuls > 0 then plain = false end
-  end
-  local prefix = col > 0 and ELLIPSIS or ""
-  if hidden > 0 and more > 0 then text = text .. string.format("%s[+%d bytes]", ELLIPSIS, hidden) end
-  return prefix .. text, #prefix, plain, cr
-end
+require("streamview_nav").setup(M.opts)
+require("streamview_nav").install(Reader)
 
 local function human(n)
   local units = { "B", "KiB", "MiB", "GiB", "TiB", "PiB" }
@@ -502,20 +358,88 @@ local function height_of(S)
   return win and vim.api.nvim_win_get_height(win) or math.max(vim.o.lines - 3, 1)
 end
 
+local function stop_bg(S)
+  if S.bg then S.bg.cancelled = true end
+  S.bg = nil
+end
+
+-- Rows of the window from S.offset: each a line, or the part of it that is in the buffer.
+-- row: off/e/term/nxt describe the line (e is nil while its end is not found), from/to the bytes
+-- in the buffer, lopen/ropen whether the line goes on before/after them.
+local function compose(S)
+  local r = S.r
+  local size = r.size
+  local rows, pos = {}, S.offset
+  local h = height_of(S)
+  local so = { budget = M.opts.sync_scan }
+  local slice = M.opts.slice
+  local over = slice * h > M.opts.window_budget
+  S.row = math.max(1, S.row)
+  while #rows < h and pos < size do
+    local row = { off = pos, e = r:line_end(pos, so) }
+    rows[#rows + 1] = row
+    local cursor_row = #rows == S.row
+    local cap = (cursor_row or not over) and slice or math.min(slice, M.opts.head)
+    local from = row.off
+    if cursor_row and S.slice_rel > 0 then
+      from = r:align_down(row.off + math.min(S.slice_rel, (row.e or size) - row.off))
+    end
+    -- a line too long to scan whole can still end near the slice
+    if not row.e and from > row.off then row.e = r:line_end(from, { budget = cap + r.bs }) end
+    local limit = row.e or size
+    local to = math.min(from + cap, limit)
+    if to < limit then to = math.max(r:align_down(to), math.min(from + 1, limit)) end
+    row.from, row.to = from, to
+    row.lopen, row.ropen = from > row.off, row.e == nil or to < row.e
+    if not row.e then break end
+    row.term = row.e < size
+    row.nxt = row.term and row.e + 1 or size
+    pos = row.nxt
+  end
+  S.row = math.min(S.row, math.max(#rows, 1))
+  return rows
+end
+
+-- Finds the end of a line that is too long to scan while drawing, a bit at a time in the background,
+-- so that it is known (and the rows after it can be drawn) soon after.
+local function start_bg(S, row, redraw)
+  if S.bg and S.bg.off == row.off then return end
+  stop_bg(S)
+  local job = { off = row.off }
+  S.bg = job
+  local r, gen = S.r, S.r.gen
+  local co = coroutine.create(function()
+    return r:line_end(row.off, {
+      tick = function()
+        if uv.hrtime() > job.deadline then coroutine.yield() end
+      end,
+    })
+  end)
+  local function step()
+    if job.cancelled or S.closed or r ~= S.r or r.gen ~= gen then return end
+    job.deadline = uv.hrtime() + 5e6
+    local ok, e = coroutine.resume(co)
+    if ok and coroutine.status(co) ~= "dead" then return vim.defer_fn(step, 5) end
+    S.bg = nil
+    if ok and e then redraw(S) end
+  end
+  vim.defer_fn(step, 1)
+end
+
 local function draw(S)
   S.r:refresh()
-  local ents, nxt = S.r:window(S.offset, height_of(S))
-  S.entries, S.nxt = ents, nxt
-  local lines, prefixes, plain, cr = {}, {}, {}, {}
-  for i, ent in ipairs(ents) do
-    lines[i], prefixes[i], plain[i], cr[i] = line_text(S.r, ent, S.col, M.opts.line_cap)
+  S.slice_rel, S.col = S.slice_rel or 0, S.col or 0
+  local rows = compose(S)
+  S.entries = rows
+  local lines, cr, eols = {}, {}, {}
+  for i, row in ipairs(rows) do
+    local text = S.r:raw(row.from, row.to)
+    if not row.ropen and row.term and text:sub(-1) == "\r" then text, cr[i] = text:sub(1, -2), true end
+    lines[i] = text
+    eols[i] = row.ropen and "" or (row.term and (cr[i] and "\r\n" or "\n") or "")
   end
   if #lines == 0 then lines[1] = "" end
-  local eols = {}
-  for i, ent in ipairs(ents) do
-    eols[i] = ent.term and (cr[i] and "\r\n" or "\n") or ""
-  end
-  S.shown, S.plain, S.eol = lines, plain, eols
+  S.shown, S.eol = lines, eols
 
   -- Setting the lines is not an edit: drop the buffer's own undo history with it
   vim.bo[S.buf].undolevels = -1
@@ -524,26 +448,41 @@ local function draw(S)
   vim.bo[S.buf].modifiable = S.editable
   vim.bo[S.buf].undolevels = S.editable and 1000 or -1
   vim.bo[S.buf].modified = S.r.log_pos > 0
+  S.tick = vim.b[S.buf].changedtick
 
   vim.api.nvim_buf_clear_namespace(S.buf, NS, 0, -1)
   local m = S.match
   if m then
-    for i, ent in ipairs(ents) do
-      local from = m.pos - ent.off - S.col
-      if m.pos >= ent.off + S.col and m.pos < ent.e and from + m.len <= #lines[i] - prefixes[i] then
-        vim.api.nvim_buf_set_extmark(S.buf, NS, i - 1, from + prefixes[i], {
-          end_col = from + prefixes[i] + m.len,
+    for i, row in ipairs(rows) do
+      local col = m.pos - row.from
+      if m.pos >= row.from and m.pos < row.to then
+        vim.api.nvim_buf_set_extmark(S.buf, NS, i - 1, col, {
+          end_col = math.min(col + m.len, #lines[i]),
           hl_group = "Search",
         })
       end
     end
   end
 
+  if S.goal_abs and rows[S.row] then
+    S.col = S.goal_abs - rows[S.row].from
+    S.goal_abs = nil
+  end
   local win = win_of(S)
   if win then
-    S.row = math.max(1, math.min(S.row, #lines))
-    vim.api.nvim_win_set_cursor(win, { S.row, 0 })
+    local line = lines[S.row] or ""
+    vim.api.nvim_win_set_cursor(win, { S.row, math.max(0, math.min(S.col, #line - 1)) })
     vim.cmd.redrawstatus()
+  end
+  local last = rows[#rows]
+  if last and not last.e then
+    start_bg(S, last, function(again)
+      -- the end was found: draw the rows that follow, if nothing is being typed
+      if again.closed or again.job or vim.api.nvim_get_mode().mode:find("^[iR]") then return end
+      if again.tick == vim.b[again.buf].changedtick or not again.editable then draw(again) end
+    end)
+  else
+    stop_bg(S)
   end
 end
 
@@ -562,10 +501,14 @@ local function joined(lines)
   return #lines == 0 and "" or table.concat(lines, "\n") .. "\n"
 end
 
+local function raw_end(row) return row.ropen and row.to or row.nxt end
+
 -- Piece table edits for the lines in the buffer, or nil and the reason they cannot be made.
--- Every line keeps its own ending (LF, CRLF, none at the end of the file). A line added or
--- replacing more lines than there were takes the ending of the nearest terminated line above it,
--- else below, else LF.
+-- A row is a line, or the part of it that is in the buffer (a slice of a long line): replacing a
+-- slice replaces just its bytes, with no line ending added. Every whole line keeps its own ending
+-- (LF, CRLF, none at the end of the file). A line added, or replacing more lines than there were,
+-- takes the ending of the nearest terminated line above it, else below, else the line just above
+-- the window, else LF.
 local function pending_edits(S, cur)
   local ents, r = S.entries, S.r
   if #ents == 0 then
@@ -596,32 +539,28 @@ local function pending_edits(S, cur)
     return above == "\r\n" and "\r\n" or "\n"
   end
   local last = ents[#ents]
-  local no_final_newline = not last.term and last.nxt >= r.size
+  local no_final_newline = not last.ropen and not last.term
   local edits = {}
   for h = #hunks, 1, -1 do
     local sa, ca, sb, cb = unpack(hunks[h])
-    for i = sa, sa + ca - 1 do
-      if not S.plain[i] then
-        return nil, string.format("line %d is shown cut or altered (long, NUL bytes or not a whole line): it cannot be edited", i)
-      end
-    end
     local start, stop
     if ca > 0 then
-      start, stop = ents[sa].off, ents[sa + ca - 1].nxt
+      start, stop = ents[sa].from, raw_end(ents[sa + ca - 1])
     elseif sa == 0 then
-      start = ents[1].off
+      start = ents[1].from
       stop = start
-      if start > 0 and r:get(start - 1, 1) ~= "\n" then return nil, "a line cannot be added inside a long line" end
+      if ents[1].lopen then return nil, "a line cannot be added inside a long line" end
     else
-      start = ents[sa].nxt
+      start = raw_end(ents[sa])
       stop = start
-      if not ents[sa].term and start < r.size then return nil, "a line cannot be added inside a long line" end
+      if ents[sa].ropen then return nil, "a line cannot be added inside a long line" end
     end
     local at_end = no_final_newline and stop >= r.size
+    local raw_tail = ca > 0 and ents[sa + ca - 1].ropen
     local text = ""
     for k = 1, cb do
       local e = k <= ca and eol[sa + k - 1] or nil
-      if k == cb and at_end then
+      if k == cb and (at_end or raw_tail) then
         e = ""
       elseif e == nil or e == "" then
         e = neighbor(ca > 0 and sa or math.max(sa, 1))
@@ -629,7 +568,7 @@ local function pending_edits(S, cur)
       text = text .. cur[sb + k - 1] .. e
     end
     if ca == 0 and at_end and cb > 0 then text = neighbor(sa) .. text end
-    if cb == 0 and at_end and start > 0 then
+    if cb == 0 and at_end and start > 0 and not ents[sa].lopen then
       -- the file did not end with a newline and must not start to: the line before loses its ending
       local before = r:get(math.max(0, start - 2), math.min(2, start))
       start = start - (before == "\r\n" and 2 or before:sub(-1) == "\n" and 1 or 0)
@@ -642,7 +581,9 @@ end
 local function window_lines(S) return vim.api.nvim_buf_get_lines(S.buf, 0, -1, false) end
 
 local function is_pending(S)
-  return S.editable and S.shown ~= nil and not vim.deep_equal(window_lines(S), S.shown)
+  if not S.editable or S.shown == nil then return false end
+  if S.tick == vim.b[S.buf].changedtick then return false end -- nothing changed since it was drawn
+  return not vim.deep_equal(window_lines(S), S.shown)
 end
 
 -- Turns the changes made in the window into one undoable edit. Returns true when the window
@@ -683,7 +624,8 @@ end
 -- offsets are computed from it.
 local function before_move(S)
   if saving(S) then
-    vim.notify("Stream view: saving, wait for it or cancel it with <C-c>", vim.log.levels.WARN)
+    local what = S.job.label:find("writing", 1, true) and "saving" or ("busy: " .. S.job.label)
+    vim.notify("Stream view: " .. what .. ", wait for it or cancel it with <C-c>", vim.log.levels.WARN)
     return false
   end
   sync_row(S)
@@ -707,11 +649,7 @@ end
 
 -- Shows the window at a logical offset, e.g. where an undo changed the text.
 local function show_at(S, at)
-  local size = S.r.size
-  S.offset = size == 0 and 0 or S.r:seg_start(math.min(at, size - 1))
-  S.row = 1
-  S.match = nil
-  draw(S)
+  M.goto_abs(S, at)
 end
 
 -- Undo first takes back what is typed in the window, then the edits made earlier wherever they are.
@@ -748,92 +686,6 @@ local function stop_follow(S)
   vim.cmd.redrawstatus()
 end
 
-function M.scroll(S, n)
-  if not before_move(S) then return end
-  stop_follow(S)
-  local size = S.r:refresh()
-  if n > 0 then
-    for _ = 1, n do
-      local _, nxt = S.r:seg_end(S.offset)
-      if nxt >= size then break end
-      S.offset = nxt
-    end
-  else
-    for _ = 1, -n do
-      if S.offset == 0 then break end
-      S.offset = S.r:seg_start(S.offset - 1)
-    end
-  end
-  M.render(S)
-end
-
--- Moves the cursor; the window scrolls only when the cursor is at its edge.
-function M.move(S, n)
-  sync_row(S)
-  local rows = vim.api.nvim_buf_line_count(S.buf)
-  local row = S.row + n
-  local function put_cursor(r)
-    S.row = r
-    local win = win_of(S)
-    if win then vim.api.nvim_win_set_cursor(win, { r, 0 }) end
-  end
-  if row > rows then
-    put_cursor(rows)
-    M.scroll(S, row - rows)
-  elseif row < 1 then
-    put_cursor(1)
-    M.scroll(S, row - 1)
-  else
-    put_cursor(row)
-  end
-end
-
-function M.page(S, pages)
-  M.scroll(S, pages * height_of(S))
-end
-
-function M.half_page(S, dir)
-  M.scroll(S, dir * math.max(1, math.floor(height_of(S) / 2)))
-end
-
-function M.head(S)
-  if not before_move(S) then return end
-  stop_follow(S)
-  S.offset, S.row = 0, 1
-  M.render(S)
-end
-
-function M.tail(S)
-  if not before_move(S) then return end
-  S.r:refresh()
-  S.offset = S.r:tail_offset(height_of(S))
-  S.row = height_of(S)
-  M.render(S)
-end
-
--- spec: a byte offset (number or "1234"), or a percentage ("60%", "12.5%")
-function M.goto_offset(S, spec)
-  if not before_move(S) then return nil, "saving" end
-  stop_follow(S)
-  local size = S.r:refresh()
-  local target
-  if type(spec) == "number" then
-    target = spec
-  else
-    local pct = tostring(spec):match("^%s*(%d+%.?%d*)%%%s*$")
-    if pct then
-      target = math.floor(size * math.min(tonumber(pct), 100) / 100)
-    else
-      target = tonumber(spec)
-    end
-  end
-  if not target then return nil, "expected a byte offset or a percentage, got: " .. tostring(spec) end
-  S.offset = size == 0 and 0 or S.r:seg_start(math.max(0, math.min(target, size - 1)))
-  S.row = 1
-  M.render(S)
-  return S.offset
-end
-
 -- Like tail -f: polls the size and keeps the end of the file in view. Any other movement stops it.
 function M.toggle_follow(S, on)
   if on == nil then on = not S.follow end
@@ -860,30 +712,37 @@ function M.toggle_follow(S, on)
   vim.cmd.redrawstatus()
 end
 
-function M.hscroll(S, dir)
-  if not before_move(S) then return end
-  local longest = 0
-  for _, ent in ipairs(S.entries) do
-    longest = math.max(longest, ent.e - ent.off)
-  end
-  S.col = math.max(0, math.min(S.col + dir * math.floor(M.opts.line_cap / 2), longest - 1))
-  M.render(S)
-end
-
 function M.lines(S) return vim.api.nvim_buf_get_lines(S.buf, 0, -1, false) end
 
+local function grouped(n)
+  local s = string.format("%d", n)
+  return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
+end
+
 function M.winbar()
-  local S = states[vim.api.nvim_win_get_buf(vim.g.statusline_winid or 0)]
+  local winid = vim.g.statusline_winid or 0
+  local S = states[vim.api.nvim_win_get_buf(winid)]
   if not S then return "" end
   local size = S.r.size
+  local row = S.entries[vim.api.nvim_win_get_cursor(winid)[1]]
+  local abs = row and row.from + vim.api.nvim_win_get_cursor(winid)[2] or S.offset
   local parts = {
     " STREAM",
     vim.fn.fnamemodify(S.path, ":t"):gsub("%%", "%%%%"),
-    string.format("%d / %d (%s)", S.offset, size, human(size)),
-    string.format("%.1f%%", size > 0 and S.offset / size * 100 or 100),
+    string.format("%s / %s (%s)", grouped(abs), grouped(size), human(size)),
+    string.format("%.1f%%", size > 0 and abs / size * 100 or 100),
   }
   if vim.bo[S.buf].modified then parts[#parts + 1] = "[+]" end
-  if S.col > 0 then parts[#parts + 1] = "col +" .. S.col end
+  if row and (row.lopen or row.ropen) then
+    -- inside a line too long for the buffer: where in the line the cursor is
+    local col = abs - row.off
+    if row.e then
+      local len = row.e - row.off
+      parts[#parts + 1] = string.format("col %s / %s (%d%%)", grouped(col), grouped(len), len > 0 and col / len * 100 or 100)
+    else
+      parts[#parts + 1] = string.format("col %s / ?", grouped(col))
+    end
+  end
   if S.follow then parts[#parts + 1] = "FOLLOW" end
   local job = S.job
   if job then
@@ -998,10 +857,9 @@ function M.search(S, pat, forward, done)
     return
   end
   S.r:refresh()
-  local cur = S.entries[S.row]
-  local origin = cur and cur.off or 0
-  local m = S.match
-  if cur and m and m.pos >= cur.off and m.pos < cur.e then origin = forward and m.pos + 1 or m.pos end
+  sync_row(S)
+  local abs = M.cursor_abs(S)
+  local origin = forward and abs + 1 or abs
   S.last_search = { pat = pat, forward = forward }
 
   local scan = forward and scan_forward or scan_backward
@@ -1009,13 +867,234 @@ function M.search(S, pat, forward, done)
     return scan(S.r, pat, origin, function(pos) tick(math.abs(pos - origin)) end)
   end, function(pos, err)
     if pos then
-      S.match = { pos = pos, len = #pat }
-      S.offset = S.r:seg_start(pos)
-      S.row = 1
-      M.render(S)
+      M.goto_abs(S, pos, { pos = pos, len = #pat }, function()
+        if done then done(pos, err) end
+      end)
+    elseif done then
+      done(pos, err)
     end
-    if done then done(pos, err) end
   end)
+end
+
+
+---------------------------------------------------------------------------------------------------
+-- Movement. Offsets are absolute: the cursor is at a byte of the file, the buffer holds a slice of
+-- its line, and the slice slides when the cursor comes near an edge that is not the line's own.
+---------------------------------------------------------------------------------------------------
+
+-- Runs a movement as a coroutine, so that it can wait for a scan that is too long to be done at once.
+local function nav(S, body)
+  local co = coroutine.create(body)
+  local ok, err = coroutine.resume(co)
+  if not ok then vim.notify("Stream view: " .. tostring(err), vim.log.levels.ERROR) end
+end
+
+-- Scans with fn(so): at once if that is quick, else as a job with progress that the calling
+-- coroutine waits for. Returns the result, or nil and why (a cancel, a short read).
+local function wait_scan(S, label, span, fn)
+  local res, why = fn({ budget = M.opts.sync_scan })
+  if res ~= nil or why ~= "budget" then return res, why end
+  local co = coroutine.running()
+  local waiting, finished, r1, r2 = false, false, nil, nil
+  run_job(S, label, span, function(tick) return fn({ tick = tick }) end, function(result, err)
+    if waiting then
+      local ok, e = coroutine.resume(co, result, err)
+      if not ok then vim.notify("Stream view: " .. tostring(e), vim.log.levels.ERROR) end
+    else
+      finished, r1, r2 = true, result, err
+    end
+  end, true)
+  if finished then return r1, r2 end
+  waiting = true
+  return coroutine.yield()
+end
+
+local function cursor_col(S)
+  local win = win_of(S)
+  return win and vim.api.nvim_win_get_cursor(win)[2] or S.col or 0
+end
+
+-- The byte of the file the cursor is on
+function M.cursor_abs(S)
+  local row = S.entries[S.row]
+  if not row then return 0 end
+  return row.from + cursor_col(S)
+end
+
+-- How far into its line the slice of a row starts for a cursor at `abs`
+local function slice_rel_for(line_start, abs)
+  local slice = M.opts.slice
+  local margin = math.min(slice * M.opts.slice_hyst, slice / 2 - 1)
+  local d = abs - line_start
+  if d + margin < slice then return 0 end
+  return math.max(0, math.floor(d - slice / 2))
+end
+
+-- Shows the file at byte `abs`, on the first row, and puts the cursor on it. match: { pos, len } to
+-- highlight. after() runs when the move is done (it may wait for a scan to the start of the line).
+function M.goto_abs(S, abs, match, after)
+  nav(S, function()
+    local function finish() if after then after() end end
+    if not before_move(S) then return finish() end
+    stop_follow(S)
+    local r = S.r
+    local size = r:refresh()
+    abs = r:align_down(math.max(0, math.min(abs, math.max(size - 1, 0))))
+    local ls = wait_scan(S, "finding the start of the line", abs, function(so) return r:line_start(abs, so) end)
+    if not ls then return finish() end
+    S.offset, S.row = ls, 1
+    S.slice_rel = slice_rel_for(ls, abs)
+    S.goal_abs = abs
+    S.match = match
+    M.render(S)
+    finish()
+  end)
+end
+
+function M.scroll(S, n)
+  nav(S, function()
+    if not before_move(S) then return end
+    stop_follow(S)
+    local r = S.r
+    r:refresh()
+    for _ = 1, math.abs(n) do
+      if n > 0 then
+        local e = wait_scan(S, "finding the end of the line", r.size - S.offset, function(so) return r:line_end(S.offset, so) end)
+        if not e then return end
+        if e + 1 >= r.size then break end
+        S.offset = e + 1
+      else
+        if S.offset == 0 then break end
+        local ls = wait_scan(S, "finding the start of the line", S.offset, function(so)
+          so.nl_at_off = true
+          return r:line_start(S.offset - 1, so)
+        end)
+        if not ls then return end
+        S.offset = ls
+      end
+    end
+    S.slice_rel = 0
+    M.render(S)
+  end)
+end
+
+local check_slice
+
+-- Moves the cursor; the window scrolls only when the cursor is at its edge.
+function M.move(S, n)
+  sync_row(S)
+  local rows = vim.api.nvim_buf_line_count(S.buf)
+  local row = S.row + n
+  local win = win_of(S)
+  if row > rows then
+    if win then vim.cmd(("noautocmd normal! %dj"):format(rows - S.row)) end
+    check_slice(S)
+    M.scroll(S, row - rows)
+  elseif row < 1 then
+    if win then vim.cmd(("noautocmd normal! %dk"):format(S.row - 1)) end
+    check_slice(S)
+    M.scroll(S, row - 1)
+  elseif win and n ~= 0 then
+    vim.cmd(("noautocmd normal! %d%s"):format(math.abs(n), n > 0 and "j" or "k"))
+    check_slice(S)
+  end
+end
+
+function M.page(S, pages)
+  M.scroll(S, pages * height_of(S))
+end
+
+function M.half_page(S, dir)
+  M.scroll(S, dir * math.max(1, math.floor(height_of(S) / 2)))
+end
+
+function M.head(S)
+  nav(S, function()
+    if not before_move(S) then return end
+    stop_follow(S)
+    S.offset, S.row, S.slice_rel, S.col = 0, 1, 0, 0
+    M.render(S)
+  end)
+end
+
+function M.tail(S)
+  nav(S, function()
+    if not before_move(S) then return end
+    local r = S.r
+    local size = r:refresh()
+    local ls = 0
+    if size > 0 then
+      ls = wait_scan(S, "finding the start of the line", size, function(so) return r:line_start(size - 1, so) end)
+      if not ls then return end
+      for _ = 2, height_of(S) do
+        if ls == 0 then break end
+        local prev = wait_scan(S, "finding the start of the line", ls, function(so)
+          so.nl_at_off = true
+          return r:line_start(ls - 1, so)
+        end)
+        if not prev then return end
+        ls = prev
+      end
+    end
+    S.offset, S.row, S.slice_rel, S.col = ls, height_of(S), 0, 0
+    M.render(S)
+  end)
+end
+
+-- spec: a byte offset (number or "1234"), or a percentage ("60%", "12.5%")
+function M.goto_offset(S, spec)
+  local size = S.r:refresh()
+  local target
+  if type(spec) == "number" then
+    target = spec
+  else
+    local pct = tostring(spec):match("^%s*(%d+%.?%d*)%%%s*$")
+    if pct then
+      target = math.floor(size * math.min(tonumber(pct), 100) / 100)
+    else
+      target = tonumber(spec)
+    end
+  end
+  if not target then return nil, "expected a byte offset or a percentage, got: " .. tostring(spec) end
+  M.goto_abs(S, target)
+  return target
+end
+
+-- The cursor row, and the slice of it in the buffer, follow the cursor: entering another row makes
+-- that one the cursor row, and a cursor near an edge of the slice that is not the line's own moves
+-- the slice. Safe to call at any time; it does nothing when the cursor is well inside.
+check_slice = function(S)
+  if S.closed or S.job or not S.entries then return end
+  local win = win_of(S)
+  if not win then return end
+  local cur = vim.api.nvim_win_get_cursor(win)
+  local row = S.entries[cur[1]]
+  if not row then return end
+  local changed_row = cur[1] ~= S.row
+  S.row = cur[1]
+  local slice = M.opts.slice
+  local margin = math.min(slice * M.opts.slice_hyst, slice / 2 - 1)
+  local width = row.to - row.from
+  local near = (row.lopen and cur[2] < margin) or (row.ropen and width - cur[2] < margin)
+  if near then
+    S.goal_abs = row.from + cur[2]
+    S.slice_rel = slice_rel_for(row.off, S.goal_abs)
+    M.render(S)
+  elseif changed_row and S.slice_rel ~= 0 then
+    S.slice_rel = 0
+    S.col = cur[2]
+    M.render(S)
+  end
+end
+
+M.check_slice = function(S) return check_slice(S) end
+
+local function attach_nav(S, group)
+  vim.api.nvim_create_autocmd("CursorMoved", {
+    group = group,
+    buffer = S.buf,
+    callback = function() check_slice(S) end,
+  })
 end
 
 local function notify_search_result(pat)
@@ -1095,7 +1174,7 @@ local function reopen(S)
   end
   S.r:close()
   S.r = r
-  S.offset = r.size == 0 and 0 or r:seg_start(math.min(S.offset, r.size - 1))
+  S.offset = r.size == 0 and 0 or r:line_start(math.min(S.offset, r.size - 1))
   S.match = nil
   if typed and #typed > 0 then r:apply(typed) end
   draw(S)
@@ -1268,8 +1347,6 @@ local function keymaps(S)
   map("<PageUp>", function() M.page(S, -1) end, "page up")
   map("gg", function() M.head(S) end, "start of file")
   map("G", function() M.tail(S) end, "end of file")
-  map("zL", function() M.hscroll(S, 1) end, "page right within long lines")
-  map("zH", function() M.hscroll(S, -1) end, "page left within long lines")
   if S.editable then
     map("u", function() for _ = 1, vim.v.count1 do M.undo(S) end end, "undo (across windows)")
     map("<C-r>", function() for _ = 1, vim.v.count1 do M.redo(S) end end, "redo (across windows)")
@@ -1403,6 +1480,7 @@ function M.attach(buf, path)
     buffer = buf,
     callback = function() check_pending(S) end,
   })
+  attach_nav(S, group)
   vim.api.nvim_create_autocmd("BufWinEnter", {
     group = group,
     buffer = buf,

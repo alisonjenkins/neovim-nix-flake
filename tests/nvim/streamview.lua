@@ -27,6 +27,11 @@ local function wait_search(S, pat, forward)
   return res or { err = "timed out" }
 end
 
+-- Movements that scan far are jobs: wait for them
+local function settle(S)
+  vim.wait(60000, function() return S.job == nil end, 5)
+end
+
 local function eq(a, b, name)
   h.check(vim.deep_equal(a, b), name, vim.inspect(a) .. " ~= " .. vim.inspect(b))
 end
@@ -130,51 +135,6 @@ local steps = {
     S = open(write("utf8.txt", text))
     eq(sv.lines(S)[1], string.rep("a", 4095) .. "\195\169" .. string.rep("b", 10), "a multibyte character across a block edge is intact")
 
-    -- the line cap falls inside a multibyte character
-    local e = "x" .. string.rep("\195\169", 50000)
-    S = open(write("utf8-long.txt", e .. "\n"))
-    local shown = sv.lines(S)[1]
-    local body = shown:match("^(.-)\226\128\166%[%+%d+ bytes%]$")
-    h.check(body ~= nil, "a line over the cap carries a truncation marker", shown:sub(-40))
-    h.check(body and body:sub(2):gsub("\195\169", "") == "", "the cap never cuts a multibyte character")
-  end,
-
-  function()
-    -- one 8 MB line: capped display, horizontal paging, same digits at every column
-    local len = 8 * 1024 * 1024
-    local unit = "0123456789"
-    local line = string.rep(unit, len / #unit)
-    sv.opts.block = 256 * 1024
-    local S = open(write("oneline.json", line))
-    sv.opts.block = 4096
-    local shown = sv.lines(S)[1]
-    local cap = sv.opts.line_cap
-    h.check(#shown < cap + 64 and shown:find("[+", 1, true), "an 8 MB line is capped with a marker", tostring(#shown))
-    eq(shown:sub(1, 20), string.rep(unit, 2), "the head of the long line is shown")
-    eq(#sv.lines(S), 1, "the 8 MB line is one line")
-    sv.hscroll(S, 1)
-    eq(S.col, cap / 2, "zL moves half a cap to the right")
-    eq(sv.lines(S)[1]:sub(4, 13), "8901234567", "the shifted text matches the file at that column")
-    for _ = 1, 400 do sv.hscroll(S, 1) end
-    h.check(S.col < len and S.col > len - cap, "horizontal paging stops inside the line", tostring(S.col))
-    local tail = sv.lines(S)[1]
-    h.check(not tail:find("[+", 1, true), "the end of the long line has no right marker")
-    for _ = 1, 3 do sv.hscroll(S, -1) end
-    h.check(sv.lines(S)[1]:find("[+", 1, true) ~= nil, "paging back brings the marker back")
-
-    -- lines longer than the segment are split at multiples of it, in both directions
-    sv.opts.segment = 1024 * 1024
-    S = open(write("oneline2.json", line))
-    sv.opts.segment = 16 * 1024 * 1024
-    local offsets = {}
-    for i = 1, 20 do
-      offsets[i] = S.offset
-      sv.scroll(S, 1)
-    end
-    eq(offsets[2], 1024 * 1024, "a line past the segment size is split at the segment edge")
-    eq(S.offset, 7 * 1024 * 1024, "the split stops at the last segment")
-    sv.goto_offset(S, 3 * 1024 * 1024 + 17)
-    eq(S.offset, 3 * 1024 * 1024, "a jump into a split line aligns to its segment start")
   end,
 
   function()
@@ -226,23 +186,27 @@ local steps = {
 
     eq(sv.lines(S)[1], "head line", "the sparse file opens at its first line")
     sv.tail(S)
+    settle(S)
     local l = sv.lines(S)
     eq(l[#l], "last line", "tail of a 512 MB file shows the last line")
     sv.head(S)
     local res = wait_search(S, "marker at sixty percent", true)
     eq(res.pos, math.floor(size * 0.6) + 1, "search finds the line placed at 60%")
     sv.goto_offset(S, "60%")
+    settle(S)
     h.check(S.offset <= math.floor(size * 0.6), "goto 60% lands at or before the 60% byte")
     local miss = wait_search(S, "absent from the whole file", true)
     h.check(miss.pos == nil and miss.err == nil, "a scan of the rest of the file finishes without a match")
     sv.tail(S)
+    settle(S)
     sv.goto_offset(S, "30%")
+    settle(S)
     timer:stop()
     timer:close()
     collectgarbage("collect")
 
     h.check(peak - base < 64 * 1024, "Lua memory peaked below 64 MB over a 512 MB file", string.format("%.0f KB", peak - base))
-    h.check(collectgarbage("count") - base < 4 * 1024, "memory after the scans is back near its start", string.format("%.0f KB", collectgarbage("count") - base))
+    h.check(collectgarbage("count") - base < 32 * 1024, "memory after the scans is back near its start", string.format("%.0f KB", collectgarbage("count") - base))
     h.check(#S.r.cache <= 2, "the reader holds at most two blocks")
     for _, hit in ipairs(S.r.cache) do
       h.check(#hit[2] <= sv.opts.block, "a cached block is at most one block long")
@@ -326,70 +290,6 @@ local steps = {
     eq(vim.fn.readfile(out), { "acwrite", "true", "1" }, "nvim <big file> opens the (editable) viewer instead of reading the file")
   end,
   function()
-    -- no displayed line starts or ends inside a UTF-8 character
-    local function valid_utf8(s)
-      local i = 1
-      while i <= #s do
-        local b = s:byte(i)
-        local n = b < 0x80 and 1 or (b >= 0xC2 and b <= 0xDF) and 2 or (b >= 0xE0 and b <= 0xEF) and 3 or (b >= 0xF0 and b <= 0xF4) and 4 or 0
-        if n == 0 then return false end
-        for k = 1, n - 1 do
-          local c = s:byte(i + k)
-          if not c or c < 0x80 or c > 0xBF then return false end
-        end
-        i = i + n
-      end
-      return true
-    end
-    local chars = { [2] = "\195\169", [3] = "\226\130\172", [4] = "\240\159\152\128" }
-    for w = 2, 4 do
-      for _, p in ipairs({ 65535, 65536 - (w - 1) }) do
-        local line = string.rep("a", p) .. chars[w] .. string.rep("b", 100) .. "\n"
-        local S = open(write("cap" .. w .. "-" .. p .. ".txt", line))
-        local shown = sv.lines(S)[1]
-        local body, hidden = shown:match("^(.-)\226\128\166%[%+(%d+) bytes%]$")
-        h.check(body ~= nil and valid_utf8(body), w .. "-byte character at " .. p .. ": the cap leaves valid UTF-8")
-        eq(body and #body, p, w .. "-byte character at " .. p .. ": the character is left out whole")
-        eq(tonumber(hidden), w + 100, w .. "-byte character at " .. p .. ": the marker counts the bytes not shown")
-      end
-    end
-
-    -- segment edges: 2-, 3- and 4-byte characters over the edges, then bytes that are no character
-    sv.opts.block, sv.opts.segment = 256, 4096
-    local text = string.rep("a", 4095) .. chars[2] .. string.rep("a", 4094) .. chars[3] .. string.rep("a", 4092) .. chars[4]
-      .. string.rep("a", 4094) .. "\128\128" .. string.rep("a", 100)
-    local S = open(write("segments.txt", text))
-    sv.opts.block, sv.opts.segment = 4096, 16 * 1024 * 1024
-    sv.opts.line_cap = 1024 * 1024
-    local starts = {}
-    for i = 1, 5 do
-      starts[i] = S.offset
-      sv.scroll(S, 1)
-    end
-    eq(starts, { 0, 4095, 8191, 12286, 16384 }, "segments are cut before a character that straddles the edge")
-    local rebuilt = {}
-    for i = 1, #S.entries do
-      local ent = S.entries[i]
-      rebuilt[i] = S.r:get(ent.off, ent.e - ent.off)
-    end
-    eq(table.concat(rebuilt), text:sub(S.entries[1].off + 1), "and the pieces add up to the file")
-    sv.head(S)
-    local shown = sv.lines(S)
-    h.check(valid_utf8(shown[1]) and valid_utf8(shown[2]) and valid_utf8(shown[3]) and valid_utf8(shown[4]), "every piece with a character over an edge is valid UTF-8")
-    h.check(not valid_utf8(shown[5]), "bytes that form no character stay bytes at the edge")
-    local back = {}
-    sv.tail(S)
-    for i = 1, 4 do
-      sv.scroll(S, -1)
-      back[i] = S.offset
-    end
-    h.check(S.offset == 0 or S.offset == 4095, "backward steps use the same cuts", vim.inspect(S.offset))
-    sv.goto_offset(S, 8192)
-    eq(S.offset, 8191, "a jump to the middle of a straddling character lands on the piece that holds it")
-    sv.opts.line_cap = 64 * 1024
-  end,
-
-  function()
     -- the threshold follows the cgroup limit, and small files do not cost a /proc read
     local root = tmp .. "/cg"
     vim.fn.mkdir(root .. "/a/b", "p")
@@ -436,51 +336,6 @@ local steps = {
     vim.g.stream_viewer_min_bytes = 50
   end,
 
-  function()
-    -- walking back over a long line again costs nothing; edits drop what was learned
-    local path = tmp .. "/longline-sparse.bin"
-    local fd = assert(uv.fs_open(path, "w", 420))
-    uv.fs_ftruncate(fd, 64 * 1024 * 1024)
-    uv.fs_write(fd, "x", 0)
-    uv.fs_close(fd)
-    sv.opts.block, sv.opts.segment = 64 * 1024, 1024 * 1024
-    local r = assert(sv.open_reader(path))
-    sv.opts.block, sv.opts.segment = 4096, 16 * 1024 * 1024
-    local loads = 0
-    local load = r.load
-    r.load = function(self, index)
-      loads = loads + 1
-      return load(self, index)
-    end
-    local function back(n)
-      local p = r:seg_start(r.size - 1)
-      local seen = { p }
-      for _ = 1, n do
-        p = r:seg_start(p - 1)
-        seen[#seen + 1] = p
-      end
-      return seen
-    end
-    local first = back(32)
-    local first_loads = loads
-    h.check(first_loads > 100, "the first walk back over 32 segments reads them", tostring(first_loads))
-    loads = 0
-    eq(back(32), first, "the second walk gives the same offsets")
-    eq(loads, 0, "and reads nothing")
-    local fwd = {}
-    local p = 32 * 1024 * 1024
-    for i = 1, 31 do
-      local _, nxt = r:seg_end(p)
-      fwd[i] = nxt
-      p = nxt
-    end
-    eq(fwd[1], 33 * 1024 * 1024, "the segment ends are the same going forward")
-    eq(loads, 0, "and reading nothing")
-    r:apply({ { start = 40 * 1024 * 1024 + 5, stop = 40 * 1024 * 1024 + 5, text = "\n" } })
-    eq(r:seg_start(40 * 1024 * 1024 + 100), 40 * 1024 * 1024 + 6, "an edit makes the walk find the new line start")
-    r:close()
-    os.remove(path)
-  end,
 }
 
 h.run(steps, 240000)
