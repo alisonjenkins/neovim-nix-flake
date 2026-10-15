@@ -2056,14 +2056,16 @@
             let
               # perSystemArgs.config, not `config`: that name is the nixvim module in this file
               treefmtCfg = perSystemArgs.config.treefmt;
-              nvimTest = name: pkgs.runCommand "nvim-test-${name}"
+              nvimTestWith = timeout: name: pkgs.runCommand "nvim-test-${name}"
                 {
                   # acl and attr: streamsave checks that ACLs and extended attributes survive a save
                   nativeBuildInputs = [ pkgs.acl pkgs.attr pkgs.bash pkgs.coreutils pkgs.git ];
+                  NVIM_TEST_TIMEOUT = toString timeout;
                 } ''
                 bash ${./tests/nvim}/run.sh ${nvim}/bin/nvim ${./tests/nvim}/${name}.lua
                 touch $out
               '';
+              nvimTest = nvimTestWith 300;
             in
             {
               default = nixvimLib.check.mkTestDerivationFromNvim {
@@ -2085,6 +2087,18 @@
               lazyload = nvimTest "lazyload";
               streamedit = nvimTest "streamedit";
               streamfuzz = nvimTest "streamfuzz";
+              # Differential tests against stock Neovim, probes and scale budgets for the viewer's
+              # motions; see docs/streamview-motions.md. Known failures are xfail in
+              # tests/nvim/streammotions_status.lua.
+              streammotions-edit1 = nvimTestWith 900 "streammotions_edit1";
+              streammotions-edit2 = nvimTestWith 900 "streammotions_edit2";
+              streammotions-misc = nvimTestWith 900 "streammotions_misc";
+              streammotions-nav = nvimTestWith 900 "streammotions_nav";
+              streammotions-scale = nvimTestWith 900 "streammotions_scale";
+              streammotions-scale-huge = nvimTestWith 3600 "streammotions_scale_huge";
+              streammotions-search = nvimTestWith 900 "streammotions_search";
+              streammotions-txt1 = nvimTestWith 900 "streammotions_txt1";
+              streammotions-txt2 = nvimTestWith 900 "streammotions_txt2";
               streamnav = nvimTest "streamnav";
               streamrobust = nvimTest "streamrobust";
               streamsave = nvimTest "streamsave";
