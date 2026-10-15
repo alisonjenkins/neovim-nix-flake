@@ -90,15 +90,6 @@ let
     }
     {
       mode = "n";
-      key = "<leader>asA";
-      action = "<cmd>lua require('sidekick.cli').toggle({ name = 'aider', focus = true })<cr>";
-      options = {
-        desc = "Sidekick Toggle Aider";
-        silent = true;
-      };
-    }
-    {
-      mode = "n";
       key = "<leader>asC";
       action = "<cmd>lua require('sidekick.cli').toggle({ name = 'copilot', focus = true })<cr>";
       options = {
@@ -121,24 +112,6 @@ let
       action = "<cmd>lua require('sidekick.cli').focus()<cr>";
       options = {
         desc = "Sidekick Switch Focus";
-        silent = true;
-      };
-    }
-    {
-      mode = "n";
-      key = "<leader>asg";
-      action = "<cmd>lua require('sidekick.cli').toggle({ name = 'gemini', focus = true })<cr>";
-      options = {
-        desc = "Sidekick Toggle Gemini";
-        silent = true;
-      };
-    }
-    {
-      mode = "n";
-      key = "<leader>aso";
-      action = "<cmd>lua require('sidekick.cli').toggle({ name = 'opencode', focus = true })<cr>";
-      options = {
-        desc = "Sidekick Toggle OpenCode";
         silent = true;
       };
     }
