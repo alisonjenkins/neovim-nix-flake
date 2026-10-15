@@ -621,6 +621,56 @@ local steps = {
   end,
 
   function()
+    -- a file that shrinks, or a read that comes back short, while it is saved never gives a
+    -- zero-filled or truncated result: the save fails and nothing is replaced
+    local dir = tmp .. "/short"
+    vim.fn.mkdir(dir, "p")
+    local lines = {}
+    for i = 1, 400 do lines[i] = string.format("L%04d", i) end
+    local path = write("short/data.txt", text_of(lines))
+    sv.opts.block = 64
+    S = open(path)
+    sv.opts.block = 256
+    set_lines(0, 1, { "EDIT" })
+    local ticks = 0
+    local real_hrtime = uv.hrtime
+    uv.hrtime = function()
+      ticks = ticks + 20e6
+      return ticks
+    end
+    local res
+    sv.write(S, nil, function(ok, err) res = { ok = ok, err = err } end)
+    local tfd = assert(uv.fs_open(path, "r+", 0))
+    uv.fs_ftruncate(tfd, 1000)
+    uv.fs_close(tfd)
+    vim.wait(5000, function() return res ~= nil end, 5)
+    uv.hrtime = real_hrtime
+    h.check(res and not res.ok, "a save of a file that shrank fails", vim.inspect(res))
+    h.check(res and (tostring(res.err):find("truncated", 1, true) or tostring(res.err):find("changed on disk", 1, true)) ~= nil, "with a reason", vim.inspect(res))
+    eq(#read(path), 1000, "the file is as the other process left it")
+    eq(leftovers(dir), {}, "and no temp file is left")
+
+    path = write("short/data2.txt", text_of(lines))
+    sv.opts.block = 64
+    S = open(path)
+    sv.opts.block = 256
+    set_lines(0, 1, { "EDIT" })
+    local real_read = uv.fs_read
+    local reads = 0
+    uv.fs_read = function(fd, size, offset, ...)
+      local data = real_read(fd, size, offset, ...)
+      reads = reads + 1
+      if reads > 20 and type(data) == "string" and #data > 10 then return data:sub(1, #data - 10) end
+      return data
+    end
+    res = save(S, { force = true })
+    uv.fs_read = real_read
+    h.check(not res.ok and tostring(res.err):find("short read", 1, true) ~= nil, "a short read fails the save", tostring(res.err))
+    eq(read(path), text_of(lines), "and the file is untouched")
+    eq(leftovers(dir), {}, "with no temp file")
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)

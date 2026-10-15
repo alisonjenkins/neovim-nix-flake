@@ -1022,6 +1022,7 @@ local function write_all(fd, data, pos)
   while done < #data do
     local n, err = uv.fs_write(fd, done == 0 and data or data:sub(done + 1), pos + done)
     if not n then return nil, err end
+    if n == 0 then return nil, "the write made no progress" end
     done = done + n
   end
   return true
@@ -1144,10 +1145,19 @@ function M.write(S, opts, done)
   run_job(S, "writing", r.size, function(tick)
     local pos = 0
     while pos < r.size do
-      local ok, werr = write_all(fd, r:get(pos, chunk), pos)
+      local want = math.min(chunk, r.size - pos)
+      local data = r:get(pos, want)
+      if #data ~= want then
+        return nil, string.format("short read at byte %d (%d of %d bytes): the file was truncated while it was being saved", pos, #data, want)
+      end
+      local ok, werr = write_all(fd, data, pos)
       if not ok then return nil, "write failed: " .. tostring(werr) end
-      pos = pos + chunk
-      tick(math.min(pos, r.size))
+      pos = pos + want
+      tick(pos)
+    end
+    local out = uv.fs_fstat(fd)
+    if not out or out.size ~= r.size then
+      return nil, string.format("the new file has %s bytes, not %d", out and out.size or "?", r.size)
     end
     if same and r:changed_on_disk() and not opts.force then return nil, S.path .. " changed on disk while it was being saved" end
     local synced, serr = uv.fs_fsync(fd)
