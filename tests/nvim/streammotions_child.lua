@@ -92,7 +92,13 @@ function SM.place(B)
   end
   local sv = SM.sv
   local S = sv.state()
-  if sv.place then return sv.place(S, B) and true or false end
+  if sv.place then
+    if sv.place(S, B) then return true end
+    -- a byte that is not a place for the cursor (a line end, inside a character): Neovim's :goto
+    -- puts the cursor on the character before it, and so does the viewer
+    local at = sv.cursor_offset(S)
+    return at <= B and B - at <= 4
+  end
   sv.goto_offset(S, B)
   for i, ent in ipairs(S.entries) do
     if ent.off <= B and B < ent.nxt then
