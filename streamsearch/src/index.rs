@@ -17,6 +17,7 @@
 
 use std::fs::{self, File, Metadata, OpenOptions};
 use std::io::{self, ErrorKind};
+use std::os::fd::AsRawFd;
 use std::os::unix::fs::{FileExt, MetadataExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -235,6 +236,9 @@ impl Index {
     /// Open the index at `path` if it describes exactly the file `ident`.
     pub fn open_valid(path: &Path, ident: &Identity) -> Option<Self> {
         let file = File::open(path).ok()?;
+        // The index is about 1% of the file: pull it in ahead of the lookups.
+        // SAFETY: the descriptor is open; advice on it cannot fault.
+        unsafe { libc::posix_fadvise(file.as_raw_fd(), 0, 0, libc::POSIX_FADV_WILLNEED) };
         let mut head = [0u8; HEADER_LEN];
         file.read_exact_at(&mut head, 0).ok()?;
         let header = Header::decode(&head)?;
