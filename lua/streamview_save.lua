@@ -94,6 +94,9 @@ function M.write(S, opts, done)
   local internal = sv().internal
   local human = internal.human
   opts = opts or {}
+  -- plugins' write hooks may run the event loop, so the request expires by time, not by a callback
+  local quit = S.quit_next ~= nil and uv.now() - S.quit_next < 2000
+  S.quit_next = nil
   local function finish(ok, err)
     if done then done(ok, err) end
   end
@@ -168,6 +171,8 @@ function M.write(S, opts, done)
   internal.stop_follow(S)
   S.saving = true
   vim.bo[S.buf].modifiable = false
+  local quit_win = quit and vim.api.nvim_get_current_win()
+  local starting = true
   internal.run_job(S, "writing", snap.size, function(tick)
     local pos = 0
     while pos < snap.size do
@@ -213,7 +218,43 @@ function M.write(S, opts, done)
       if not reopened then return finish(false, "saved, but cannot reopen: " .. tostring(oerr)) end
     end
     finish(true)
+    -- A save that ended before the write command returned leaves the buffer unmodified, and the
+    -- command quits by itself
+    if quit_win and not starting and vim.api.nvim_win_is_valid(quit_win) then
+      vim.api.nvim_win_call(quit_win, function()
+        local quit_ok, quit_err = pcall(vim.cmd, "quit")
+        if not quit_ok then vim.notify("Stream view: saved, but cannot quit: " .. tostring(quit_err), vim.log.levels.WARN) end
+      end)
+    end
   end)
+  starting = false
+  if quit_win and S.saving then
+    vim.notify("Stream view: the save is running; quitting when it has finished", vim.log.levels.INFO)
+  end
+end
+
+-- :wq and friends write through BufWriteCmd and then quit only if the buffer is unmodified, which a
+-- sliced save is not yet. The commands are recognised as they are typed, and the quit is done when
+-- the save has succeeded.
+local QUIT_COMMANDS = { wq = true, x = true, xi = true, xit = true, exi = true, exit = true }
+
+local function want_quit(S)
+  S.quit_next = uv.now()
+end
+
+function M.attach(S, group)
+  vim.api.nvim_create_autocmd("CmdlineLeave", {
+    group = group,
+    callback = function(ev)
+      if vim.v.event.abort or ev.match ~= ":" or vim.api.nvim_get_current_buf() ~= S.buf then return end
+      local name = vim.fn.getcmdline():match("^%s*:*%s*(%a+)!?%s*$")
+      if name and QUIT_COMMANDS[name] then want_quit(S) end
+    end,
+  })
+  vim.keymap.set("n", "ZZ", function()
+    want_quit(S)
+    pcall(vim.cmd, "x")
+  end, { buffer = S.buf, nowait = true, silent = true, desc = "Stream view: save and quit" })
 end
 
 return M

@@ -1970,6 +1970,7 @@ function M.attach(buf, path)
     end,
   })
   if S.editable then
+    save.attach(S, group)
     vim.api.nvim_create_autocmd("BufWriteCmd", {
       group = group,
       buffer = buf,

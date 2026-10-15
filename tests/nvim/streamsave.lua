@@ -217,6 +217,66 @@ local steps = {
     eq(read(path), numbered(400), "and the file is untouched")
     eq(leftovers(tmp), {}, "and no temp file is left")
   end,
+
+  function()
+    -- S1: :wq, :x and ZZ save, then close the window; a failed save keeps it open
+    for _, how in ipairs({ "wq", "x", "ZZ" }) do
+      local path = write("quit-" .. how .. ".txt", numbered(400))
+      vim.cmd("only")
+      S = open(path)
+      vim.cmd("split")
+      local win = vim.api.nvim_get_current_win()
+      vim.api.nvim_buf_set_lines(0, 0, 1, false, { "QUIT EDIT" })
+      local restore = slow_slices()
+      if how == "ZZ" then
+        -- the mapping itself: a key press can be taken by other plugins' triggers (which-key)
+        vim.fn.maparg("ZZ", "n", false, true).callback()
+      else
+        vim.api.nvim_feedkeys(":" .. how .. "\r", "tx", false)
+      end
+      h.check(vim.api.nvim_win_is_valid(win), ":" .. how .. " keeps the window while the save runs")
+      vim.wait(60000, function() return not vim.api.nvim_win_is_valid(win) end, 5)
+      restore()
+      h.check(not vim.api.nvim_win_is_valid(win), ":" .. how .. " closes the window when the save is done")
+      h.check(read(path):sub(1, 10) == "QUIT EDIT\n", ":" .. how .. " saved the edit")
+    end
+
+    -- a save that ends before the command returns: the command quits by itself, once
+    local small = write("quit-small.txt", numbered(3))
+    vim.cmd("only")
+    S = open(small)
+    vim.cmd("split")
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "SMALL" })
+    local quick_win = vim.api.nvim_get_current_win()
+    vim.api.nvim_feedkeys(":wq\r", "tx", false)
+    h.check(not vim.api.nvim_win_is_valid(quick_win), ":wq on a quick save closes the window")
+    h.check(read(small):sub(1, 6) == "SMALL\n", "and saved it")
+    vim.cmd("only")
+    S = open(small)
+    vim.cmd("split")
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "PLAIN" })
+    quick_win = vim.api.nvim_get_current_win()
+    vim.api.nvim_feedkeys(":w\r", "tx", false)
+    h.check(vim.api.nvim_win_is_valid(quick_win), ":w does not close the window")
+
+    local path = write("quit-fail.txt", numbered(400))
+    vim.cmd("only")
+    S = open(path)
+    vim.cmd("split")
+    local win = vim.api.nvim_get_current_win()
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "QUIT EDIT" })
+    local restore = slow_slices()
+    vim.api.nvim_feedkeys(":wq\r", "tx", false)
+    local tfd = assert(uv.fs_open(path, "r+", 0))
+    assert(uv.fs_ftruncate(tfd, 1000))
+    uv.fs_close(tfd)
+    vim.wait(60000, function() return not S.saving end, 5)
+    restore()
+    vim.wait(100)
+    h.check(vim.api.nvim_win_is_valid(win), "a failed save does not close the window")
+    h.check(vim.bo[S.buf].modified, "and the buffer stays modified")
+    vim.cmd("only")
+  end,
 }
 
-h.run(steps, 120000)
+h.run(steps, 600000)
