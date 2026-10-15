@@ -68,6 +68,21 @@ function Reader:close()
   self.fd, self.cache = nil, {}
 end
 
+-- A private copy of the reader as it is now, for a job that outlives the next edit. The pieces are
+-- never changed in place, so copying the lists is enough; the file is re-opened for its own fd.
+function Reader:snapshot()
+  local fd, err = uv.fs_open("/proc/self/fd/" .. self.fd, "r", 0)
+  if not fd then return nil, err end
+  local snap = setmetatable({}, Reader)
+  for k, v in pairs(self) do
+    snap[k] = v
+  end
+  snap.fd = fd
+  snap.pieces, snap.starts = { unpack(self.pieces) }, { unpack(self.starts) }
+  snap.cache, snap.cuts, snap.nonl, snap.log, snap.log_pos = {}, {}, {}, {}, 0
+  return snap
+end
+
 -- True when no edit is applied, so the logical file is the file on disk.
 function Reader:pristine() return self.log_pos == 0 end
 
@@ -515,6 +530,8 @@ end
 -- Editing: the window's lines are diffed against what was shown and become piece table edits
 ---------------------------------------------------------------------------------------------------
 
+local function saving(S) return S.job ~= nil and S.job.exclusive == true end
+
 local function sync_row(S)
   local win = win_of(S)
   if win then S.row = vim.api.nvim_win_get_cursor(win)[1] end
@@ -601,6 +618,7 @@ local function apply_pending(S)
 end
 
 function M.render(S)
+  if saving(S) then return end
   apply_pending(S)
   draw(S)
 end
@@ -608,8 +626,13 @@ end
 -- Runs first in every movement: the edits made in the window must be in the piece table before
 -- offsets are computed from it.
 local function before_move(S)
+  if saving(S) then
+    vim.notify("Stream view: saving, wait for it or cancel it with <C-c>", vim.log.levels.WARN)
+    return false
+  end
   sync_row(S)
   if apply_pending(S) then draw(S) end
+  return true
 end
 
 -- Keeps the modified flag right and takes back an edit to a line that is not shown whole.
@@ -619,7 +642,7 @@ local function check_pending(S)
     local edits, err = pending_edits(S, window_lines(S))
     if not edits then
       pcall(vim.cmd, "silent undo")
-      if not pending_edits(S, window_lines(S)) then draw(S) end
+      if not pending_edits(S, window_lines(S)) and not saving(S) then draw(S) end
       vim.notify("Stream view: " .. err .. "; the change was undone", vim.log.levels.ERROR)
     end
   end
@@ -637,6 +660,7 @@ end
 
 -- Undo first takes back what is typed in the window, then the edits made earlier wherever they are.
 function M.undo(S)
+  if saving(S) then return before_move(S) end
   sync_row(S)
   if is_pending(S) then
     pcall(vim.cmd, "silent undo")
@@ -648,6 +672,7 @@ function M.undo(S)
 end
 
 function M.redo(S)
+  if saving(S) then return before_move(S) end
   sync_row(S)
   local tree = vim.api.nvim_buf_call(S.buf, vim.fn.undotree)
   if tree.seq_cur < tree.seq_last then
@@ -668,7 +693,7 @@ local function stop_follow(S)
 end
 
 function M.scroll(S, n)
-  before_move(S)
+  if not before_move(S) then return end
   stop_follow(S)
   local size = S.r:refresh()
   if n > 0 then
@@ -716,14 +741,14 @@ function M.half_page(S, dir)
 end
 
 function M.head(S)
-  before_move(S)
+  if not before_move(S) then return end
   stop_follow(S)
   S.offset, S.row = 0, 1
   M.render(S)
 end
 
 function M.tail(S)
-  before_move(S)
+  if not before_move(S) then return end
   S.r:refresh()
   S.offset = S.r:tail_offset(height_of(S))
   S.row = height_of(S)
@@ -732,7 +757,7 @@ end
 
 -- spec: a byte offset (number or "1234"), or a percentage ("60%", "12.5%")
 function M.goto_offset(S, spec)
-  before_move(S)
+  if not before_move(S) then return nil, "saving" end
   stop_follow(S)
   local size = S.r:refresh()
   local target
@@ -778,7 +803,7 @@ function M.toggle_follow(S, on)
 end
 
 function M.hscroll(S, dir)
-  before_move(S)
+  if not before_move(S) then return end
   local longest = 0
   for _, ent in ipairs(S.entries) do
     longest = math.max(longest, ent.e - ent.off)
@@ -862,9 +887,9 @@ local SLICE_NS = 10e6
 
 -- Runs fn(tick) in slices of about 10 ms so the editor stays responsive. fn calls tick(bytes_done)
 -- as it goes and returns its result; done(result, err) runs once, also on cancel.
-local function run_job(S, label, span, fn, done)
+local function run_job(S, label, span, fn, done, exclusive)
   M.cancel(S)
-  local job = { label = label, span = span, done_bytes = 0, done = done }
+  local job = { label = label, span = span, done_bytes = 0, done = done, exclusive = exclusive }
   S.job = job
   local co = coroutine.create(function()
     return fn(function(bytes_done)
@@ -898,9 +923,12 @@ end
 -- Scans from the cursor line (past the current match, if it is there); `done(pos, err)` is called
 -- when the scan ends. The match line becomes the first line of the window.
 function M.search(S, pat, forward, done)
+  if not before_move(S) then
+    if done then done(nil, "saving") end
+    return
+  end
   M.cancel(S)
   stop_follow(S)
-  before_move(S)
   if pat == "" or #pat >= S.r.bs then
     if done then done(nil, "the pattern must be 1 to " .. (S.r.bs - 1) .. " bytes") end
     return
@@ -986,16 +1014,27 @@ end
 local function reopen(S)
   local r, err = M.open_reader(S.path)
   if not r then return nil, err end
+  -- Text typed while the save ran is not in the file: it goes on as an edit of the new file, whose
+  -- text equals the one the typed text was written against
+  local typed
+  if is_pending(S) then
+    local edits, perr = pending_edits(S, window_lines(S))
+    if edits then
+      typed = edits
+    else
+      vim.notify("Stream view: " .. perr .. "; the change was discarded", vim.log.levels.ERROR)
+    end
+  end
   S.r:close()
   S.r = r
   S.offset = r.size == 0 and 0 or r:seg_start(math.min(S.offset, r.size - 1))
   S.match = nil
+  if typed and #typed > 0 then r:apply(typed) end
   draw(S)
   return true
 end
 
-local function patch_in_place(S, dest)
-  local r = S.r
+local function patch_in_place(S, r, dest)
   local fd, err = uv.fs_open(dest, "r+", 0)
   if not fd then return nil, err end
   for i, piece in ipairs(r.pieces) do
@@ -1021,8 +1060,14 @@ function M.write(S, opts, done)
     if done then done(ok, err) end
   end
   if S.job then return finish(false, "busy: " .. S.job.label) end
-  before_move(S)
-  local r = S.r
+  if not before_move(S) then return finish(false, "busy") end
+  local r, rerr = S.r:snapshot()
+  if not r then return finish(false, "cannot read the file again: " .. tostring(rerr)) end
+  local report = finish
+  finish = function(ok, err)
+    r:close()
+    report(ok, err)
+  end
   local target = opts.path or S.path
   local dest = uv.fs_realpath(target) or vim.fn.fnamemodify(target, ":p")
   local same = dest == (uv.fs_realpath(S.path) or S.path)
@@ -1053,7 +1098,7 @@ function M.write(S, opts, done)
       ) == 1
     end
     if not yes then return finish(false, "not saved: no room for a copy") end
-    local ok, err = patch_in_place(S, dest)
+    local ok, err = patch_in_place(S, r, dest)
     return finish(ok, err)
   end
 
@@ -1096,7 +1141,7 @@ function M.write(S, opts, done)
       if not reopened then return finish(false, "saved, but cannot reopen: " .. tostring(oerr)) end
     end
     finish(true)
-  end)
+  end, true)
 end
 
 local function write_command(S, o)

@@ -422,6 +422,47 @@ local steps = {
   end,
 
   function()
+    -- the viewer is used while a save runs: the file gets the text as it was when the save began
+    local lines = {}
+    for i = 1, 100 do lines[i] = string.format("L%03d", i) end
+    local path = write("edit-during-save.txt", text_of(lines))
+    S = open(path)
+    h.capture_notify()
+    set_lines(0, 1, { "AAA" })
+    local ticks = 0
+    local real_hrtime = uv.hrtime
+    uv.hrtime = function()
+      ticks = ticks + 20e6
+      return ticks
+    end
+    local res
+    sv.write(S, nil, function(ok, err) res = { ok = ok, err = err } end)
+    h.check(S.job ~= nil and S.job.exclusive, "the save is running in slices")
+    set_lines(0, 3, { "ZZZZZZZZZZ" })
+    local offset = S.offset
+    sv.scroll(S, 1)
+    eq(S.offset, offset, "a move during a save is refused")
+    sv.undo(S)
+    sv.search(S, "L050", true, function() end)
+    h.check(S.job ~= nil and S.job.label:find("writing", 1, true) ~= nil, "and a search does not cancel the save")
+    h.check(#h.notes_matching("saving, wait") >= 3, "with a message")
+    vim.wait(5000, function() return res ~= nil end, 5)
+    uv.hrtime = real_hrtime
+    h.check(res and res.ok, "the save finishes", vim.inspect(res))
+    lines[1] = "AAA"
+    eq(read(path), text_of(lines), "the file has the text as it was when the save began")
+    eq(sv.lines(S)[1], "ZZZZZZZZZZ", "the text typed during the save is still in the window")
+    h.check(vim.bo.modified, "and the buffer is still modified")
+    sv.head(S)
+    lines[1], lines[2], lines[3] = "ZZZZZZZZZZ", nil, nil
+    local expect = { "ZZZZZZZZZZ" }
+    for i = 4, 100 do expect[#expect + 1] = lines[i] or string.format("L%03d", i) end
+    eq(logical(S), text_of(expect), "and it becomes an edit of the saved file")
+    save(S)
+    eq(read(path), text_of(expect), "which saves")
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)
