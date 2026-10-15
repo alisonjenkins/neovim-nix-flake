@@ -66,6 +66,23 @@ local steps = {
   end,
 
   function()
+    -- an agent rewriting a file on disk shows up in the open buffer (Neovim's own autoread watcher; nothing in this config does it)
+    local dir = os.getenv("TMPDIR") or "/tmp"
+    local function rewrite_behind_our_back(name)
+      local path = dir .. "/" .. name
+      vim.fn.writefile({ "before" }, path)
+      vim.cmd("edit " .. vim.fn.fnameescape(path))
+      vim.fn.writefile({ "after" }, path)
+      local later = os.time() + 5
+      vim.uv.fs_utime(path, later, later)
+      vim.wait(300, function() return vim.api.nvim_buf_get_lines(0, 0, -1, false)[1] == "after" end, 20)
+      return vim.api.nvim_buf_get_lines(0, 0, -1, false)[1]
+    end
+
+    h.check(rewrite_behind_our_back("ai_autoread.txt") == "after", "a file changed on disk is re-read by autoread")
+  end,
+
+  function()
     -- neotest is a dependency of its adapters, so its plugin/ files define :Neotest at startup;
     -- the command only works if setup() has already run.
     h.check(require("neotest").summary ~= nil, "neotest.setup() has run")
