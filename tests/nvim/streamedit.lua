@@ -211,9 +211,9 @@ local steps = {
     set_lines(1, 2, { "B" })
     set_lines(2, 3, { "c", "d" })
     sv.head(S)
-    eq(logical(S), "a\r\nB\r\nc\nd", "CRLF is kept and the missing final newline stays missing")
+    eq(logical(S), "a\r\nB\r\nc\r\nd", "CRLF is kept, a line added takes the ending above it, the missing final newline stays missing")
     local res = save(S)
-    eq(read(tmp .. "/edit-crlf.txt"), "a\r\nB\r\nc\nd", "and so is the saved file")
+    eq(read(tmp .. "/edit-crlf.txt"), "a\r\nB\r\nc\r\nd", "and so is the saved file")
 
     local bad = "ok\n\255\254 bad bytes\nend\n"
     S = open(write("edit-bad.txt", bad))
@@ -700,6 +700,108 @@ local steps = {
   end,
 
   function()
+    -- edits in the window, LF / CRLF / mixed endings, an unterminated last line, against a line model.
+    -- Each line keeps its ending; a new line takes the ending of the nearest terminated line above
+    -- it, else below, else LF; the end of the file keeps being unterminated if it was.
+    math.randomseed(11)
+    sv.opts.block = 64
+    local function neighbor(model, i)
+      for k = math.min(i, #model), 1, -1 do
+        if model[k].eol ~= "" then return model[k].eol end
+      end
+      for k = i + 1, #model do
+        if model[k].eol ~= "" then return model[k].eol end
+      end
+      return "\n"
+    end
+    local function text_of_model(model)
+      local out = {}
+      for i, l in ipairs(model) do out[i] = l.text .. l.eol end
+      return table.concat(out)
+    end
+    local failures = 0
+    for trial = 1, 300 do
+      local n = math.random(1, 10)
+      local style = math.random(3)
+      local model = {}
+      for i = 1, n do
+        local eol = style == 1 and "\n" or style == 2 and "\r\n" or (math.random(2) == 1 and "\n" or "\r\n")
+        model[i] = { text = string.format("t%d_%d_%d", trial, i, math.random(1000, 9999)), eol = eol }
+      end
+      if math.random(3) == 1 then model[n].eol = "" end
+      local path = write("fuzz.txt", text_of_model(model))
+      S = open(path)
+      local win = {}
+      for i, l in ipairs(model) do win[i] = l.text end
+      -- anchors at least two lines apart, edited from the last to the first
+      local anchors, at = {}, math.random(0, 2)
+      while at <= n do
+        anchors[#anchors + 1] = at
+        at = at + math.random(2, 4)
+      end
+      local log = {}
+      for a = #anchors, 1, -1 do
+        local i = anchors[a]
+        local op = math.random(3)
+        if op == 3 and #model > 1 and i >= 1 and i <= #model then
+          log[#log + 1] = "delete " .. i
+          local gone = table.remove(model, i)
+          table.remove(win, i)
+          if gone.eol == "" and i > 1 then model[i - 1].eol = "" end
+        elseif op == 2 or i == 0 then
+          log[#log + 1] = "insert after " .. i
+          local new = { text = string.format("new%d_%d", trial, a) }
+          if i == #model and model[i].eol == "" then
+            new.eol = ""
+            model[i].eol = neighbor(model, i)
+          elseif i >= 1 and model[i].eol ~= "" then
+            new.eol = model[i].eol
+          else
+            new.eol = neighbor(model, i)
+          end
+          table.insert(model, i + 1, new)
+          table.insert(win, i + 1, new.text)
+        elseif i >= 1 and i <= #model then
+          log[#log + 1] = "replace " .. i
+          model[i].text = string.format("rep%d_%d", trial, a)
+          win[i] = model[i].text
+        end
+      end
+      set_lines(0, -1, win)
+      sv.head(S)
+      local want = text_of_model(model)
+      if logical(S) ~= want then
+        failures = failures + 1
+        if failures <= 3 then
+          h.check(false, "window edits against the line model, trial " .. trial,
+            vim.inspect(logical(S)) .. " ~= " .. vim.inspect(want) .. " after " .. table.concat(log, ", "))
+        end
+      end
+      vim.cmd("StreamView! " .. vim.fn.fnameescape(numbered))
+    end
+    h.check(failures == 0, "300 random window edits keep every line's own ending and match the line model", tostring(failures))
+
+    -- deleting every line of the window does not leave a stray empty line, and deleting the last
+    -- line of a file without a final newline does not give it one
+    S = open(write("all-gone.txt", "a\r\nb\r\nc\r\n"))
+    set_lines(0, -1, { "" })
+    sv.head(S)
+    eq(logical(S), "", "deleting every line gives an empty file, not a stray newline")
+    S = open(write("last-gone.txt", "a\nb\nc"))
+    set_lines(2, 3, {})
+    sv.head(S)
+    eq(logical(S), "a\nb", "deleting an unterminated last line leaves the file unterminated")
+    S = open(write("last-gone-crlf.txt", "a\r\nb\r\nc"))
+    set_lines(2, 3, {})
+    sv.head(S)
+    eq(logical(S), "a\r\nb", "also in a CRLF file")
+    S = open(write("above-unterminated.txt", "a\r\nb\r\nc"))
+    set_lines(2, 2, { "new" })
+    sv.head(S)
+    eq(logical(S), "a\r\nb\r\nnew\r\nc", "a line added above an unterminated last line takes the ending above it")
+  end,
+
+  function()
     -- the piece table against a plain string model, with random edits, undo and redo
     sv.opts.block = 64
     math.randomseed(7)
@@ -708,6 +810,7 @@ local steps = {
     local path = write("edit-model.bin", table.concat(orig))
     local r = assert(sv.open_reader(path))
     local models = { table.concat(orig) }
+    local addeds = { 0 } -- bytes of edit text of the applied edits, per history position
     local bad
     for step = 1, 2000 do
       local op = math.random(1, 10)
@@ -719,24 +822,32 @@ local steps = {
         local edits, m = {}, cur
         for i = 1, 2 do
           local stop, start = cuts[2 * i - 1], cuts[2 * i]
-          local text = math.random(1, 4) == 1 and "" or string.rep("Z", math.random(0, 150))
+          -- distinct text, so a piece in the wrong place shows
+          local text = math.random(1, 4) == 1 and "" or string.format("<%d.%d:%s>", step, i, string.rep("Z", math.random(0, 150)))
           edits[i] = { start = start, stop = stop, text = text }
           m = m:sub(1, start) .. text .. m:sub(stop + 1)
         end
         r:apply(edits)
-        for i = #models, r.log_pos + 2, -1 do models[i] = nil end
+        for i = #models, r.log_pos + 2, -1 do
+          models[i], addeds[i] = nil, nil
+        end
         models[r.log_pos + 1] = m
+        local group = 0
+        for _, e in ipairs(edits) do
+          group = group + #e.text
+        end
+        addeds[r.log_pos + 1] = addeds[r.log_pos] + group
       elseif op <= 8 then
         r:undo()
       else
         r:redo()
       end
-      if r:get(0, r.size) ~= models[r.log_pos + 1] then
+      if r:get(0, r.size) ~= models[r.log_pos + 1] or r.added ~= addeds[r.log_pos + 1] then
         bad = step
         break
       end
     end
-    h.check(bad == nil, "2000 random edits, undos and redos match a string model", tostring(bad))
+    h.check(bad == nil, "2000 random edits, undos and redos match a string model and the edit text held", tostring(bad))
     r:close()
   end,
 }

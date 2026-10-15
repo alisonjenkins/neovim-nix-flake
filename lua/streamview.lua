@@ -180,11 +180,19 @@ function Reader:replace(start, stop, text)
   if b_off > 0 then new[#new + 1] = sub_piece(self.pieces[b], b_off, self.pieces[b].len - b_off) end
   splice(self, a, #old, new)
   self.added = self.added + #text
-  return { i = a, old = old, new = new }
+  return { i = a, old = old, new = new, added = #text }
 end
 
-function Reader:undo_op(op) splice(self, op.i, #op.new, op.old) end
-function Reader:redo_op(op) splice(self, op.i, #op.old, op.new) end
+-- `added` counts the edit text of the edits that are applied, so an undone edit no longer counts
+function Reader:undo_op(op)
+  splice(self, op.i, #op.new, op.old)
+  self.added = self.added - op.added
+end
+
+function Reader:redo_op(op)
+  splice(self, op.i, #op.old, op.new)
+  self.added = self.added + op.added
+end
 
 -- Applies edits ({ start, stop, text }, in descending offset order so none shifts another) as one
 -- undoable step. Returns the logical offset of the first change.
@@ -441,6 +449,7 @@ local function line_text(r, ent, col, cap)
   local more = len - col - want
   local text, cr = "", false
   local plain = col == 0 and more <= 0 and (ent.term or ent.e >= r.size)
+    and (ent.off == 0 or r:get(ent.off - 1, 1) == "\n")
   local hidden = 0 -- bytes right of the shown text
   if want > 0 then
     local from = ent.off + col
@@ -502,7 +511,11 @@ local function draw(S)
     lines[i], prefixes[i], plain[i], cr[i] = line_text(S.r, ent, S.col, M.opts.line_cap)
   end
   if #lines == 0 then lines[1] = "" end
-  S.shown, S.plain, S.cr = lines, plain, cr
+  local eols = {}
+  for i, ent in ipairs(ents) do
+    eols[i] = ent.term and (cr[i] and "\r\n" or "\n") or ""
+  end
+  S.shown, S.plain, S.eol = lines, plain, eols
 
   -- Setting the lines is not an edit: drop the buffer's own undo history with it
   vim.bo[S.buf].undolevels = -1
@@ -545,18 +558,43 @@ local function sync_row(S)
   if win then S.row = vim.api.nvim_win_get_cursor(win)[1] end
 end
 
+local function joined(lines)
+  return #lines == 0 and "" or table.concat(lines, "\n") .. "\n"
+end
+
 -- Piece table edits for the lines in the buffer, or nil and the reason they cannot be made.
+-- Every line keeps its own ending (LF, CRLF, none at the end of the file). A line added or
+-- replacing more lines than there were takes the ending of the nearest terminated line above it,
+-- else below, else LF.
 local function pending_edits(S, cur)
   local ents, r = S.entries, S.r
   if #ents == 0 then
     if #cur == 1 and cur[1] == "" then return {} end
-    return { { start = 0, stop = 0, text = table.concat(cur, "\n") .. "\n" } }
+    return { { start = 0, stop = 0, text = joined(cur) } }
   end
-  local hunks = vim.diff(
-    table.concat(S.shown, "\n") .. "\n",
-    table.concat(cur, "\n") .. "\n",
-    { result_type = "indices" }
-  )
+  -- Deleting every line leaves Neovim one empty line, which is not a line to add (unless it could
+  -- as well be one of the empty lines that were shown, or the only line was emptied)
+  if #cur == 1 and cur[1] == "" and #S.shown > 1 then
+    local all_text = true
+    for _, l in ipairs(S.shown) do
+      all_text = all_text and l ~= ""
+    end
+    if all_text then cur = {} end
+  end
+  local hunks = vim.diff(joined(S.shown), joined(cur), { result_type = "indices" })
+  local eol = S.eol
+  local function neighbor(i)
+    for k = math.min(i, #ents), 1, -1 do
+      if eol[k] ~= "" then return eol[k] end
+    end
+    for k = i + 1, #ents do
+      if eol[k] ~= "" then return eol[k] end
+    end
+    -- nothing terminated in the window: the line just above it
+    local top = ents[1].off
+    local above = top > 0 and r:get(math.max(0, top - 2), math.min(2, top)) or ""
+    return above == "\r\n" and "\r\n" or "\n"
+  end
   local last = ents[#ents]
   local no_final_newline = not last.term and last.nxt >= r.size
   local edits = {}
@@ -573,18 +611,28 @@ local function pending_edits(S, cur)
     elseif sa == 0 then
       start = ents[1].off
       stop = start
+      if start > 0 and r:get(start - 1, 1) ~= "\n" then return nil, "a line cannot be added inside a long line" end
     else
       start = ents[sa].nxt
       stop = start
+      if not ents[sa].term and start < r.size then return nil, "a line cannot be added inside a long line" end
     end
-    local eol = S.cr[math.max(sa, 1)] and "\r\n" or "\n"
+    local at_end = no_final_newline and stop >= r.size
     local text = ""
-    if cb > 0 then
-      text = table.concat(cur, eol, sb, sb + cb - 1) .. eol
-      if no_final_newline and stop >= r.size then
-        text = text:sub(1, -#eol - 1)
-        if ca == 0 then text = "\n" .. text end
+    for k = 1, cb do
+      local e = k <= ca and eol[sa + k - 1] or nil
+      if k == cb and at_end then
+        e = ""
+      elseif e == nil or e == "" then
+        e = neighbor(ca > 0 and sa or math.max(sa, 1))
       end
+      text = text .. cur[sb + k - 1] .. e
+    end
+    if ca == 0 and at_end and cb > 0 then text = neighbor(sa) .. text end
+    if cb == 0 and at_end and start > 0 then
+      -- the file did not end with a newline and must not start to: the line before loses its ending
+      local before = r:get(math.max(0, start - 2), math.min(2, start))
+      start = start - (before == "\r\n" and 2 or before:sub(-1) == "\n" and 1 or 0)
     end
     edits[#edits + 1] = { start = start, stop = stop, text = text }
   end
