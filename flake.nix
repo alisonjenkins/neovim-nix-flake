@@ -2082,6 +2082,7 @@
               lazyload = nvimTest "lazyload";
               streamedit = nvimTest "streamedit";
               streamnav = nvimTest "streamnav";
+              streamrobust = nvimTest "streamrobust";
               # The package build runs the cargo tests (doCheck); this adds the Lua translator
               # tests, which also drive the built binary.
               streamsearch = pkgs.runCommand "streamsearch-test"
