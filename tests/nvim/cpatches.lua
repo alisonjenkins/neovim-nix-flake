@@ -211,8 +211,288 @@ local function insert_steps()
   }
 end
 
+---------------------------------------------------------------------------------------------------
+-- 0003: column measuring skips runs of printable ASCII
+---------------------------------------------------------------------------------------------------
+
+-- A line is a list of clusters: { text, kind }. Widths come from the kind, not from Neovim.
+local CJK = { "\xe4\xb8\xad", "\xe6\x96\x87", "\xe5\xad\x97" }
+local EMOJI = "\xf0\x9f\x98\x80"
+local COMBINING = "\xcc\x81" -- U+0301, zero cells, attaches to the character before it
+local BOUNDARY_RUNS = { 6, 7, 8, 9, 14, 15, 16, 17, 22, 23, 24, 25 }
+
+local function gen_line(rnd)
+  local clusters = {}
+  local function add(text, kind) clusters[#clusters + 1] = { text = text, kind = kind } end
+  local function ascii_run(n)
+    for _ = 1, n do add(string.char(31 + rnd(95)), "ascii") end -- 0x20 to 0x7e
+  end
+  for _ = 1, rnd(6) do
+    local pick = rnd(14)
+    if pick <= 6 then
+      local n = rnd(3) == 1 and BOUNDARY_RUNS[rnd(#BOUNDARY_RUNS)] or rnd(71) - 1
+      ascii_run(n)
+    elseif pick == 7 then
+      add("\t", "tab")
+    elseif pick == 8 then
+      -- 0x01 to 0x1f except TAB and NL, shown as ^A
+      local code = rnd(29)
+      add(string.char(code >= 9 and code + 2 or code), "ctrl")
+    elseif pick == 9 then
+      add("\x7f", "del")
+    elseif pick == 10 then
+      add(CJK[rnd(#CJK)], "wide")
+    elseif pick == 11 then
+      add(EMOJI, "wide")
+    elseif pick == 12 then
+      add(rnd(2) == 1 and "\xff" or "\xfe", "invalid")
+    elseif pick == 13 then
+      -- a combining mark right after an ASCII run, or after a wide character
+      ascii_run(rnd(20))
+      local last = clusters[#clusters]
+      if last and last.kind == "ascii" then last.text = last.text .. COMBINING end
+    else
+      ascii_run(BOUNDARY_RUNS[rnd(#BOUNDARY_RUNS)])
+      add("\t", "tab")
+    end
+  end
+  local last = clusters[#clusters]
+  if last and last.kind == "wide" and rnd(2) == 1 then last.text = last.text .. COMBINING end
+  return clusters
+end
+
+local function line_text(clusters)
+  local t = {}
+  for i, c in ipairs(clusters) do t[i] = c.text end
+  return table.concat(t)
+end
+
+-- Cells taken by one cluster starting at display column "col" (0-based).
+local function cluster_width(c, col, ts, tab_expands)
+  if c.kind == "ascii" then return 1 end
+  if c.kind == "tab" then return tab_expands and (ts - col % ts) or 2 end
+  if c.kind == "ctrl" or c.kind == "del" or c.kind == "wide" then return 2 end
+  return 4 -- invalid byte, shown as <ff>
+end
+
+-- Layout of a line: per-cluster start column, width and byte offset, plus the total width.
+local function layout(clusters, ts, tab_expands, col0)
+  local col, byte, out = col0, 0, {}
+  for i, c in ipairs(clusters) do
+    local w = cluster_width(c, col, ts, tab_expands)
+    out[i] = { start = col, width = w, byte = byte }
+    col = col + w
+    byte = byte + #c.text
+  end
+  return out, col
+end
+
+-- What the cells of one cluster look like on screen: one entry per cell, false where the entry is
+-- not comparable (the right half of a wide character).
+local function cluster_cells(c, w, tab_expands, tab_lead)
+  if c.kind == "ascii" then return { c.text } end
+  if c.kind == "wide" then return { c.text, false } end
+  if c.kind == "tab" then
+    if not tab_expands then return { "^", "I" } end
+    local cells = {}
+    for i = 1, w do cells[i] = tab_lead and (i == 1 and tab_lead or "-") or " " end
+    return cells
+  end
+  if c.kind == "ctrl" then return { "^", string.char(c.text:byte() + 64) } end
+  if c.kind == "del" then return { "^", "?" } end
+  local hex = string.format("<%02x>", c.text:byte())
+  return { hex:sub(1, 1), hex:sub(2, 2), hex:sub(3, 3), hex:sub(4, 4) }
+end
+
+local function setup_window(opts)
+  vim.g.snacks_indent = false -- its guides overdraw leading blanks and tabs
+  vim.cmd("enew!")
+  vim.cmd("silent! only!")
+  vim.wo.wrap = false
+  vim.wo.number = false
+  vim.wo.signcolumn = "no"
+  vim.wo.foldcolumn = "0"
+  vim.wo.statuscolumn = ""
+  vim.wo.list = opts.list or false
+  vim.wo.listchars = opts.listchars or "nbsp:+"
+  vim.wo.breakindent = false
+  vim.wo.showbreak = ""
+  vim.wo.linebreak = false
+  vim.wo.cursorline = false
+  vim.o.ambiwidth = "single"
+  vim.o.sidescroll = opts.sidescroll or 0
+  vim.o.sidescrolloff = 0
+  vim.bo.tabstop = opts.ts
+  vim.bo.vartabstop = ""
+  vim.bo.textwidth = 0
+end
+
+local function describe(clusters)
+  return vim.inspect(line_text(clusters))
+end
+
+local function check_measures(opts, nlines, seed)
+  local rnd = prng(seed)
+  local fails = 0
+  local name = string.format("%s ts=%d", opts.label, opts.ts)
+  local tab_expands = (not opts.list) or opts.listchars_has_tab
+  local tab_lead = opts.list and opts.listchars_has_tab and ">" or nil
+  setup_window(opts)
+  local screen_cells = 0
+  for n = 1, nlines do
+    local clusters = gen_line(rnd)
+    local text = line_text(clusters)
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { text })
+    local lay, total = layout(clusters, opts.ts, tab_expands, 0)
+    local function fail(what, got, want)
+      fails = fails + 1
+      if fails <= 5 then
+        h.check(false, name .. ": " .. what .. " for line " .. n, string.format("got %s, want %s, line %s", got, want, describe(clusters)))
+      end
+    end
+
+    local sdw = vim.fn.strdisplaywidth(text)
+    if sdw ~= total then fail("strdisplaywidth", sdw, total) end
+    local _, total_from3 = layout(clusters, opts.ts, tab_expands, 3)
+    local sdw3 = vim.fn.strdisplaywidth(text, 3)
+    if sdw3 ~= total_from3 - 3 then fail("strdisplaywidth from column 3", sdw3, total_from3 - 3) end
+
+    vim.fn.cursor(1, #text + 1)
+    local vc = vim.fn.virtcol("$")
+    if vc ~= total + 1 then fail("virtcol('$')", vc, total + 1) end
+
+    -- cursor at a few clusters, including the first and the last
+    local picks = { 1, #clusters }
+    for _ = 1, 3 do picks[#picks + 1] = rnd(math.max(#clusters, 1)) end
+    for _, i in ipairs(picks) do
+      local c, l = clusters[i], lay[i]
+      if c then
+        vim.fn.cursor(1, l.byte + 1)
+        local vcol = vim.fn.virtcol(".")
+        local want_end = l.start + l.width
+        if vcol ~= want_end then fail("virtcol('.') on cluster " .. i, vcol, want_end) end
+      end
+    end
+
+    -- horizontal scroll: what is on screen must be the reference cells shifted by leftcol
+    if total > 0 then
+      local wanted = { 0, 7, 8, 9, 15, 16, 17, rnd(total) - 1, total - 1 }
+      for _, want_left in ipairs({ wanted[rnd(7)], wanted[8], wanted[9] }) do
+        vim.cmd("normal! 0")
+        vim.fn.winrestview({ leftcol = 0 })
+        if want_left > 0 then vim.cmd("normal! " .. want_left .. "zl") end
+        vim.cmd("redraw")
+        local leftcol = vim.fn.winsaveview().leftcol
+        if want_left == 0 and leftcol ~= 0 then fail("leftcol after 0zl", leftcol, 0) end
+        -- cell table of the whole line
+        local cells = {}
+        for i, c in ipairs(clusters) do
+          local cc = cluster_cells(c, lay[i].width, tab_expands, tab_lead)
+          for k = 1, lay[i].width do cells[lay[i].start + k] = cc[k] end
+        end
+        local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+        local width = info.width - info.textoff
+        for s = 1, width do
+          local idx = leftcol + s
+          local want = cells[idx]
+          if want ~= nil and want ~= false then
+            -- the first column can be the cut-off tail of a wide cluster or a tab
+            local edge = (s == 1 and leftcol > 0) or (s == width)
+            local got = vim.fn.screenstring(info.winrow, info.wincol + info.textoff + s - 1)
+            screen_cells = screen_cells + 1
+            if got ~= want and not edge then
+              fail(string.format("screen cell %d at leftcol %d", s, leftcol), vim.inspect(got), vim.inspect(want))
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+  h.check(fails == 0, name .. ": " .. nlines .. " generated lines measure as the reference (" .. screen_cells .. " screen cells compared)")
+end
+
+local function measure_steps()
+  local modes = {
+    { label = "plain", ts = 8 },
+    { label = "plain", ts = 3 },
+    { label = "list without tab in listchars", ts = 8, list = true, listchars = "nbsp:+" },
+    { label = "list with tab:>-", ts = 8, list = true, listchars = "tab:>-", listchars_has_tab = true },
+    { label = "list with tab:>-", ts = 3, list = true, listchars = "tab:>-", listchars_has_tab = true },
+  }
+  local steps = {}
+  for i, m in ipairs(modes) do
+    steps[#steps + 1] = function() check_measures(m, 450, 1000 + i) end
+  end
+  return steps
+end
+
+-- Wrapped lines with 'showbreak' and 'breakindent': every screen row after the first loses the
+-- width of the showbreak string and of the line's indent. Printable ASCII only, so the row count
+-- follows from the length alone.
+local function check_wrapped(opts, nlines, seed)
+  local rnd = prng(seed)
+  local name = "wrap, " .. opts.label
+  vim.cmd("enew!")
+  vim.cmd("silent! only!")
+  vim.wo.wrap = true
+  vim.wo.number = false
+  vim.wo.signcolumn = "no"
+  vim.wo.foldcolumn = "0"
+  vim.wo.statuscolumn = ""
+  vim.wo.list = false
+  vim.wo.linebreak = false
+  vim.wo.breakindent = opts.breakindent
+  vim.wo.showbreak = opts.showbreak
+  vim.bo.tabstop = 8
+  local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+  local width = info.width - info.textoff
+  local fails = 0
+  for n = 1, nlines do
+    local indent = opts.breakindent and rnd(11) - 1 or 0
+    local len = rnd(3) == 1 and BOUNDARY_RUNS[rnd(#BOUNDARY_RUNS)] * rnd(30) or rnd(400)
+    local body = {}
+    for i = 1, len do body[i] = string.char(32 + rnd(94)) end
+    local text = string.rep(" ", indent) .. "x" .. table.concat(body)
+    local cells = #text
+    local later = width - #opts.showbreak - indent
+    local rows = cells <= width and 1 or 1 + math.ceil((cells - width) / later)
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { text })
+    local got = vim.api.nvim_win_text_height(0, { start_row = 0, end_row = 0 }).all
+    if got ~= rows then
+      fails = fails + 1
+      if fails <= 5 then
+        h.check(false, name .. ": screen rows for a line of " .. cells .. " cells, indent " .. indent, string.format("got %d, want %d", got, rows))
+      end
+    end
+    local extra = (rows - 1) * (#opts.showbreak + indent)
+    local sdw = vim.fn.strdisplaywidth(text)
+    vim.fn.cursor(1, #text + 1)
+    local vc = vim.fn.virtcol("$")
+    if sdw ~= cells + extra or vc ~= cells + extra + 1 then
+      fails = fails + 1
+      if fails <= 5 then
+        h.check(false, name .. ": width of a line of " .. cells .. " cells, indent " .. indent,
+          string.format("strdisplaywidth %d, virtcol('$') %d, want %d and %d", sdw, vc, cells + extra, cells + extra + 1))
+      end
+    end
+  end
+  h.check(fails == 0, name .. ": " .. nlines .. " generated lines match the reference")
+end
+
+local function wrap_steps()
+  return {
+    function() check_wrapped({ label = "control, no showbreak or breakindent", showbreak = "", breakindent = false }, 300, 2001) end,
+    function() check_wrapped({ label = "showbreak", showbreak = ">> ", breakindent = false }, 300, 2002) end,
+    function() check_wrapped({ label = "breakindent", showbreak = "", breakindent = true }, 300, 2003) end,
+    function() check_wrapped({ label = "showbreak and breakindent", showbreak = ">> ", breakindent = true }, 300, 2004) end,
+  }
+end
+
 local steps = {}
 vim.list_extend(steps, readfile_steps())
 vim.list_extend(steps, insert_steps())
+vim.list_extend(steps, measure_steps())
+vim.list_extend(steps, wrap_steps())
 
 h.run(steps, 280000)
