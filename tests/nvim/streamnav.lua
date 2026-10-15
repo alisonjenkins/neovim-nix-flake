@@ -1257,6 +1257,8 @@ local steps = {
     eq(V.entries[1].off, text:find("line 150", 1, true) - 1, ":150 shows line 150 of the file first")
     vim.api.nvim_feedkeys(":$\r", "mx", false)
     eq(V.entries[#V.entries].off, text:find("line 300", 1, true) - 1, ":$ shows the last line of the file last")
+    vim.api.nvim_feedkeys(":goto 100\r", "mx", false)
+    eq(sv.cursor_offset(V), 99, ":goto 100 is the same as 100go")
     vim.api.nvim_feedkeys(":echo 1\r", "mx", false)
     h.check(true, "other ex commands still run")
     sv.place(V, 0)
