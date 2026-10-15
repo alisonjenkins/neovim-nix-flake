@@ -1775,9 +1775,28 @@
                     inherit hash;
                     excludes = [ "runtime/doc/news.txt" "test/*" ];
                   };
+
+                  # Query analysis in libtree-sitter is the biggest first-open cost (opening a
+                  # TypeScript file spends about 100 ms in it). alisonjenkins/tree-sitter#1,
+                  # four commits that touch only lib/src/query.c, cut it about 3.9x. The tests
+                  # (crates/) are excluded. Neovim links the copy the nightly overlay builds.
+                  tsForkPatch = rev: hash: prev.fetchpatch2 {
+                    name = "tree-sitter-fork-${builtins.substring 0 8 rev}.patch";
+                    url = "https://github.com/alisonjenkins/tree-sitter/commit/${rev}.patch";
+                    inherit hash;
+                    excludes = [ "crates/*" ];
+                  };
+                  treeSitter = inputs.neovim-nightly-overlay.packages.${prev.stdenv.hostPlatform.system}.tree-sitter.overrideAttrs (old: {
+                    patches = (old.patches or [ ]) ++ [
+                      (tsForkPatch "4e963c50417bc0951b4a249a016877afc380a359" "sha256-JJQHlI1yB2qKBN4MSaRHssLzqz5J7KJBigvS9OryJ9A=")
+                      (tsForkPatch "87cf69fe3b34e54e7c1bfa5b9fd3f63056a7b50e" "sha256-U7klCK970fO3j+E2JvXQOL9t92Ko19DOypW9BFenywQ=")
+                      (tsForkPatch "205cef85022f47d0f3eb1fc2ea1920a5266bae6e" "sha256-JGJura+h3it0g1JSbKh6hhVEipEUkrLc5+9DEJJYAD4=")
+                      (tsForkPatch "89f188ac197836eb9825cc93e227805d4b58b877" "sha256-X57ZrGMEM9sTSLRh+XyHSPLXBN2OBNdovyRdFpXjYo4=")
+                    ];
+                  });
                 in
                 {
-                  neovim-unwrapped = prev.neovim-unwrapped.overrideAttrs (old: {
+                  neovim-unwrapped = (prev.neovim-unwrapped.override { tree-sitter = treeSitter; }).overrideAttrs (old: {
                     patches = (old.patches or [ ]) ++ [
                       # alisonjenkins/neovim#1: grow the line buffer in place when reading
                       (forkPatch { pr = 1; rev = "e017bff092b2816829655869106df11c493050e9"; hash = "sha256-aG4Ddrnr6yughN6xadQ1nt1QgHUhymGqw1gleNDJLic="; })
