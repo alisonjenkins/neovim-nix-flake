@@ -23,6 +23,12 @@ local NUL_SYMBOL = "\226\144\128"
 local Reader = {}
 Reader.__index = Reader
 
+local function file_pieces(size)
+  return size > 0 and { { off = 0, len = size } } or {}
+end
+
+local function mtime_of(st) return st.mtime.sec * 1e9 + st.mtime.nsec end
+
 function M.open_reader(path)
   local fd, err = uv.fs_open(path, "r", 0)
   if not fd then return nil, err end
@@ -33,11 +39,21 @@ function M.open_reader(path)
   end
   return setmetatable({
     fd = fd,
-    size = st.size,
-    mtime = st.mtime.sec * 1e9 + st.mtime.nsec,
+    path = path,
+    stat = st, -- of the file as opened; a save compares it to the file on disk
+    file_size = st.size,
+    size = st.size, -- logical size: the file with the edits applied
+    mtime = mtime_of(st),
     bs = M.opts.block,
     seg = M.opts.segment,
     cache = {}, -- most recent first: { index, data }
+    -- The logical file is these pieces in order. A piece is bytes of the file ({ off, len }) or of
+    -- an edit's text ({ str, off, len }); unedited regions are never copied into memory.
+    pieces = file_pieces(st.size),
+    starts = { 0 }, -- logical offset of each piece
+    log = {}, -- applied edits, then undone ones: { at, ops = { { i, old, new } } }
+    log_pos = 0,
+    added = 0, -- bytes of edit text held
   }, Reader)
 end
 
@@ -46,14 +62,161 @@ function Reader:close()
   self.fd, self.cache = nil, {}
 end
 
+-- True when no edit is applied, so the logical file is the file on disk.
+function Reader:pristine() return self.log_pos == 0 end
+
+-- Compares the file on disk with the one that was opened.
+function Reader:changed_on_disk()
+  local st = uv.fs_stat(self.path)
+  if not st then return true end
+  return st.size ~= self.stat.size or mtime_of(st) ~= self.mtime or st.ino ~= self.stat.ino or st.dev ~= self.stat.dev
+end
+
+function Reader:rebuild()
+  local pos = 0
+  for i, piece in ipairs(self.pieces) do
+    self.starts[i] = pos
+    pos = pos + piece.len
+  end
+  for i = #self.pieces + 1, #self.starts do
+    self.starts[i] = nil
+  end
+  self.size = pos
+  self.cache = {}
+end
+
+-- Follows the file as it grows, unless there are edits (then the file is only reported as changed).
 function Reader:refresh()
   local st = self.fd and uv.fs_fstat(self.fd)
-  if st then
-    local mtime = st.mtime.sec * 1e9 + st.mtime.nsec
-    if st.size ~= self.size or mtime ~= self.mtime then self.cache = {} end
-    self.size, self.mtime = st.size, mtime
+  if not st then return self.size end
+  local mtime = mtime_of(st)
+  if st.size ~= self.file_size or mtime ~= self.mtime then
+    if self:pristine() then
+      self.file_size, self.mtime, self.stat = st.size, mtime, st
+      self.pieces = file_pieces(st.size)
+      self:rebuild()
+    end
   end
   return self.size
+end
+
+-- Index of the piece holding logical offset `pos` and the offset inside it; #pieces + 1 at the end.
+function Reader:locate(pos)
+  local lo, hi = 1, #self.pieces
+  if pos >= self.size then return #self.pieces + 1, 0 end
+  while lo < hi do
+    local mid = math.ceil((lo + hi) / 2)
+    if self.starts[mid] <= pos then lo = mid else hi = mid - 1 end
+  end
+  return lo, pos - self.starts[lo]
+end
+
+local function sub_piece(piece, from, len)
+  return { str = piece.str, off = piece.off + from, len = len }
+end
+
+local function splice(self, at, count, list)
+  local pieces = self.pieces
+  local tail = {}
+  for i = at + count, #pieces do
+    tail[#tail + 1] = pieces[i]
+  end
+  for i = at, #pieces do
+    pieces[i] = nil
+  end
+  for _, piece in ipairs(list) do
+    pieces[#pieces + 1] = piece
+  end
+  for _, piece in ipairs(tail) do
+    pieces[#pieces + 1] = piece
+  end
+  self:rebuild()
+end
+
+-- Replaces logical bytes [start, stop) by `text`. Returns an op that undo_op reverses: the pieces
+-- the change touched are kept whole, so ops undo in reverse order whatever was split since.
+function Reader:replace(start, stop, text)
+  local a, a_off = self:locate(start)
+  local b, b_off = self:locate(stop)
+  local last = b_off > 0 and b or b - 1
+  local old = {}
+  for i = a, last do
+    old[#old + 1] = self.pieces[i]
+  end
+  local new = {}
+  if a_off > 0 then new[#new + 1] = sub_piece(self.pieces[a], 0, a_off) end
+  if text ~= "" then new[#new + 1] = { str = text, off = 0, len = #text } end
+  if b_off > 0 then new[#new + 1] = sub_piece(self.pieces[b], b_off, self.pieces[b].len - b_off) end
+  splice(self, a, #old, new)
+  self.added = self.added + #text
+  return { i = a, old = old, new = new }
+end
+
+function Reader:undo_op(op) splice(self, op.i, #op.new, op.old) end
+function Reader:redo_op(op) splice(self, op.i, #op.old, op.new) end
+
+-- Applies edits ({ start, stop, text }, in descending offset order so none shifts another) as one
+-- undoable step. Returns the logical offset of the first change.
+function Reader:apply(edits)
+  local group = { ops = {}, at = math.huge }
+  for _, e in ipairs(edits) do
+    group.ops[#group.ops + 1] = self:replace(e.start, e.stop, e.text)
+    group.at = math.min(group.at, e.start)
+  end
+  for i = #self.log, self.log_pos + 1, -1 do
+    self.log[i] = nil
+  end
+  self.log[#self.log + 1] = group
+  self.log_pos = #self.log
+  return group.at
+end
+
+-- Each returns the offset to show, or nil when there is nothing to undo or redo.
+function Reader:undo()
+  local group = self.log[self.log_pos]
+  if not group then return nil end
+  for i = #group.ops, 1, -1 do
+    self:undo_op(group.ops[i])
+  end
+  self.log_pos = self.log_pos - 1
+  return group.at
+end
+
+function Reader:redo()
+  local group = self.log[self.log_pos + 1]
+  if not group then return nil end
+  for _, op in ipairs(group.ops) do
+    self:redo_op(op)
+  end
+  self.log_pos = self.log_pos + 1
+  return group.at
+end
+
+-- Reads the logical bytes of block `index` from the pieces.
+function Reader:load(index)
+  local lo = index * self.bs
+  local hi = math.min(self.size, lo + self.bs)
+  if hi <= lo or not self.fd then return "" end
+  local pieces = self.pieces
+  if #pieces == 1 and not pieces[1].str then return uv.fs_read(self.fd, hi - lo, pieces[1].off + lo) or "" end
+  local parts, pos = {}, lo
+  local i = self:locate(lo)
+  while pos < hi do
+    local piece, start = pieces[i], self.starts[i]
+    local take = math.min(hi, start + piece.len) - pos
+    local from = piece.off + pos - start
+    local data
+    if piece.str then
+      data = piece.str:sub(from + 1, from + take)
+    else
+      data = uv.fs_read(self.fd, take, from) or ""
+    end
+    parts[#parts + 1] = data
+    if #data < take then break end
+    pos = pos + take
+    i = i + 1
+  end
+  return table.concat(parts)
 end
 
 function Reader:block(index)
@@ -63,7 +226,7 @@ function Reader:block(index)
       return hit[2]
     end
   end
-  local data = self.fd and uv.fs_read(self.fd, self.bs, index * self.bs) or ""
+  local data = self:load(index)
   table.insert(self.cache, 1, { index, data })
   self.cache[3] = nil
   return data
