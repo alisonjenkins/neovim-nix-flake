@@ -388,6 +388,52 @@ local steps = {
     eq(S.offset, 8191, "a jump to the middle of a straddling character lands on the piece that holds it")
     sv.opts.line_cap = 64 * 1024
   end,
+
+  function()
+    -- walking back over a long line again costs nothing; edits drop what was learned
+    local path = tmp .. "/longline-sparse.bin"
+    local fd = assert(uv.fs_open(path, "w", 420))
+    uv.fs_ftruncate(fd, 64 * 1024 * 1024)
+    uv.fs_write(fd, "x", 0)
+    uv.fs_close(fd)
+    sv.opts.block, sv.opts.segment = 64 * 1024, 1024 * 1024
+    local r = assert(sv.open_reader(path))
+    sv.opts.block, sv.opts.segment = 4096, 16 * 1024 * 1024
+    local loads = 0
+    local load = r.load
+    r.load = function(self, index)
+      loads = loads + 1
+      return load(self, index)
+    end
+    local function back(n)
+      local p = r:seg_start(r.size - 1)
+      local seen = { p }
+      for _ = 1, n do
+        p = r:seg_start(p - 1)
+        seen[#seen + 1] = p
+      end
+      return seen
+    end
+    local first = back(32)
+    local first_loads = loads
+    h.check(first_loads > 100, "the first walk back over 32 segments reads them", tostring(first_loads))
+    loads = 0
+    eq(back(32), first, "the second walk gives the same offsets")
+    eq(loads, 0, "and reads nothing")
+    local fwd = {}
+    local p = 32 * 1024 * 1024
+    for i = 1, 31 do
+      local _, nxt = r:seg_end(p)
+      fwd[i] = nxt
+      p = nxt
+    end
+    eq(fwd[1], 33 * 1024 * 1024, "the segment ends are the same going forward")
+    eq(loads, 0, "and reading nothing")
+    r:apply({ { start = 40 * 1024 * 1024 + 5, stop = 40 * 1024 * 1024 + 5, text = "\n" } })
+    eq(r:seg_start(40 * 1024 * 1024 + 100), 40 * 1024 * 1024 + 6, "an edit makes the walk find the new line start")
+    r:close()
+    os.remove(path)
+  end,
 }
 
 h.run(steps, 240000)

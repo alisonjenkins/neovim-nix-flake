@@ -52,6 +52,7 @@ function M.open_reader(path)
     seg = M.opts.segment,
     cache = {}, -- most recent first: { index, data }
     cuts = {}, -- segment boundary -> where the segment really ends
+    nonl = {}, -- segment number -> { from, to }: a stretch known to hold no "\n"
     -- The logical file is these pieces in order. A piece is bytes of the file ({ off, len }) or of
     -- an edit's text ({ str, off, len }); unedited regions are never copied into memory.
     pieces = file_pieces(st.size),
@@ -89,6 +90,7 @@ function Reader:rebuild()
   self.size = pos
   self.cache = {}
   self.cuts = {}
+  self.nonl = {}
 end
 
 -- Follows the file as it grows, unless there are edits (then the file is only reported as changed).
@@ -326,20 +328,46 @@ function Reader:segment(off)
   return k, start, math.min(self.size, self:cut_at((k + 1) * self.seg))
 end
 
+-- A line of many MB has to be scanned to find that it has no "\n" in a segment; remember it, so that
+-- walking over the same stretch again (k, <C-b>) costs nothing. One stretch per segment is kept.
+function Reader:is_nonl(k, from, to)
+  local known = self.nonl[k]
+  return known ~= nil and known[1] <= from and known[2] >= to
+end
+
+function Reader:note_nonl(k, from, to)
+  local known = self.nonl[k]
+  if known and known[1] <= to and from <= known[2] then
+    known[1], known[2] = math.min(known[1], from), math.max(known[2], to)
+    return
+  end
+  self.nonl_count = (self.nonl_count or 0) + 1
+  if self.nonl_count > 4096 then
+    self.nonl, self.nonl_count = {}, 1
+  end
+  self.nonl[k] = { from, to }
+end
+
 -- Lines are cut at "\n" or at the segment edges, so a line never needs more than one segment of
 -- scanning in either direction, and the cuts depend only on the file contents.
 function Reader:seg_start(off)
-  local _, floor = self:segment(off)
+  local k, floor = self:segment(off)
+  if self:is_nonl(k, floor, off) then return floor end
   local nl = self:find_nl_back(off, floor)
-  return nl and nl + 1 or floor
+  if nl then return nl + 1 end
+  -- the byte at `off` is part of the line too: a walk back from the next segment starts on its last byte
+  self:note_nonl(k, floor, self:get(off, 1) == "\n" and off or off + 1)
+  return floor
 end
 
 -- Returns the offset where the line ends (its "\n", or the cut), the start of the next line,
 -- and whether a "\n" ended it.
 function Reader:seg_end(start)
-  local _, _, limit = self:segment(start)
+  local k, _, limit = self:segment(start)
+  if self:is_nonl(k, start, limit) then return limit, limit, false end
   local nl = self:find_nl(start, limit)
   if nl then return nl, nl + 1, true end
+  self:note_nonl(k, start, limit)
   return limit, limit, false
 end
 
