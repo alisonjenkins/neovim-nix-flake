@@ -112,7 +112,7 @@ The `tests/` directory also contains example projects for trying language-specif
 - Custom plugin versions pinned via overlays
 - Renovate bot (`renovate.json`) automatically creates PRs for dependency updates
 - The nightly overlay pins its own Neovim source, so `nix flake update` alone leaves Neovim behind: also run `nix flake update neovim-nightly-overlay/neovim-src`
-- `patches/neovim/*.patch` are applied to `neovim-unwrapped` by an overlay in `flake.nix` (very-long-line fixes). If one stops applying after a nightly update, check whether upstream fixed it, then drop or rebase the patch
+- Three Neovim C patches (very-long-line fixes) are applied to `neovim-unwrapped` by an overlay in `flake.nix`. Each is a PR on our fork, https://github.com/alisonjenkins/neovim/pulls (#1 `readfile`, #2 Insert `start_textlen`, #3 ASCII runs), fetched by commit with `fetchpatch2` (news.txt and tests excluded). The PRs are the reminder to upstream them to `neovim/neovim`; they are not submitted there yet. To change one, push a new commit to its fork branch and bump `rev` and `hash` in the overlay. If one stops applying after a nightly update, rebase the fork branch, or drop it once upstream has the fix
 
 ### Large Files
 - Files over 1 MB get `vim.b.bigfile` in the `BufReadPre` gate in `flake.nix` (snacks `bigfile` also sets it for long-line files). Per-buffer scanners that walk the whole text must check it: smartcolumn, nvim-ufo's `provider_selector`, conform (`disable_autoformat`), smear-cursor
