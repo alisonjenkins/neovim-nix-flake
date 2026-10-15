@@ -668,13 +668,21 @@
             -- 'incsearch' and 'inccommand' rescan the buffer after every key typed in a
             -- / or :s command line: one full scan per key, ~120 ms at 100 MB and over
             -- a second at 1 GB. Both are global, so switch them as buffers are entered.
+            -- The values are saved on the way into a big buffer, not at startup, so a
+            -- :set made in between is kept.
             do
-              local incsearch, inccommand = vim.o.incsearch, vim.o.inccommand
+              local saved
               vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
                 callback = function(ev)
-                  local big = vim.b[ev.buf].bigfile
-                  vim.o.incsearch = incsearch and not big
-                  vim.o.inccommand = big and "" or inccommand
+                  if vim.b[ev.buf].bigfile then
+                    saved = saved or { incsearch = vim.o.incsearch, inccommand = vim.o.inccommand }
+                    vim.o.incsearch = false
+                    vim.o.inccommand = ""
+                  elseif saved then
+                    vim.o.incsearch = saved.incsearch
+                    vim.o.inccommand = saved.inccommand
+                    saved = nil
+                  end
                 end,
               })
             end
