@@ -349,7 +349,141 @@ function M.winbar()
     string.format("%.1f%%", size > 0 and S.offset / size * 100 or 100),
   }
   if S.col > 0 then parts[#parts + 1] = "col +" .. S.col end
+  local job = S.search
+  if job then
+    local span = job.forward and size - job.origin or job.origin
+    local done = job.forward and job.pos - job.origin or job.origin - job.pos
+    parts[#parts + 1] = string.format("searching %d%% (<C-c> cancels)", span > 0 and done / span * 100 or 100)
+  end
   return table.concat(parts, "  ")
+end
+
+---------------------------------------------------------------------------------------------------
+-- Search: literal text, scanned block by block from the cursor line
+---------------------------------------------------------------------------------------------------
+
+-- A match can straddle two blocks, so the last m-1 bytes of the scanned side are carried over.
+local function scan_forward(r, pat, from, tick)
+  local m = #pat
+  local pos, tail = from, ""
+  while pos < r.size do
+    local index = math.floor(pos / r.bs)
+    local base = index * r.bs
+    local data = r:block(index)
+    if data == "" then return nil end
+    local win = tail .. data:sub(pos - base + 1)
+    local i = win:find(pat, 1, true)
+    if i then return pos - #tail + i - 1 end
+    tail = m > 1 and win:sub(-(m - 1)) or ""
+    pos = base + r.bs
+    tick(pos)
+  end
+end
+
+-- Finds the last match that starts before `before`.
+local function scan_backward(r, pat, before, tick)
+  local m = #pat
+  local reversed = pat:reverse()
+  local hi, after = math.min(before, r.size), ""
+  while hi > 0 do
+    local index = math.floor((hi - 1) / r.bs)
+    local base = index * r.bs
+    local win = r:block(index):sub(1, hi - base) .. after
+    local i = win:reverse():find(reversed, 1, true)
+    if i then return base + #win - i - m + 1 end
+    after = win:sub(1, m - 1)
+    hi = base
+    tick(hi)
+  end
+end
+
+function M.cancel(S)
+  local job = S.search
+  if not job then return end
+  job.cancelled = true
+  S.search = nil
+  vim.cmd.redrawstatus()
+  if job.done then job.done(nil, "cancelled") end
+end
+
+-- Scans from the cursor line (past the current match, if it is there) in time slices so the editor stays responsive; `done(pos, err)`
+-- is called when the scan ends. The match line becomes the first line of the window.
+function M.search(S, pat, forward, done)
+  M.cancel(S)
+  if pat == "" or #pat >= S.r.bs then
+    if done then done(nil, "the pattern must be 1 to " .. (S.r.bs - 1) .. " bytes") end
+    return
+  end
+  S.r:refresh()
+  local cur = S.entries[S.row]
+  local origin = cur and cur.off or 0
+  local m = S.match
+  if cur and m and m.pos >= cur.off and m.pos < cur.e then origin = forward and m.pos + 1 or m.pos end
+  local job = { pat = pat, forward = forward, origin = origin, pos = origin, done = done }
+  S.search = job
+  S.last_search = { pat = pat, forward = forward }
+
+  local scan = forward and scan_forward or scan_backward
+  local co = coroutine.create(function()
+    return scan(S.r, pat, origin, function(pos)
+      job.pos = pos
+      if uv.hrtime() > job.deadline then coroutine.yield() end
+    end)
+  end)
+
+  local function finish(pos, err)
+    S.search = nil
+    if pos then
+      S.match = { pos = pos, len = #pat }
+      S.offset = S.r:seg_start(pos)
+      S.row = 1
+      M.render(S)
+    else
+      vim.cmd.redrawstatus()
+    end
+    if done then done(pos, err) end
+  end
+
+  local function step()
+    if job.cancelled or S.closed then return end
+    job.deadline = uv.hrtime() + 10e6
+    local ok, res = coroutine.resume(co)
+    if not ok then
+      finish(nil, tostring(res))
+    elseif coroutine.status(co) == "dead" then
+      finish(res)
+    else
+      vim.cmd.redrawstatus()
+      vim.defer_fn(step, 1)
+    end
+  end
+  step()
+end
+
+local function notify_search_result(pat)
+  return function(pos, err)
+    if err == "cancelled" then
+      vim.notify("Search cancelled", vim.log.levels.INFO)
+    elseif err then
+      vim.notify("Search failed: " .. err, vim.log.levels.ERROR)
+    elseif not pos then
+      vim.notify("Pattern not found: " .. pat, vim.log.levels.WARN)
+    end
+  end
+end
+
+function M.search_again(S, reverse)
+  local last = S.last_search
+  if not last then return vim.notify("No previous search", vim.log.levels.WARN) end
+  local forward = last.forward ~= reverse
+  M.search(S, last.pat, forward, notify_search_result(last.pat))
+  S.last_search.forward = last.forward
+end
+
+function M.prompt_search(S, forward)
+  vim.ui.input({ prompt = forward and "/" or "?" }, function(pat)
+    if pat and pat ~= "" then M.search(S, pat, forward, notify_search_result(pat)) end
+  end)
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -374,6 +508,11 @@ local function keymaps(S)
   map("G", function() M.tail(S) end, "end of file")
   map("zL", function() M.hscroll(S, 1) end, "page right within long lines")
   map("zH", function() M.hscroll(S, -1) end, "page left within long lines")
+  map("/", function() M.prompt_search(S, true) end, "search forward (literal text)")
+  map("?", function() M.prompt_search(S, false) end, "search backward (literal text)")
+  map("n", function() M.search_again(S, false) end, "next match")
+  map("N", function() M.search_again(S, true) end, "previous match")
+  map("<C-c>", function() M.cancel(S) end, "cancel the running search")
   map("%", function()
     local count = vim.v.count
     if count > 0 then
@@ -415,6 +554,7 @@ end
 local function close(S)
   if S.closed then return end
   S.closed = true
+  M.cancel(S)
   if S.on_close then S.on_close() end
   S.r:close()
   states[S.buf] = nil
