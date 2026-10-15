@@ -319,6 +319,58 @@ local steps = {
     sv.opts.follow_ms = 500
   end,
 
+
+  function()
+    -- like tail -F: a truncated or rotated file is read again from the start
+    h.capture_notify()
+    sv.opts.follow_ms = 40
+    local path = write("rotate.log", "old1\nold2\nold3\n")
+    local S = open(path)
+    sv.toggle_follow(S)
+    local function wait_for(line)
+      vim.wait(3000, function() return last_line(S) == line end, 20)
+      return last_line(S)
+    end
+
+    append(path, "old4\n")
+    eq(wait_for("old4"), "old4", "an appended line is shown")
+
+    -- truncated in place, then written again
+    local fd = assert(uv.fs_open(path, "w", 420))
+    uv.fs_write(fd, "new1\n", 0)
+    uv.fs_close(fd)
+    eq(wait_for("new1"), "new1", "a truncated file is shown from its start")
+    eq(sv.lines(S), { "new1" }, "with none of the old text left")
+    h.check(S.follow ~= nil, "and follow continues")
+    h.check(#h.notes_matching("was truncated") > 0, "and the truncation is reported")
+    append(path, "new2\n")
+    eq(wait_for("new2"), "new2", "the reopened file keeps being followed")
+
+    -- renamed away, then created again: a gap with no file at all
+    os.rename(path, path .. ".1")
+    vim.wait(200, function() return false end, 20)
+    eq(last_line(S), "new2", "while the file is missing the old text stays")
+    h.check(S.follow ~= nil, "and follow waits for it")
+    write("rotate.log", "fresh1\nfresh2\n")
+    eq(wait_for("fresh2"), "fresh2", "the file created in its place is shown from its start")
+    eq(sv.lines(S), { "fresh1", "fresh2" }, "with none of the rotated text")
+    h.check(#h.notes_matching("was replaced") > 0, "and the replacement is reported")
+    append(path, "fresh3\n")
+    eq(wait_for("fresh3"), "fresh3", "and followed from then on")
+
+    -- a rotation that happens while there are edits keeps them
+    sv.toggle_follow(S, false)
+    vim.api.nvim_buf_set_lines(S.buf, 0, 1, false, { "EDIT" })
+    sv.toggle_follow(S)
+    os.rename(path, path .. ".2")
+    write("rotate.log", "other\n")
+    vim.wait(3000, function() return S.follow == nil end, 20)
+    h.check(S.follow == nil, "follow stops when the file is replaced under edits")
+    eq(sv.lines(S)[1], "EDIT", "and the edit is kept")
+    h.check(#h.notes_matching("your edits are kept") > 0, "and the user is told")
+    sv.opts.follow_ms = 500
+  end,
+
   function()
     -- the file grows while edits are held: they stay, the new lines appear, a save has both
     sv.opts.follow_ms = 40

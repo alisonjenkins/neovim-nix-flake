@@ -720,6 +720,32 @@ local function typing(S)
   return mode:find("^[iRc]") ~= nil or mode:find("^ni") ~= nil
 end
 
+-- Like tail -F: a file that was replaced (log rotation) or truncated is read again from its start.
+-- Returns true when the reader was replaced. A file that is gone is waited for. With edits the
+-- window cannot move to the new file without losing them, so follow stops and says so.
+local function follow_rotated(S)
+  local st = uv.fs_stat(S.path)
+  if not st or st.type ~= "file" then return false end
+  local r = S.r
+  local replaced = st.ino ~= r.stat.ino or st.dev ~= r.stat.dev
+  if not replaced and st.size >= r.file_size then return false end
+  local what = replaced and "was replaced" or "was truncated"
+  if not r:pristine() then
+    stop_follow(S)
+    vim.notify(
+      string.format("Stream view: %s %s on disk; your edits are kept, so follow stopped (save with ! to overwrite, or :edit! to reload)", S.path, what),
+      vim.log.levels.WARN
+    )
+    return false
+  end
+  local nr = M.open_reader(S.path)
+  if not nr then return false end -- raced with another rotation: try again on the next poll
+  r:close()
+  S.r, S.offset, S.row, S.slice_rel, S.col, S.match, S.line_for = nr, 0, 1, 0, 0, nil, nil
+  vim.notify(string.format("Stream view: %s %s on disk; reading it again from the start", S.path, what), vim.log.levels.INFO)
+  return true
+end
+
 -- Like tail -f: polls the size and keeps the end of the file in view. Any other movement stops it.
 -- The window is only redrawn when nothing is being typed, no typed change waits to be applied and no
 -- save is running; until then the update is held back and the next poll tries again.
@@ -738,8 +764,10 @@ function M.toggle_follow(S, on)
       if S.closed or S.follow ~= timer then return end
       S.follow_paused = typing(S) or is_pending(S) or saving(S)
       if S.follow_paused then return end
+      local rotated = follow_rotated(S)
+      if S.follow ~= timer then return end
       local size = S.r:refresh()
-      if size ~= last then
+      if rotated or size ~= last then
         last = size
         M.tail(S)
       end
