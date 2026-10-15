@@ -967,6 +967,223 @@ local steps = {
     print("1 GB line timings: " .. table.concat(timings, ", "))
     os.remove(path)
   end,
+
+  function()
+    -- search: literal text and Vim regexes, 'ignorecase' and 'smartcase', against Neovim's own search
+    vim.o.report = 1000000
+    local Search = require("streamview_search")
+    local saved = { Search.opts.batch, Search.opts.overlap, Search.opts.streamsearch, vim.o.ignorecase, vim.o.smartcase }
+    Search.opts.streamsearch = { "/nonexistent/streamsearch" } -- (found, but it never runs: see below)
+    Search.opts.streamsearch = nil
+    local real_exepath = vim.fn.exepath
+    vim.fn.exepath = function(name)
+      if name == "streamsearch" then return "" end
+      return real_exepath(name)
+    end
+    math.randomseed(31)
+    local words = { "foo", "Foo", "FOO", "bar", "Bar", "x1", "y22", "abc", "abcd", "ABC", "caf\195\169", "CAF\195\137", "a.c", "--", " ", " ", "  ", "9", "123", "_z" }
+    local function line_of(n)
+      local t = {}
+      for i = 1, n do t[i] = words[math.random(#words)] end
+      return table.concat(t, math.random(2) == 1 and " " or "")
+    end
+    local lines = {}
+    for i = 1, 40 do lines[i] = line_of(math.random(1, 25)) end
+    lines[10] = line_of(3000) -- a line longer than the batch below
+    lines[25] = ""
+    local text = table.concat(lines, "\n") .. "\n"
+    local path = write("search-text.txt", text)
+    local starts, pos = {}, 0
+    for i, l in ipairs(lines) do
+      starts[i] = pos
+      pos = pos + #l + 1
+    end
+    local function to_lc(abs)
+      for i = #starts, 1, -1 do
+        if abs >= starts[i] then return i, abs - starts[i] end
+      end
+    end
+
+    vim.cmd("only")
+    vim.cmd("new")
+    local obuf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_set_lines(obuf, 0, -1, false, lines)
+    local owin = vim.api.nvim_get_current_win()
+    vim.cmd("wincmd j")
+    local V = open(path)
+    Search.opts.batch, Search.opts.overlap = 1024, 64
+
+    local patterns = {
+      "foo", "Foo", "FOO", "abc", "a.c", "\\<abc\\>", "abc\\>", "\\<x1", "[0-9]\\+", "\\d\\d\\d", "y\\d\\+", "\\(foo\\|bar\\)x", "\\(foo\\|bar\\) ",
+      "\\vfoo|Bar", "\\v<abc>", "^foo", "^\\s*$", "abc$", "ba\\?r", "\\cFOO", "\\Cfoo", "\\Va.c", "caf\195\169", "CAF\195\137", "\195\169", "\\w\\+z", "-\\{2}", "xyz",
+    }
+    local mismatches, total = {}, 0
+    local function native(pat, abs, forward)
+      local line, col = to_lc(abs)
+      vim.api.nvim_win_set_cursor(owin, { line, col })
+      local r = vim.api.nvim_win_call(owin, function() return vim.fn.searchpos(pat, forward and "nW" or "nbW") end)
+      if r[1] == 0 then return nil end
+      return starts[r[1]] + r[2] - 1
+    end
+    for trial = 1, 500 do
+      local pat = patterns[math.random(#patterns)]
+      local forward = math.random(3) ~= 1
+      vim.o.ignorecase = math.random(2) == 1
+      vim.o.smartcase = math.random(2) == 1
+      local line_no = ({ 1, 2, 10, 10, 10, 25, 40, math.random(#lines) })[math.random(8)]
+      local abs = starts[line_no] + (#lines[line_no] > 0 and math.random(0, #lines[line_no] - 1) or 0)
+      abs = V.r:align_down(abs)
+      sv.goto_abs(V, abs)
+      settle(V)
+      local at = sv.cursor_abs(V)
+      local want = native(pat, at, forward)
+      local res
+      sv.search(V, pat, forward, function(p, err) res = { pos = p, err = err } end)
+      vim.wait(20000, function() return res ~= nil end, 2)
+      settle(V)
+      total = total + 1
+      local got = res and res.pos
+      if got ~= want then
+        local line, col = to_lc(at)
+        mismatches[#mismatches + 1] = string.format("%s%s ic=%s sc=%s from line %d col %d (abs %d, line starts %d): got %s (%q) want %s (%q) %s", forward and "/" or "?", pat, tostring(vim.o.ignorecase), tostring(vim.o.smartcase), line, col, at, starts[line], tostring(got), got and text:sub(got + 1, got + 8) or "", tostring(want), want and text:sub(want + 1, want + 8) or "", tostring(res and res.err))
+      end
+    end
+    h.check(#mismatches == 0, string.format("%d searches (literal and regex, both directions, ignorecase/smartcase) find what Neovim's search finds", total), table.concat(vim.list_slice(mismatches, 1, 6), "\n      "))
+
+    -- a regex that is not valid is an error, not a crash
+    local bad
+    sv.search(V, "\\(unclosed", true, function(p, err) bad = { p = p, err = err } end)
+    h.check(bad ~= nil and bad.p == nil and tostring(bad.err):find("invalid pattern", 1, true) ~= nil, "an invalid regex is reported", vim.inspect(bad))
+
+    -- a match that reaches past the overlap at the edge of a window of a long line is cut there
+    Search.opts.batch, Search.opts.overlap = 1024, 8
+    local long = string.rep("a", 1020) .. "NEEDLE-LONGER-THAN-OVERLAP" .. string.rep("b", 3000)
+    local LP = write("search-window.txt", "x\n" .. long .. "\nend\n")
+    local W = open(LP)
+    sv.goto_abs(W, 0)
+    settle(W)
+    local found
+    sv.search(W, "NEEDLE-\\w\\+", true, function(p) found = { p = p } end)
+    vim.wait(5000, function() return found ~= nil end, 2)
+    eq(found.p, 2 + 1020, "a match that starts in a window is found")
+    eq(W.match.len, 12, "but is cut at the end of the overlap (documented)")
+    Search.opts.overlap = 64
+    sv.goto_abs(W, 0)
+    settle(W)
+    found = nil
+    sv.search(W, "NEEDLE-\\w\\+", true, function(p) found = { p = p } end)
+    vim.wait(5000, function() return found ~= nil end, 2)
+    eq(W.match.len, 13, "whole when the overlap covers it")
+
+    vim.fn.exepath = real_exepath
+    Search.opts.batch, Search.opts.overlap, Search.opts.streamsearch = saved[1], saved[2], saved[3]
+    vim.o.ignorecase, vim.o.smartcase = saved[4], saved[5]
+  end,
+
+  function()
+    -- the streamsearch helper, driven through a stand-in that follows the same command line
+    local Search = require("streamview_search")
+    local saved = Search.opts.streamsearch
+    local log = tmp .. "/stub.log"
+    os.remove(log)
+    vim.env.STUB_LOG = log
+    Search.opts.streamsearch = { os.getenv("NVIM_BIN") or "nvim", "--headless", "-l", os.getenv("TEST_DIR") .. "/stub-streamsearch.lua" }
+    local function calls()
+      local f = io.open(log, "r")
+      if not f then return {} end
+      local out = {}
+      for line in f:lines() do out[#out + 1] = line end
+      f:close()
+      return out
+    end
+    local lines = {}
+    for i = 1, 200 do lines[i] = "row " .. i .. (i % 50 == 0 and " NEEDLE" or "") end
+    local text = table.concat(lines, "\n") .. "\n"
+    local path = write("helper.txt", text)
+    local V = open(path)
+    local function run(pat, forward)
+      local res
+      sv.search(V, pat, forward, function(p, err) res = { pos = p, err = err } end)
+      vim.wait(20000, function() return res ~= nil end, 5)
+      settle(V)
+      return res
+    end
+    local function find_all(needle)
+      local out, at = {}, 1
+      while true do
+        local s = text:find(needle, at, true)
+        if not s then break end
+        out[#out + 1] = s - 1
+        at = s + 1
+      end
+      return out
+    end
+    local needles = find_all("NEEDLE")
+
+    local res = run("NEEDLE", true)
+    eq(res.pos, needles[1], "a literal search goes through the helper and jumps to its first match")
+    local c = calls()
+    eq(#c, 1, "which was run once")
+    h.check(c[1]:find("--fixed", 1, true) and c[1]:find("NEEDLE", 1, true) and c[1]:find("--from\t1\t", 1, true), "as --fixed with --from after the cursor", c[1])
+    res = run("NEEDLE", true)
+    eq(res.pos, needles[2], "n resumes after the match")
+    h.check(calls()[2]:find("--from\t" .. (needles[1] + 1) .. "\t", 1, true) ~= nil, "with --from just past the last one", calls()[2])
+    res = run("NEEDLE", false)
+    eq(res.pos, needles[1], "a backward search asks for --backward")
+    h.check(calls()[3]:find("--backward", 1, true) ~= nil, "(the helper was told)", calls()[3])
+
+    sv.goto_abs(V, 0)
+    settle(V)
+    vim.o.ignorecase, vim.o.smartcase = true, false
+    res = run("needle", true)
+    eq(res.pos, needles[1], "ignorecase becomes --ignore-case")
+    h.check(calls()[#calls()]:find("--ignore-case", 1, true) ~= nil, "(the helper was told)")
+    vim.o.ignorecase = false
+
+    res = run("nowhere-to-be-found", true)
+    h.check(res.pos == nil and res.err == nil, "no match (exit 1) is reported as no match")
+    res = run("FAIL", true)
+    h.check(res.pos == nil and tostring(res.err):find("something went wrong", 1, true) ~= nil, "an error (exit 2) carries the helper's message", vim.inspect(res))
+
+    -- a regex the translator cannot give the helper stays with the slower engine
+    local before = #calls()
+    res = run("row 1\\d\\d NEEDLE", true)
+    eq(#calls(), before, "without a translator a regex is searched in Lua")
+    eq(res.pos, find_all("row 100 NEEDLE")[1], "and found")
+
+    -- cancel kills the helper and tells it was cancelled
+    local cancelled
+    sv.search(V, "SLEEP", true, function(p, err) cancelled = { pos = p, err = err } end)
+    h.check(V.job ~= nil and V.job.label:find("streamsearch", 1, true) ~= nil, "a running helper search is a job with a label")
+    vim.g.statusline_winid = vim.fn.bufwinid(V.buf)
+    h.check(sv.winbar():find("searching (streamsearch)", 1, true) ~= nil, "shown in the winbar with the time it took")
+    sv.cancel(V)
+    eq(cancelled and cancelled.err, "cancelled", "cancel is reported")
+    eq(V.job, nil, "and the job is gone")
+
+    -- edits the helper cannot see: Lua searches the text as it is
+    sv.goto_abs(V, 0)
+    settle(V)
+    vim.api.nvim_buf_set_lines(V.buf, 0, 1, false, { "row 1 NEEDLE edited" })
+    before = #calls()
+    res = run("NEEDLE", true)
+    eq(#calls(), before, "with edits the helper is not used")
+    eq(res.pos, 6, "and the edited text is searched")
+
+    -- the helper is not there
+    Search.opts.streamsearch = nil
+    local real = vim.fn.exepath
+    vim.fn.exepath = function(name) return name == "streamsearch" and "" or real(name) end
+    sv.goto_abs(V, 0)
+    settle(V)
+    before = #calls()
+    res = run("NEEDLE", true)
+    vim.fn.exepath = real
+    eq(#calls(), before, "without the helper the Lua scan does it")
+    h.check(res.pos ~= nil, "and finds it")
+    Search.opts.streamsearch = saved
+    vim.env.STUB_LOG = nil
+  end,
 }
 
 h.run(steps, 600000)

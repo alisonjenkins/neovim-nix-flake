@@ -777,7 +777,8 @@ function M.winbar()
   local job = S.job
   if job then
     local pct = job.span > 0 and job.done_bytes / job.span * 100 or 100
-    parts[#parts + 1] = string.format("%s %d%% (<C-c> cancels)", job.label, pct)
+    local elapsed = job.started and string.format(" %.1fs", (uv.hrtime() - job.started) / 1e9) or ""
+    parts[#parts + 1] = string.format("%s %d%%%s (<C-c> cancels)", job.label, pct, elapsed)
   end
   return table.concat(parts, "  ")
 end
@@ -786,46 +787,12 @@ end
 -- Search: literal text, scanned block by block from the cursor line
 ---------------------------------------------------------------------------------------------------
 
--- A match can straddle two blocks, so the last m-1 bytes of the scanned side are carried over.
-local function scan_forward(r, pat, from, tick)
-  local m = #pat
-  local pos, tail = from, ""
-  while pos < r.size do
-    local index = math.floor(pos / r.bs)
-    local base = index * r.bs
-    local data = r:block(index)
-    if data == "" then return nil end
-    local win = tail .. data:sub(pos - base + 1)
-    local i = win:find(pat, 1, true)
-    if i then return pos - #tail + i - 1 end
-    tail = m > 1 and win:sub(-(m - 1)) or ""
-    pos = base + r.bs
-    tick(pos)
-  end
-end
-
--- Finds the last match that starts before `before`.
-local function scan_backward(r, pat, before, tick)
-  local m = #pat
-  local reversed = pat:reverse()
-  local hi, after = math.min(before, r.size), ""
-  while hi > 0 do
-    local index = math.floor((hi - 1) / r.bs)
-    local base = index * r.bs
-    local win = r:block(index):sub(1, hi - base) .. after
-    local i = win:reverse():find(reversed, 1, true)
-    if i then return base + #win - i - m + 1 end
-    after = win:sub(1, m - 1)
-    hi = base
-    tick(hi)
-  end
-end
-
 function M.cancel(S)
   local job = S.job
   if not job then return end
   job.cancelled = true
   S.job = nil
+  if job.kill then job.kill() end
   vim.cmd.redrawstatus()
   if job.done then job.done(nil, "cancelled") end
 end
@@ -875,6 +842,66 @@ end
 
 -- Scans from the cursor line (past the current match, if it is there); `done(pos, err)` is called
 -- when the scan ends. The match line becomes the first line of the window.
+local Search = require("streamview_search")
+M.search_engine = Search
+
+-- Searches with the streamsearch helper, a process that reads the file on disk in parallel with an
+-- index: the first match it prints is shown at once, and the process is stopped.
+local function search_with_helper(S, plan, cmd, abs, origin, forward, found, done)
+  local r = S.r
+  local job = {
+    label = "searching (streamsearch)",
+    span = r.size,
+    done_bytes = 0,
+    exclusive = true,
+    started = uv.hrtime(),
+  }
+  local matched = false
+  local finished = false
+  local function finish(pos, err)
+    if finished then return end
+    finished = true
+    if S.job == job then S.job = nil end
+    vim.cmd.redrawstatus()
+    if pos then
+      found(pos[1], pos[2])
+    elseif done then
+      done(nil, err)
+    end
+  end
+  job.done = function(_, err) finish(nil, err) end
+  S.job = job
+  local argv = Search.helper_argv(cmd, plan, r.path, origin, forward)
+  local handle = Search.run_helper(argv, {
+    on_match = function(start, stop)
+      -- going back, a match at the cursor or after it is not wanted; the helper goes on to the next
+      if not forward and start >= abs then return false end
+      matched = true
+      vim.schedule(function() finish({ start, stop - start }) end)
+      return true
+    end,
+    on_progress = function(scanned, total)
+      job.done_bytes, job.span = scanned, total or job.span
+      vim.schedule(function() vim.cmd.redrawstatus() end)
+    end,
+    on_exit = function(code, errtext)
+      vim.schedule(function()
+        if matched or finished then return end
+        if code == 1 then
+          finish(nil, nil)
+        else
+          finish(nil, "streamsearch failed: " .. (errtext ~= "" and errtext or ("exit code " .. tostring(code))))
+        end
+      end)
+    end,
+  })
+  job.kill = handle.kill
+end
+
+-- Searches from the cursor for literal text or a Vim regex ('ignorecase' and 'smartcase' count; a
+-- regex that is not valid is an error). done(pos, err) is called when the search ends: pos is nil with
+-- no err when nothing matched. The match line becomes the first line of the window, the cursor is on
+-- the match and, in a line too long for the buffer, the slice slides to it.
 function M.search(S, pat, forward, done)
   if not before_move(S) then
     if done then done(nil, "saving") end
@@ -882,8 +909,13 @@ function M.search(S, pat, forward, done)
   end
   M.cancel(S)
   stop_follow(S)
-  if pat == "" or #pat >= S.r.bs then
-    if done then done(nil, "the pattern must be 1 to " .. (S.r.bs - 1) .. " bytes") end
+  if pat == "" then
+    if done then done(nil, "the pattern is empty") end
+    return
+  end
+  local plan, perr = Search.plan(pat)
+  if not plan then
+    if done then done(nil, perr) end
     return
   end
   S.r:refresh()
@@ -891,20 +923,31 @@ function M.search(S, pat, forward, done)
   local abs = M.cursor_abs(S)
   local origin = forward and abs + 1 or abs
   S.last_search = { pat = pat, forward = forward }
+  local function found(pos, len)
+    M.goto_abs(S, pos, { pos = pos, len = len }, function()
+      if done then done(pos, nil) end
+    end)
+  end
 
-  local scan = forward and scan_forward or scan_backward
-  run_job(S, "searching", forward and S.r.size - origin or origin, function(tick)
-    return scan(S.r, pat, origin, function(pos) tick(math.abs(pos - origin)) end)
-  end, function(pos, err)
+  local r = S.r
+  local cmd = Search.helper()
+  if cmd and plan.external and r:pristine() and #r.log == 0 and r.size == r.file_size and not r:changed_on_disk() then
+    return search_with_helper(S, plan, cmd, abs, origin, forward, found, done)
+  end
+  if cmd and not plan.external then
+    vim.notify("Stream view: " .. plan.untranslatable .. "; searching with the slower engine", vim.log.levels.INFO)
+  end
+  run_job(S, "searching", forward and r.size - origin or origin, function(tick)
+    return Search.lua_scan(r, plan, origin, forward, function(pos) tick(math.abs(pos - origin)) end)
+  end, function(pos, len)
     if pos then
-      M.goto_abs(S, pos, { pos = pos, len = #pat }, function()
-        if done then done(pos, err) end
-      end)
+      found(pos, len)
     elseif done then
-      done(pos, err)
+      done(nil, type(len) == "string" and len or nil)
     end
-  end)
+  end, true)
 end
+
 
 
 ---------------------------------------------------------------------------------------------------
