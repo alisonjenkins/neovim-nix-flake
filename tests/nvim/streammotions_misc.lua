@@ -4,7 +4,7 @@
 local h = dofile(os.getenv("TEST_DIR") .. "/harness.lua")
 local L = dofile(os.getenv("TEST_DIR") .. "/streammotions_lib.lua")
 
-local CFG = { block = 4096, line_cap = 4096, segment = 16384 }
+local CFG = { block = 4096 }
 local ORIG = L.read_file(L.files.get(L.dir, "log", 300 * 1024))
 
 local P = {}
@@ -77,7 +77,7 @@ P["dsp.unicode"] = function()
     if #want == #shown then break end
   end
   for i, l in ipairs(shown) do
-    if #want[i] <= CFG.line_cap and l ~= want[i] then return false, string.format("line %d: %q, want %q", i, l, want[i]) end
+    if #want[i] <= 4096 and l ~= want[i] then return false, string.format("line %d: %q, want %q", i, l, want[i]) end
   end
   return true
 end
@@ -277,7 +277,7 @@ local function big()
   return BIG
 end
 
-local SLOW = { block = 64, line_cap = 4096, segment = 16384 }
+local SLOW = { block = 64 }
 
 -- The patterns end in \zs: the streamsearch helper cannot take it, so the scan is the viewer's own,
 -- a job in slices (the helper finishes the 128 MB at once; its cancel is in streamsearchint.lua).

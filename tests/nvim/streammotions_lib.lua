@@ -30,11 +30,11 @@ L.log = os.getenv("STREAM_LOG") and io.open(os.getenv("STREAM_LOG"), "w") or nil
 L.dir = (os.getenv("TMPDIR") or "/tmp") .. "/streammotions"
 vim.fn.mkdir(L.dir, "p")
 
--- Viewer settings that make every motion cross block, line-cap and segment edges
+-- Viewer settings that make every motion cross block edges and slide the slice of a long line
 L.cfgs = {
-  { block = 4096, line_cap = 4096, segment = 16384 },
-  { block = 16384, line_cap = 16384, segment = 65536 },
-  { block = 65536, line_cap = 8192, segment = 32768 },
+  { block = 4096, slice = 8192, head = 1024, window_budget = 65536 },
+  { block = 16384, slice = 32768, head = 4096, window_budget = 262144 },
+  { block = 65536, slice = 16384, head = 2048, window_budget = 131072 },
 }
 
 ---------------------------------------------------------------------------------------------------
@@ -198,8 +198,8 @@ local function make_cases(row, R, fkind, finfo)
     local cfg = L.cfgs[(n % #L.cfgs) + 1]
     local at = start_for(n)
     if row.at == "edge" then
-      -- just before or after a block or segment edge, where a slice has to be joined
-      local unit = (n % 2 == 0) and cfg.block or cfg.segment
+      -- just before or after a block or slice edge, where a slice has to be joined
+      local unit = (n % 2 == 0) and cfg.block or cfg.slice
       local k = 1 + R(math.max(1, math.floor(finfo.size / unit) - 2))
       at = math.min(k * unit + (R(7) - 4), finfo.size - 1)
     end
@@ -295,11 +295,11 @@ function L.run_row(row)
             if not res.repro then
               local toks = (#case.toks > 1 and not why:find("cannot place", 1, true)) and shrink(row, finfo.path, fo, case, spec) or case.toks
               res.repro = string.format("file=%s at=%d cfg=%d/%d/%d seed=%d keys=%s: %s", name, case.at,
-                case.cfg.block, case.cfg.line_cap, case.cfg.segment, L.seed, vim.inspect(table.concat(toks)), why)
+                case.cfg.block, case.cfg.slice, case.cfg.head, L.seed, vim.inspect(table.concat(toks)), why)
               if #toks ~= #case.toks then
                 local a2, b2 = run_both(finfo.path, fo, case.cfg, case.at, toks, spec, 30000)
                 res.repro = string.format("file=%s at=%d cfg=%d/%d/%d seed=%d keys=%s: %s", name, case.at,
-                  case.cfg.block, case.cfg.line_cap, case.cfg.segment, L.seed, vim.inspect(table.concat(toks)), differ(a2, b2, row) or why)
+                  case.cfg.block, case.cfg.slice, case.cfg.head, L.seed, vim.inspect(table.concat(toks)), differ(a2, b2, row) or why)
               end
             end
           end

@@ -1201,7 +1201,7 @@ function M.move(S, n)
   sync_row(S)
   -- j on the last line of the file and k on the first fail, which drops the keys typed after them
   local here = S.entries[S.row]
-  if here and ((n > 0 and not here.ropen and here.nxt >= S.r.size) or (n < 0 and not here.lopen and here.off == 0)) then
+  if here and ((n > 0 and here.e and here.nxt >= S.r.size) or (n < 0 and here.off == 0)) then
     return flush_typeahead()
   end
   local rows = vim.api.nvim_buf_line_count(S.buf)
