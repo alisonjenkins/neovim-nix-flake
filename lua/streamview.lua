@@ -1360,9 +1360,12 @@ local function hmove_abs(S, key, n, arg)
     sync_row(S)
     local row = S.entries[S.row]
     if not row then return end
+    local from = M.cursor_abs(S)
     local target, why = motion_target(S, row, key, n, arg)
     if target then
       place(S, target)
+      -- l and h that cannot move at all fail too
+      if target == from and (key == "l" or key == "h") then flush_typeahead() end
     elseif why == "fail" then
       flush_typeahead()
     end
@@ -1390,7 +1393,11 @@ function M.hmove(S, key, count, arg)
       local after = vim.api.nvim_win_get_cursor(win)
       local len = #(vim.api.nvim_buf_get_lines(S.buf, after[1] - 1, after[1], false)[1] or "")
       local at_edge = (key == "l" and row.ropen and len - after[2] <= 8) or (key == "h" and row.lopen and after[2] <= 8)
-      if not at_edge then return M.check_slice(S) end
+      if not at_edge then
+        -- a move that went nowhere failed: Neovim drops the keys typed after it
+        if after[1] == before[1] and after[2] == before[2] then flush_typeahead() end
+        return M.check_slice(S)
+      end
       vim.api.nvim_win_set_cursor(win, before)
     end
   end

@@ -1256,6 +1256,10 @@ local steps = {
     vim.api.nvim_feedkeys("fex", "mx", false)
     eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], before_text:gsub("e", "", 1), "while fe runs the x after it")
     vim.cmd("undo")
+    vim.api.nvim_feedkeys("$lx", "mx", false)
+    eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], before_text, "an l at the end of the line fails, so the x typed after it does not run")
+    vim.api.nvim_feedkeys("0hx", "mx", false)
+    eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], before_text, "and so does an h at the start of it")
     local before_char = text:find("\195\169", 1, true) -- the second byte of the first accented letter
     h.check(not sv.place(V, before_char), "inside a character it reports that it could not")
     eq(sv.cursor_offset(V), before_char - 1, "and the cursor is on the start of the character")
