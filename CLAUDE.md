@@ -88,7 +88,7 @@ Automated tests run as flake checks (`nix flake check`, and in CI):
 - `checks.default` - nixvim startup check; fails on any startup error or evaluation warning
 - `checks.treefmt` - formatting (`nix fmt` fixes it)
 - `checks.terraform-tools` - `tests/lua/test_terraform_tools.lua` under luajit
-- `checks.bigfile`, `checks.lazyload`, `checks.cpatches`, `checks.git-async`, `checks.git-hooks`, `checks.streamedit`, `checks.streamfuzz`, `checks.streamnav`, `checks.streamrobust`, `checks.streamview` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them; `run.sh` exports `NVIM_BIN` (the wrapped nvim) for tests that start a second Neovim, since `vim.v.progpath` is the unwrapped binary without the config
+- `checks.bigfile`, `checks.lazyload`, `checks.cpatches`, `checks.git-async`, `checks.git-hooks`, `checks.streamedit`, `checks.streamfuzz`, `checks.streamnav`, `checks.streamrobust`, `checks.streamsearchint`, `checks.streamview` - headless Neovim tests in `tests/nvim/`, run by `tests/nvim/run.sh` in a throwaway repo isolated from the user's git config; `tests/nvim/fake-git` fakes network commands and holds them until the test releases them; `run.sh` exports `NVIM_BIN` (the wrapped nvim) for tests that start a second Neovim, since `vim.v.progpath` is the unwrapped binary without the config
 
 The `tests/` directory also contains example projects for trying language-specific features by hand:
 - `tests/python/` - Python project with nox testing setup
@@ -148,6 +148,7 @@ The `tests/` directory also contains example projects for trying language-specif
 - A match must fit in `--max-match-bytes` (default 64 KiB) past its chunk; longer regex matches come back with `"truncated":true`
 - `lua/streamsearch_regex.lua` translates Vim patterns (`\<`, `\>`, `\v`, `\c`, `\{n,m}`, `\(`) and returns `nil, "untranslatable: ..."` when the caller must fall back to `vim.regex`
 - `checks.streamsearch` runs the Lua translator tests against the built binary; the cargo tests (`tests/search.rs`, a naive-model comparison plus cancellation and bounded-RSS checks) run in the package's `checkPhase`
+- `tests/nvim/streamsearchint.lua` (`checks.streamsearchint`) drives the viewer's `/ ? n N`, `:StreamSearchAll` and `<C-c>` with the packaged binary (the one on the wrapper's PATH, not `tests/nvim/stub-streamsearch.lua`, which `streamnav.lua` keeps as a unit-test stand-in for the command line) on a planted few-MB file and a 1 GB sparse one: literal text, Vim regexes through the translator, `ignorecase`/`smartcase`, `\zs` and `\&` (refused by the translator, searched by `vim.regex` in Lua), and matches inside a 2 MB and a 1 GB line. The 1 GB part skips where files are not sparse
 
 ### Custom Lua Setup
 Extra Lua configuration in `extraConfigLua` sets up safe directories for backups, swap files, and undo files outside of git repositories.
