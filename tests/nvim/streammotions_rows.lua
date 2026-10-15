@@ -693,7 +693,7 @@ scale("scale1.xdel", "{K}l then x", "Deletes one byte (size -1), memory flat.", 
 scale("scale1.w", "1000000w (64 MB only)", "One million words on, 3 bytes each.", "3 s", 2)
 scale("scale1.e", "1000000e (64 MB only)", "One million word ends on.", "3 s", 3)
 scale("scale1.yank", "{K}l then y$ (64 MB only)", "The register holds the 8 MB tail exactly.", "3 s", 3)
-scale("scale1.cancel", "<C-c> during a scan of a 1 GB line (1 GB only)", "Stops in 1.5 s, cursor unchanged, memory flat.", "1.5 s", 1)
+scale("scale.cancel", "<C-c> during a scan of a 2 GB file (2 GB only)", "Stops in 1.5 s, cursor unchanged, memory flat.", "1.5 s", 1)
 
 ---------------------------------------------------------------------------------------------------
 -- Documented only

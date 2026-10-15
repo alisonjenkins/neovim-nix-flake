@@ -202,9 +202,9 @@ local function run_op(op, f)
 end
 
 local function cancel_probe(f)
-  local id = "scale1.cancel" .. SUFFIX
+  local id = "scale.cancel" .. SUFFIX
   local c = L.spawn("viewer")
-  assert(c:call("open", { f.path, {}, {} }))
+  assert(c:call("open", { f.path, {}, { block = 4096 } }))
   c:call("start_keys", { "/ZZZZ<CR>" })
   vim.wait(500)
   local st = c:call("status", {})
@@ -260,6 +260,7 @@ else
   for _, op in ipairs(many_ops(f1)) do
     if want[op[1]] and not skipped_by_status(op[1]) then run_op(op, f1) end
   end
+  if BIG and want["scale.cancel"] then cancel_probe(f1) end
 end
 
 local f2, why2 = one_file()
@@ -273,7 +274,7 @@ else
   for _, op in ipairs(one_ops(f2)) do
     if want[op[1]] and not skipped_by_status(op[1]) then run_op(op, f2) end
   end
-  if BIG and want["scale1.cancel"] then cancel_probe(f2) end
+  
 end
 
 L.stop()
