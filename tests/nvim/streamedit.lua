@@ -335,6 +335,7 @@ local steps = {
 
   function()
     -- cancel a save: no temp file, the original untouched
+    if not h.sparse_supported(tmp) then return h.skip("cancel a save of a 1 GB file: no sparse files here") end
     local path = tmp .. "/edit-sparse.bin"
     local fd = assert(uv.fs_open(path, "w", 420))
     uv.fs_ftruncate(fd, 1024 * 1024 * 1024)
@@ -374,6 +375,7 @@ local steps = {
 
   function()
     -- a 512 MB sparse file: an edit at 60%, saved in place, memory stays flat
+    if not h.sparse_supported(tmp) then return h.skip("edit a 512 MB file: no sparse files here") end
     local path = tmp .. "/edit-sparse-big.bin"
     local size = 512 * 1024 * 1024
     local at = math.floor(size * 0.6)

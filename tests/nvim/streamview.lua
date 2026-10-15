@@ -166,6 +166,7 @@ local steps = {
 
   function()
     -- 512 MB sparse file: memory stays flat while scanning, jumping and tailing it
+    if not h.sparse_supported(tmp) then return h.skip("scan a 512 MB file: no sparse files here") end
     local path = tmp .. "/sparse.bin"
     local fd = assert(uv.fs_open(path, "w", 420))
     local size = 512 * 1024 * 1024
@@ -218,6 +219,7 @@ local steps = {
 
   function()
     -- a scan is cancellable and leaves no job behind
+    if not h.sparse_supported(tmp) then return h.skip("cancel a scan of a 2 GB file: no sparse files here") end
     local path = tmp .. "/sparse2.bin"
     local fd = assert(uv.fs_open(path, "w", 420))
     uv.fs_ftruncate(fd, 2 * 1024 * 1024 * 1024)

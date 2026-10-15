@@ -484,6 +484,7 @@ local steps = {
 
   function()
     -- a scan that takes a job can be cancelled, and what it learned makes the next one instant
+    if not h.sparse_supported(tmp) then return h.skip("scan a 1 GB line: no sparse files here") end
     local saved = sv.opts.sync_scan
     sv.opts.sync_scan = 1 * MB
     local size = 1024 * MB
@@ -852,6 +853,7 @@ local steps = {
   function()
     -- a 1 GB line: f F t T ; , $ 0 | and counts across many slices, operators over hundreds of MB,
     -- with timings and the memory of the process
+    if not h.sparse_supported(tmp) then return h.skip("navigate a 1 GB line: no sparse files here") end
     h.capture_notify()
     local size = 1024 * MB
     local ls = #"first\n"
