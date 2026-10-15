@@ -1528,6 +1528,48 @@ local function attach_nav(S, group)
   })
 end
 
+-- The first `limit` matches from the cursor, as a list to pick from (vim.ui.select), each with the
+-- text around it; the last entry asks for more. The picked match is shown like a search hit.
+function M.search_all(S, pat, limit, from)
+  limit = limit or 50
+  local plan, perr = Search.plan(pat)
+  if not plan then return vim.notify("StreamSearchAll: " .. tostring(perr), vim.log.levels.ERROR) end
+  nav(S, function()
+    if not before_move(S) then return end
+    sync_row(S)
+    local r = S.r
+    local origin = from or (M.cursor_abs(S) + 1)
+    local found = {}
+    local last
+    run_job(S, "listing matches", r.size - origin, function(tick)
+      local at = origin
+      while #found < limit do
+        local pos, len = Search.lua_scan(r, plan, at, true, function(p) tick(p - origin) end)
+        if not pos then return true end
+        local a = math.max(0, pos - 20)
+        local text = r:get(a, 90):gsub("[%c\128-\255]", function(c) return c:byte() >= 128 and c or "." end)
+        found[#found + 1] = { pos = pos, len = len, text = text }
+        at = pos + math.max(len, 1)
+        last = at
+      end
+      return false
+    end, function(complete, err)
+      if err then return vim.notify("StreamSearchAll: " .. tostring(err), vim.log.levels.ERROR) end
+      if #found == 0 then return vim.notify("Pattern not found: " .. pat, vim.log.levels.WARN) end
+      local items = vim.list_extend({}, found)
+      if not complete then items[#items + 1] = { more = true, text = "(more...)" } end
+      vim.ui.select(items, {
+        prompt = pat,
+        format_item = function(it) return it.more and it.text or string.format("%s  %s", grouped(it.pos), it.text) end,
+      }, function(choice)
+        if not choice then return end
+        if choice.more then return M.search_all(S, pat, limit, last) end
+        M.goto_abs(S, choice.pos, { pos = choice.pos, len = choice.len })
+      end)
+    end, true)
+  end)
+end
+
 local function notify_search_result(pat)
   return function(pos, err)
     if err == "cancelled" then
@@ -2250,6 +2292,12 @@ function M.setup()
     if err then vim.notify("StreamGoto: " .. err, vim.log.levels.ERROR) end
   end, { nargs = 1, desc = "Stream view: jump to a byte offset or a percentage (60%)" })
 
+  vim.api.nvim_create_user_command("StreamSearchAll", function(o)
+    local S = current_state()
+    if not S then return end
+    local pat, n = o.args:match("^(.-)%s+(%d+)$")
+    M.search_all(S, pat or o.args, tonumber(n))
+  end, { nargs = "+", desc = "Stream view: list the first matches of a pattern from the cursor (N at the end: how many)" })
   vim.api.nvim_create_user_command("StreamLine", function(o)
     local S = current_state()
     if S then M.goto_line(S, math.max(tonumber(o.args) or 1, 1)) end

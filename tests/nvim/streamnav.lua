@@ -1184,6 +1184,36 @@ local steps = {
     Search.opts.streamsearch = saved
     vim.env.STUB_LOG = nil
   end,
+
+  function()
+    -- :StreamSearchAll lists matches, a batch at a time, and jumps to the one picked
+    local lines = {}
+    for i = 1, 300 do lines[i] = "row " .. i .. (i % 10 == 0 and " HIT" or "") end
+    local path = write("search-all.txt", table.concat(lines, "\n") .. "\n")
+    local V = open(path)
+    sv.head(V)
+    local shown, picks = {}, 0
+    local real_select = vim.ui.select
+    vim.ui.select = function(items, opts, choice)
+      shown[#shown + 1] = items
+      picks = picks + 1
+      if picks == 1 then
+        choice(items[#items]) -- (more...)
+      else
+        choice(items[2])
+      end
+    end
+    sv.search_all(V, "HIT", 5)
+    vim.wait(10000, function() return picks >= 2 end, 5)
+    settle(V)
+    vim.ui.select = real_select
+    eq(#shown[1], 6, "five matches and a way to ask for more")
+    eq(shown[1][#shown[1]].more, true, "the last entry asks for more")
+    h.check(shown[1][1].text:find("HIT", 1, true) ~= nil, "each with the text around it")
+    eq(shown[2][1].pos > shown[1][5].pos, true, "more starts after the last one listed")
+    local want = shown[2][2].pos
+    eq(sv.cursor_abs(V), want, "the match picked is where the cursor goes")
+  end,
 }
 
 h.run(steps, 600000)
