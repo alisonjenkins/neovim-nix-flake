@@ -659,3 +659,245 @@ fn progress_lines_are_json() {
         "{err}"
     );
 }
+
+fn count_of(args: &[&str], file: &Path) -> u64 {
+    let out = Command::new(BIN)
+        .args(args)
+        .arg(file)
+        .stderr(Stdio::null())
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(0), "{args:?}");
+    let text = String::from_utf8(out.stdout).unwrap();
+    text.trim()
+        .strip_prefix("{\"count\":")
+        .unwrap()
+        .strip_suffix('}')
+        .unwrap()
+        .parse()
+        .unwrap()
+}
+
+#[test]
+fn count_matches_model_across_chunks_threads_and_ranges() {
+    let d = dir();
+    let mut rng = Rng(4242);
+    let data = random_data(&mut rng, 6000, b"abcd\n");
+    let f = write_file(d.path(), "c.dat", &data);
+    let abc = model(&data, b"abc", false);
+    let nl = model(&data, b"\n", false);
+    for chunk in ["1", "5", "64", "1000", "100000"] {
+        for threads in ["1", "3", "8"] {
+            let base = [
+                "--count",
+                "--chunk-bytes",
+                chunk,
+                "--threads",
+                threads,
+                "--max-match-bytes",
+                "2",
+                "--progress-ms",
+                "0",
+            ];
+            let mut a = base.to_vec();
+            a.extend(["--fixed", "abc"]);
+            assert_eq!(
+                count_of(&a, &f),
+                abc.len() as u64,
+                "abc chunk={chunk} threads={threads}"
+            );
+            let mut r = base.to_vec();
+            r.extend(["--regex", "a[bd]c"]);
+            let a_c = (0..data.len() - 2)
+                .filter(|&i| {
+                    data[i] == b'a' && matches!(data[i + 1], b'b' | b'd') && data[i + 2] == b'c'
+                })
+                .count() as u64;
+            assert_eq!(
+                count_of(&r, &f),
+                a_c,
+                "a[bd]c chunk={chunk} threads={threads}"
+            );
+            let mut n = base.to_vec();
+            n.extend(["--fixed", "\n"]);
+            assert_eq!(
+                count_of(&n, &f),
+                nl.len() as u64,
+                "newline chunk={chunk} threads={threads}"
+            );
+            let mut ranged = base.to_vec();
+            ranged.extend(["--fixed", "--from", "1001", "--to", "4003", "\n"]);
+            let want = nl.iter().filter(|s| s.0 >= 1001 && s.0 < 4003).count() as u64;
+            assert_eq!(
+                count_of(&ranged, &f),
+                want,
+                "ranged newline chunk={chunk} threads={threads}"
+            );
+            let mut back = base.to_vec();
+            back.extend([
+                "--backward",
+                "--fixed",
+                "--from",
+                "4003",
+                "--to",
+                "1001",
+                "\n",
+            ]);
+            assert_eq!(count_of(&back, &f), want, "backward ranged chunk={chunk}");
+        }
+    }
+}
+
+#[test]
+fn nth_picks_the_nth_match_in_search_order() {
+    let d = dir();
+    let mut rng = Rng(31337);
+    let data = random_data(&mut rng, 6000, b"abcd\n");
+    let f = write_file(d.path(), "n.dat", &data);
+    let nl = model(&data, b"\n", false);
+    let abc = model(&data, b"abc", false);
+    for chunk in ["1", "7", "64", "1000", "100000"] {
+        for threads in ["1", "4"] {
+            for n in [1usize, 2, 3, 50, nl.len() / 2, nl.len() - 1, nl.len()] {
+                let ns = n.to_string();
+                let base = [
+                    "--nth",
+                    &ns,
+                    "--chunk-bytes",
+                    chunk,
+                    "--threads",
+                    threads,
+                    "--max-match-bytes",
+                    "2",
+                    "--progress-ms",
+                    "0",
+                ];
+                let mut a = base.to_vec();
+                a.extend(["--fixed", "\n"]);
+                assert_eq!(
+                    run(&a, &f).0,
+                    vec![nl[n - 1]],
+                    "newline n={n} chunk={chunk}"
+                );
+                let mut b = base.to_vec();
+                b.extend(["--backward", "--fixed", "\n"]);
+                assert_eq!(
+                    run(&b, &f).0,
+                    vec![nl[nl.len() - n]],
+                    "backward newline n={n} chunk={chunk}"
+                );
+            }
+            for n in [1usize, 2, abc.len() / 2, abc.len()] {
+                let ns = n.to_string();
+                let base = [
+                    "--nth",
+                    &ns,
+                    "--chunk-bytes",
+                    chunk,
+                    "--threads",
+                    threads,
+                    "--max-match-bytes",
+                    "2",
+                    "--progress-ms",
+                    "0",
+                ];
+                let mut a = base.to_vec();
+                a.extend(["--fixed", "abc"]);
+                assert_eq!(run(&a, &f).0, vec![abc[n - 1]], "abc n={n} chunk={chunk}");
+                let mut b = base.to_vec();
+                b.extend(["--backward", "--regex", "abc"]);
+                assert_eq!(
+                    run(&b, &f).0,
+                    vec![abc[abc.len() - n]],
+                    "backward abc n={n} chunk={chunk}"
+                );
+            }
+            let too_many = (nl.len() + 1).to_string();
+            let (got, code) = run(
+                &[
+                    "--nth",
+                    &too_many,
+                    "--fixed",
+                    "--chunk-bytes",
+                    chunk,
+                    "--threads",
+                    threads,
+                    "--progress-ms",
+                    "0",
+                    "\n",
+                ],
+                &f,
+            );
+            assert!(got.is_empty());
+            assert_eq!(code, 1);
+        }
+    }
+    let (got, _) = run(
+        &[
+            "--nth",
+            "2",
+            "--from",
+            "100",
+            "--fixed",
+            "--chunk-bytes",
+            "9",
+            "--progress-ms",
+            "0",
+            "\n",
+        ],
+        &f,
+    );
+    let after: Vec<Span> = nl.iter().copied().filter(|s| s.0 >= 100).collect();
+    assert_eq!(got, vec![after[1]]);
+    let (_, code) = run(&["--nth", "0", "--fixed", "x"], &f);
+    assert_eq!(code, 2);
+}
+
+#[test]
+fn count_and_nth_on_a_giant_single_line_stay_bounded() {
+    let d = dir();
+    let gib = 1u64 << 30;
+    let plants: Vec<(u64, &[u8])> = vec![(5, b"Q"), (gib / 3, b"Q"), (gib - 1, b"Q")];
+    let f = sparse(d.path(), "q.dat", gib, &plants);
+    let mut child = Command::new(BIN)
+        .args(["--fixed", "--count", "--progress-ms", "0", "Q"])
+        .arg(&f)
+        .stdout(Stdio::null())
+        .spawn()
+        .unwrap();
+    let pid = child.id();
+    let mut peak = 0;
+    while child.try_wait().unwrap().is_none() {
+        peak = peak.max(peak_rss_kib(pid));
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    assert!(peak < 200 * 1024, "peak RSS {peak} KiB");
+    assert_eq!(
+        count_of(&["--fixed", "--count", "--progress-ms", "0", "Q"], &f),
+        3
+    );
+    assert_eq!(
+        run(&["--fixed", "--nth", "3", "--progress-ms", "0", "Q"], &f).0,
+        vec![(gib - 1, gib)]
+    );
+    assert_eq!(
+        run(
+            &[
+                "--fixed",
+                "--backward",
+                "--nth",
+                "3",
+                "--progress-ms",
+                "0",
+                "Q"
+            ],
+            &f
+        )
+        .0,
+        vec![(5, 6)]
+    );
+    assert_eq!(
+        run(&["--fixed", "--nth", "4", "--progress-ms", "0", "Q"], &f).1,
+        1
+    );
+}
