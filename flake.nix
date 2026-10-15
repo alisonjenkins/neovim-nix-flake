@@ -1148,6 +1148,9 @@
               end,
             })
 
+            -- Files too big for memory open in a paged viewer instead of being loaded
+            require("streamview").setup()
+
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
             require("terraform-search").setup()
@@ -1188,6 +1191,7 @@
 
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
+            "lua/streamview.lua".source = ./lua/streamview.lua;
             "lua/terraform-search.lua".source = ./lua/terraform-search.lua;
             "lua/terraform-tools.lua".source = ./lua/terraform-tools.lua;
             # Patched Python highlights query without "except*" keyword
