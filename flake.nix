@@ -172,6 +172,22 @@
           ];
 
           extraConfigLuaPre = ''
+            -- 'packpath' lists every XDG data dir (flatpak, snap, per-profile ...), and each
+            -- rebuild of the runtime path and each :packadd globs all of them. Keep only the
+            -- ones that hold packages.
+            do
+              local keep = {}
+              for _, dir in ipairs(vim.opt.packpath:get()) do
+                for _, sub in ipairs({ "pack", "start", "opt" }) do
+                  if vim.uv.fs_stat(dir .. "/" .. sub) then
+                    keep[#keep + 1] = dir
+                    break
+                  end
+                end
+              end
+              vim.opt.packpath = keep
+            end
+
             -- Resolve `require('async')` collision: both `promise-async` and
             -- `async.nvim` ship `lua/async.lua`. nvim-ufo expects the
             -- promise-async one (a callable table with `__call` metamethod);
