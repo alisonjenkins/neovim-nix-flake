@@ -849,6 +849,124 @@ local steps = {
     _ = W
   end,
 
+  function()
+    -- a 1 GB line: f F t T ; , $ 0 | and counts across many slices, operators over hundreds of MB,
+    -- with timings and the memory of the process
+    h.capture_notify()
+    local size = 1024 * MB
+    local ls = #"first\n"
+    local line_len = size - ls - #"\nafter\n"
+    local q = { 100, 300 * MB, 500 * MB, 900 * MB } -- offsets in the line of the planted Q
+    local e_at = 600 * MB -- the two-byte character
+    local planted = { [0] = "first\n", [size - #"\nafter\n"] = "\nafter\n", [ls + e_at] = "\195\169", [ls + line_len - 3] = "END" }
+    for _, o in ipairs(q) do planted[ls + o] = "Q" end
+    local path = sparse("line1gb.bin", size, planted)
+    local base = rss_mb()
+    local peak = base
+    local timer = uv.new_timer()
+    timer:start(0, 10, function() peak = math.max(peak, rss_mb()) end)
+    local timings = {}
+    local function timed(label, fn)
+      local t0 = uv.hrtime()
+      fn()
+      settle(G1)
+      local ms = (uv.hrtime() - t0) / 1e6
+      timings[#timings + 1] = string.format("%s %.0f ms", label, ms)
+      return ms
+    end
+    G1 = open(path)
+    sv.goto_abs(G1, ls)
+    settle(G1)
+    local abs = function() return sv.cursor_abs(G1) end
+
+    local ms = timed("fQ near", function() sv.hmove(G1, "f", 0, "Q") end)
+    eq(abs(), ls + q[1], "fQ finds the Q 100 bytes away")
+    h.check(ms < 50, "and quickly", string.format("%.1f ms", ms))
+    ms = timed(";", function() sv.hmove(G1, ";", 0) end)
+    eq(abs(), ls + q[2], "; goes on to the Q 300 MB along the line")
+    h.check(ms < 3000, string.format("in %.0f ms", ms))
+    timed(";", function() sv.hmove(G1, ";", 0) end)
+    eq(abs(), ls + q[3], "; to the next")
+    timed("2;", function() sv.hmove(G1, ";", 0) end)
+    eq(abs(), ls + q[4], "and the last")
+    ms = timed("; miss", function() sv.hmove(G1, ";", 0) end)
+    eq(abs(), ls + q[4], "; with no more Q leaves the cursor")
+    local miss_again = timed("; miss again", function() sv.hmove(G1, ";", 0) end)
+    h.check(miss_again < 50, "the same miss again is instant", string.format("%.1f ms", miss_again))
+    timed(",", function() sv.hmove(G1, ",", 0) end)
+    eq(abs(), ls + q[3], ", goes back one")
+    timed("F", function() sv.hmove(G1, "F", 0, "Q") end)
+    eq(abs(), ls + q[2], "FQ goes back to the one before")
+    timed("3FQ", function() sv.hmove(G1, "F", 3, "Q") end)
+    eq(abs(), ls + q[2], "3FQ with only one behind does not move")
+    sv.goto_abs(G1, ls)
+    settle(G1)
+    timed("3fQ", function() sv.hmove(G1, "f", 3, "Q") end)
+    eq(abs(), ls + q[3], "3fQ is the third Q")
+    timed("tQ", function() sv.hmove(G1, "t", 0, "Q") end)
+    eq(abs(), ls + q[4] - 1, "tQ stops before the next")
+    timed("t;", function() sv.hmove(G1, ";", 0) end)
+    eq(abs(), ls + q[4] - 1, "; after tQ stays before the same one only once more... and has no further Q")
+    sv.goto_abs(G1, ls)
+    settle(G1)
+    timed("f(e acute)", function() sv.hmove(G1, "f", 0, "\195\169") end)
+    eq(abs(), ls + e_at, "a two-byte character 600 MB along")
+    timed("fK miss", function() sv.hmove(G1, "f", 0, "K") end)
+    eq(abs(), ls + e_at, "a character that is not there leaves the cursor")
+
+    timed("$", function() sv.hmove(G1, "$", 0) end)
+    eq(abs(), ls + line_len - 1, "$ is the last byte of a 1 GB line")
+    timed("0", function() sv.hmove(G1, "0", 0) end)
+    eq(abs(), ls, "0 is its first")
+    local dollar_again = timed("$ again", function() sv.hmove(G1, "$", 0) end)
+    h.check(dollar_again < 500, "$ again is quick", string.format("%.1f ms", dollar_again))
+    eq(abs(), ls + line_len - 1, "and in the same place")
+    timed("500000000h", function() sv.hmove(G1, "h", 500000000) end)
+    -- (the two-byte character on the way is one character: one byte less than that many bytes)
+    eq(abs(), ls + line_len - 1 - 500000000 - 1, "500000000h is that many characters left")
+    timed("5000000l", function() sv.hmove(G1, "l", 5000000) end)
+    eq(abs(), ls + line_len - 1 - 500000000 - 1 + 5000000, "5000000l that many right")
+    vim.cmd("StreamCol 50%")
+    settle(G1)
+    eq(abs(), ls + math.floor(line_len / 2), "StreamCol 50% is half way")
+
+    -- operators over hundreds of MB, deleted from the piece table, and undone
+    sv.goto_abs(G1, ls + 50)
+    settle(G1)
+    sv.far_op(G1, "d", "f", 1, "Q")
+    settle(G1)
+    eq(G1.r.size, size - (q[1] - 50 + 1), "dfQ deletes up to and including the Q")
+    eq(G1.r:get(ls + 49, 3), "\0\0\0", "and what is left is what was around it")
+    sv.undo(G1)
+    settle(G1)
+    eq(G1.r.size, size, "u puts it back")
+
+    sv.goto_abs(G1, ls + 50)
+    settle(G1)
+    sv.far_op(G1, "d", "f", 3, "Q")
+    settle(G1)
+    eq(G1.r.size, size - (q[3] - 50 + 1), "d3fQ deletes 500 MB without loading it")
+    sv.undo(G1)
+    settle(G1)
+    sv.goto_abs(G1, ls + q[2] + 1)
+    settle(G1)
+    sv.far_op(G1, "d", "$", 1)
+    settle(G1)
+    eq(G1.r.size, size - (line_len - q[2] - 1) , "d$ deletes to the end of the 1 GB line")
+    sv.undo(G1)
+    settle(G1)
+    sv.goto_abs(G1, ls + q[2] - 1)
+    settle(G1)
+    local before_notes = #h.notes_matching("too much to yank")
+    sv.far_op(G1, "y", "$", 1)
+    settle(G1)
+    h.check(#h.notes_matching("too much to yank") > before_notes, "y$ over 700 MB says it is too much for a register")
+    timer:stop()
+    timer:close()
+    h.check(peak - base < 400, string.format("process memory stayed bounded (+%.0f MB)", peak - base))
+    print("1 GB line timings: " .. table.concat(timings, ", "))
+    os.remove(path)
+  end,
 }
 
 h.run(steps, 600000)
