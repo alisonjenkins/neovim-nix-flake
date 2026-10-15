@@ -3,9 +3,14 @@
 -- Everything here works in absolute byte offsets of the file as the viewer shows it.
 local N = {}
 
+local ffi = require("ffi")
+local u8 = ffi.typeof("const uint8_t*")
+
 local opts -- the viewer's options (scan_chunk, fact_min, max_facts)
 
 function N.setup(viewer_opts) opts = viewer_opts end
+
+local function mtime_key(st) return string.format("%d.%09d", st.mtime.sec, st.mtime.nsec) end
 
 -- First entry of the sorted list whose end is >= x
 local function first_ending_at_or_after(list, x)
@@ -227,15 +232,52 @@ end
 
 local function chunk_first() return 4096 end
 
--- First byte at or after `from` that matches `pat` (the size of the file when none does)
-local function fwd_find(r, from, pat, so)
+-- Scanning for bytes of a set is a loop over the bytes, which LuaJIT compiles: about a byte per
+-- nanosecond, where a Lua pattern with a character class costs ten times that. A set is a table of
+-- 256 flags.
+local function set_of(pred)
+  local t = ffi.new("uint8_t[256]")
+  for b = 0, 255 do
+    if pred(b) then t[b] = 1 end
+  end
+  return t
+end
+
+local function is_sp(b) return b == 32 or b == 9 or b == 13 or b == 12 or b == 11 end
+local function is_kw(b) return (b >= 48 and b <= 57) or (b >= 65 and b <= 90) or (b >= 97 and b <= 122) or b == 95 or b >= 128 end
+
+-- the bytes that end a run of a class
+local NOT_IN = {
+  sp = set_of(function(b) return not is_sp(b) end),
+  kw = set_of(function(b) return not is_kw(b) end),
+  bigkw = set_of(function(b) return is_sp(b) or b == 10 end),
+  pu = set_of(function(b) return is_kw(b) or is_sp(b) or b == 10 end),
+  blank_or_nl = set_of(function(b) return not (is_sp(b) or b == 10) end),
+}
+
+local function first_in(data, set)
+  local p = ffi.cast(u8, data)
+  for i = 0, #data - 1 do
+    if set[p[i]] ~= 0 then return i + 1 end
+  end
+end
+
+local function last_in(data, set)
+  local p = ffi.cast(u8, data)
+  for i = #data - 1, 0, -1 do
+    if set[p[i]] ~= 0 then return i + 1 end
+  end
+end
+
+-- First byte at or after `from` that is in `set` (the size of the file when none is)
+local function fwd_find(r, from, set, so)
   local size, pos, chunk, scanned = r.size, from, chunk_first(), 0
   while pos < size do
     if so and so.budget and scanned >= so.budget then return nil, "budget" end
     local hi = math.min(size, pos + chunk)
     local data = r:raw(pos, hi)
     if #data < hi - pos then return nil, "short read" end
-    local i = data:find(pat)
+    local i = first_in(data, set)
     if i then return pos + i - 1 end
     scanned = scanned + #data
     pos = hi
@@ -245,8 +287,8 @@ local function fwd_find(r, from, pat, so)
   return size
 end
 
--- Last byte before `before` that matches `pat` (-1 when none does)
-local function bwd_find(r, before, pat, so)
+-- Last byte before `before` that is in `set` (-1 when none is)
+local function bwd_find(r, before, set, so)
   local pos, chunk, scanned = math.min(before, r.size), chunk_first(), 0
   local start = pos
   while pos > 0 do
@@ -254,8 +296,8 @@ local function bwd_find(r, before, pat, so)
     local lo = math.max(0, pos - chunk)
     local data = r:raw(lo, pos)
     if #data < pos - lo then return nil, "short read" end
-    local i = data:reverse():find(pat)
-    if i then return pos - i end
+    local i = last_in(data, set)
+    if i then return lo + i - 1 end
     scanned = scanned + #data
     pos = lo
     chunk = math.min(chunk * 4, opts.scan_chunk)
@@ -299,22 +341,37 @@ local function cls(b, big)
   return "pu"
 end
 
--- patterns for the first byte that is not in a run of the class
-local NOT_IN = {
-  sp = "[^ \t\r\f\v]",
-  kw = "[^%w_\128-\255]",
-  bigkw = "[ \t\r\f\v\n]",
-  pu = "[%w_\128-\255 \t\r\f\v\n]",
-  blank_or_nl = "[^ \t\r\f\v\n]",
-}
-
 local function run_pat(c, big)
   if c == "kw" and big then return NOT_IN.bigkw end
   return NOT_IN[c]
 end
 
-local function count_chars(s)
-  return select(2, s:gsub("[^\128-\191]", ""))
+-- Index (1-based) of the k-th character start in `s` (k >= 1), or nil and how many there are
+local function nth_start(s, k)
+  local p = ffi.cast(u8, s)
+  local c = 0
+  for i = 0, #s - 1 do
+    local b = p[i]
+    if b < 128 or b >= 192 then
+      c = c + 1
+      if c == k then return i + 1 end
+    end
+  end
+  return nil, c
+end
+
+-- Index of the k-th character start counted from the end of `s`, or nil and how many there are
+local function nth_start_back(s, k)
+  local p = ffi.cast(u8, s)
+  local c = 0
+  for i = #s - 1, 0, -1 do
+    local b = p[i]
+    if b < 128 or b >= 192 then
+      c = c + 1
+      if c == k then return i + 1 end
+    end
+  end
+  return nil, c
 end
 
 local function trim_partial(s)
@@ -327,19 +384,15 @@ local function trim_partial(s)
   return s
 end
 
--- Index (1-based) in `s` of the k-th character start (k >= 1), or nil
-local function nth_start(s, k)
-  if not s:find("[\128-\255]") then return k <= #s and k or nil end
-  if count_chars(s) < k then return nil end
-  local lo, hi = 1, #s
-  while lo < hi do
-    local mid = math.floor((lo + hi) / 2)
-    if count_chars(s:sub(1, mid)) >= k then hi = mid else lo = mid + 1 end
-  end
-  return lo
-end
+function N.next_char(r, a) return next_char(r, a) end
 
--- n characters to the right; stops on the last character of the line
+function N.prev_char(r, a) return prev_char(r, a) end
+
+-- "sp", "kw", "pu", "nl" or "eof": the kind of the character at `a`
+function N.class_at(r, a, big) return cls(byte_at(r, a), big) end
+
+-- n characters to the right; stops on the last character of the line. Also returns how many
+-- characters it moved over.
 function N.right(e, n, so)
   local r = e.r
   local p, remaining, scanned = e.pos, n, 0
@@ -353,14 +406,14 @@ function N.right(e, n, so)
     local complete = nl ~= nil or hi >= r.size
     local body = nl and data:sub(1, nl - 1) or (complete and data or trim_partial(data:sub(1, chunk)))
     -- the character the cursor is on is the first of the body: the target is the (remaining + 1)-th
-    local i = nth_start(body, remaining + 1)
-    if i then return p + i - 1 end
+    local i, total = nth_start(body, remaining + 1)
+    if i then return p + i - 1, n end
     if complete then
-      if #body == 0 then return p end
-      local last = body:match(".*()[^\128-\191]")
-      return p + (last or 1) - 1
+      if #body == 0 then return p, n - remaining end
+      local last = nth_start_back(body, 1)
+      return p + (last or 1) - 1, n - remaining + total - 1
     end
-    remaining = remaining - count_chars(body)
+    remaining = remaining - total
     p = p + #body
     scanned = scanned + #body
     if so and so.tick then so.tick(p - e.pos) end
@@ -376,10 +429,9 @@ function N.left(e, n, so)
     if so and so.budget and scanned >= so.budget then return nil, "budget" end
     local lo = math.max(e.ls, p - chunk)
     local body = r:raw(lo, p)
-    local rev = body:reverse()
-    local j = nth_start(rev, remaining)
-    if j then return p - j end
-    remaining = remaining - count_chars(rev)
+    local j, total = nth_start_back(body, remaining)
+    if j then return lo + j - 1 end
+    remaining = remaining - total
     p = lo
     scanned = scanned + #body
     if so and so.tick then so.tick(e.pos - p) end
@@ -395,19 +447,30 @@ function N.first_nonblank(e, so)
   return p
 end
 
--- `n` words forward (w, or W when big)
-function N.word_forward(e, n, big, so)
+-- `n` words forward (w, or W when big). eol: for an operator, where the last word moved over ends
+-- at the end of the line the motion stops there, not at the first word of the next line.
+function N.word_forward(e, n, big, so, eol)
   local r = e.r
   local p = e.pos
-  for _ = 1, n do
-    local c = cls(byte_at(r, p), big)
-    if c == "eof" then break end
-    if c == "nl" then
+  for i = 1, n do
+    local last = eol and i == n
+    local b0 = byte_at(r, p)
+    if b0 == nil then break end
+    if b0 == 10 then
+      -- on an empty line: on to the next
       p = p + 1
-    elseif c ~= "sp" then
-      local q, why = fwd_find(r, p, run_pat(c, big), so)
-      if not q then return nil, why end
-      p = q
+      if last then return p end
+    else
+      -- always at least one character
+      local c = cls(b0, big)
+      p = next_char(r, p)
+      if last and byte_at(r, p) == 10 then return p end
+      if c ~= "sp" then
+        local q, why = fwd_find(r, p, run_pat(c, big), so)
+        if not q then return nil, why end
+        p = q
+        if last and byte_at(r, p) == 10 then return p end
+      end
     end
     while true do
       local q, why = fwd_find(r, p, NOT_IN.sp, so)
@@ -425,18 +488,20 @@ function N.word_forward(e, n, big, so)
     if p >= r.size then break end
   end
   if p >= r.size then
+    -- the end of the file: an operator takes everything up to it
+    if eol then return byte_at(r, r.size - 1) == 10 and r.size - 1 or r.size end
     p = math.max(prev_char(r, r.size), 0)
     if byte_at(r, p) == 10 then p = prev_char(r, p) end
   end
   return p
 end
 
--- `n` word ends forward (e, or E)
-function N.word_end(e, n, big, so)
+-- `n` word ends forward (e, or E). stay: the first is the end of the word the cursor is on (cw).
+function N.word_end(e, n, big, so, stay)
   local r = e.r
   local p = e.pos
-  for _ = 1, n do
-    p = next_char(r, p)
+  for i = 1, n do
+    if not (stay and i == 1) then p = next_char(r, p) end
     local q, why = fwd_find(r, p, NOT_IN.blank_or_nl, so)
     if not q then return nil, why end
     p = q
@@ -446,7 +511,10 @@ function N.word_end(e, n, big, so)
     if not q2 then return nil, why2 end
     p = prev_char(r, q2)
   end
-  if p >= r.size then p = prev_char(r, r.size) end
+  if p >= r.size then
+    p = prev_char(r, r.size)
+    if byte_at(r, p) == 10 then p = prev_char(r, p) end
+  end
   return p
 end
 
@@ -584,6 +652,226 @@ function N.find_char(e, ch, n, forward, till, again, so)
     if so and so.tick then so.tick(stop - pos) end
   end
   return nil, "fail"
+end
+
+
+---------------------------------------------------------------------------------------------------
+-- Counting lines. Moving n lines through the file counts newlines in big chunks (a compiled loop
+-- over the bytes), and absolute line numbers rest on checkpoints (a line start and its number)
+-- every few MB, kept as the file is walked and saved in the cache directory.
+---------------------------------------------------------------------------------------------------
+
+local is_nl = ffi.new("uint8_t[256]")
+is_nl[10] = 1
+
+-- Number of "\n" in `data` (a loop without a branch per byte, so that it runs at the same speed
+-- whether newlines are dense or rare), and the 1-based index of the last one
+local function count_nl(data)
+  local p = ffi.cast(u8, data)
+  local c = 0
+  for i = 0, #data - 1 do
+    c = c + is_nl[p[i]]
+  end
+  if c == 0 then return 0, nil end
+  for i = #data - 1, 0, -1 do
+    if p[i] == 10 then return c, i + 1 end
+  end
+end
+
+-- 1-based index of the k-th "\n" of `data`
+local function nth_nl(data, k)
+  local p = ffi.cast(u8, data)
+  local c = 0
+  for i = 0, #data - 1 do
+    if p[i] == 10 then
+      c = c + 1
+      if c == k then return i + 1 end
+    end
+  end
+end
+
+-- 1-based index of the k-th "\n" of `data` counted from its end
+local function nth_nl_back(data, k)
+  local p = ffi.cast(u8, data)
+  local c = 0
+  for i = #data - 1, 0, -1 do
+    if p[i] == 10 then
+      c = c + 1
+      if c == k then return i + 1 end
+    end
+  end
+end
+
+function N.install_lines(Reader)
+  -- Checkpoints: sorted by offset (and by line number), { off, line }, line 1 at offset 0.
+  function Reader:checkpoint(off, line)
+    local list = self.lidx
+    local last = list[#list]
+    if last and off <= last.off then return end
+    if last and off - last.off < opts.checkpoint_gap then return end
+    list[#list + 1] = { off = off, line = line }
+  end
+
+  -- The checkpoint with the largest line number that is at most `line` (or offset `off`)
+  function Reader:best_checkpoint(line, off)
+    local list = self.lidx
+    local lo, hi = 1, #list
+    while lo < hi do
+      local mid = math.ceil((lo + hi) / 2)
+      local c = list[mid]
+      if (line and c.line <= line) or (off and c.off <= off) then lo = mid else hi = mid - 1 end
+    end
+    return list[lo]
+  end
+
+  -- Start of the line n lines after the line that starts at p (p must be a line start), and how
+  -- many lines it really moved: fewer at the end of the file, where the last line is the end.
+  -- line0: the number of the line at p, when known; then checkpoints are kept on the way.
+  function Reader:lines_forward(p, n, so, line0)
+    so = so or {}
+    local size = self.size
+    if n <= 64 then
+      -- a few lines: line by line, which uses what is known about long lines
+      local cur, moved = p, 0
+      while moved < n do
+        local e, why = self:line_end(cur, so)
+        if not e then return nil, why end
+        if e + 1 >= size then break end
+        cur, moved = e + 1, moved + 1
+        if line0 then self:checkpoint(cur, line0 + moved) end
+      end
+      if line0 and moved < n then self.nlines = line0 + moved end
+      return cur, moved
+    end
+    local pos, need, cur, scanned, moved = p, n, p, 0, 0
+    while need > 0 and pos < size do
+      if so.budget and scanned >= so.budget then return nil, "budget" end
+      local hi = math.min(size, pos + opts.scan_chunk)
+      local data = self:raw(pos, hi)
+      if #data < hi - pos then return nil, "short read" end
+      -- the newline that ends the file starts no line
+      local body = (hi >= size and data:byte(#data) == 10) and data:sub(1, #data - 1) or data
+      local c, last = count_nl(body)
+      if c < need then
+        need = need - c
+        moved = moved + c
+        if last then
+          cur = pos + last
+          if line0 then self:checkpoint(cur, line0 + moved) end
+        else
+          self:note_free(cur, hi, true, false) -- the line goes on through this chunk
+        end
+        scanned = scanned + #data
+        pos = hi
+        if so.tick then so.tick(pos - p) end
+      else
+        local idx = nth_nl(body, need)
+        cur = pos + idx
+        if line0 then self:checkpoint(cur, line0 + n) end
+        return cur, n
+      end
+    end
+    if line0 then self.nlines = line0 + moved end
+    return cur, moved
+  end
+
+  -- Start of the line n lines before the line that starts at p, and how many lines it moved
+  function Reader:lines_backward(p, n, so)
+    so = so or {}
+    if p <= 0 or n <= 0 then return p, 0 end
+    if n <= 64 then
+      local cur, moved = p, 0
+      while moved < n and cur > 0 do
+        local ls, why = self:line_start(cur - 1, { budget = so.budget, tick = so.tick, nl_at_off = true })
+        if not ls then return nil, why end
+        cur, moved = ls, moved + 1
+      end
+      return cur, moved
+    end
+    local pos, need, scanned = p, n + 1, 0
+    while pos > 0 do
+      if so.budget and scanned >= so.budget then return nil, "budget" end
+      local lo = math.max(0, pos - opts.scan_chunk)
+      local data = self:raw(lo, pos)
+      if #data < pos - lo then return nil, "short read" end
+      local c = count_nl(data)
+      if c < need then
+        need = need - c
+        scanned = scanned + #data
+        pos = lo
+        if so.tick then so.tick(p - pos) end
+      else
+        return lo + nth_nl_back(data, need), n
+      end
+    end
+    return 0, math.min(n + 1 - need, n)
+  end
+
+  -- Start of line number `line` (1-based; the last line if there are fewer)
+  function Reader:line_offset(line, so)
+    if line <= 1 then return 0, 1 end
+    local c = self:best_checkpoint(line, nil)
+    local off, moved = self:lines_forward(c.off, line - c.line, so, c.line)
+    if not off then return nil, moved end
+    return off, c.line + moved
+  end
+
+  -- Number of the line that starts at `off` (a line start); nil when it is not cheap to know:
+  -- the nearest checkpoint must be within the budget
+  function Reader:line_number(off, so)
+    local c = self:best_checkpoint(nil, off)
+    if off - c.off > ((so and so.budget) or math.huge) then return nil, "budget" end
+    local pos, count = c.off, c.line - 1
+    while pos < off do
+      local hi = math.min(off, pos + opts.scan_chunk)
+      local data = self:raw(pos, hi)
+      if #data < hi - pos then return nil, "short read" end
+      count = count + count_nl(data)
+      pos = hi
+      if so and so.tick then so.tick(pos - c.off) end
+    end
+    return count + 1
+  end
+
+  -- The checkpoints of a file that has not been edited are kept between sessions, keyed by what
+  -- identifies the file's contents; any change gives another key, so a stale one is never read.
+  function Reader:index_path()
+    local st = self.stat
+    local key = vim.fn.sha256(string.format("%s|%d|%d|%d|%s", self.path, st.ino, st.dev, st.size, mtime_key(st)))
+    return vim.fs.joinpath(vim.fn.stdpath("cache"), "streamview", key:sub(1, 32) .. ".json")
+  end
+
+  function Reader:index_load()
+    if self.lidx_loaded or not self:pristine() or #self.log > 0 then return end
+    self.lidx_loaded = true
+    local f = io.open(self:index_path(), "r")
+    if not f then return end
+    local ok, data = pcall(vim.json.decode, f:read("*a"))
+    f:close()
+    local st = self.stat
+    if not ok or type(data) ~= "table" or data.size ~= st.size or data.mtime ~= mtime_key(st) or data.ino ~= st.ino then return end
+    local list = { { off = 0, line = 1 } }
+    for i = 1, #data.off do
+      list[#list + 1] = { off = data.off[i], line = data.line[i] }
+    end
+    self.lidx, self.nlines = list, data.nlines
+  end
+
+  function Reader:index_save()
+    if not self:pristine() or #self.log > 0 or #self.lidx < 2 then return end
+    local st = self.stat
+    local offs, lines = {}, {}
+    for i = 2, #self.lidx do
+      offs[#offs + 1] = self.lidx[i].off
+      lines[#lines + 1] = self.lidx[i].line
+    end
+    local path = self:index_path()
+    vim.fn.mkdir(vim.fs.dirname(path), "p")
+    local f = io.open(path, "w")
+    if not f then return end
+    f:write(vim.json.encode({ size = st.size, mtime = mtime_key(st), ino = st.ino, nlines = self.nlines, off = offs, line = lines }))
+    f:close()
+  end
 end
 
 return N

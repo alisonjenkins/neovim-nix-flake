@@ -95,6 +95,7 @@ sv.opts.editable = true
 -- Random motions on the viewer against Neovim's own on a normal buffer with the same text. The
 -- slice is small and the scan budget too, so the motions cross slice edges and some take a job.
 local function motion_trials(name, lines, keys, trials, counts, chars)
+  vim.o.report = 1000000 -- no "N fewer lines" messages: one left waiting for a key would take the next keys
   local saved = { sv.opts.slice, sv.opts.sync_scan }
   sv.opts.slice, sv.opts.sync_scan = 4096, 64 * 1024
   local text = table.concat(lines, "\n") .. "\n"
@@ -120,7 +121,7 @@ local function motion_trials(name, lines, keys, trials, counts, chars)
   local function native(abs, keys_)
     local line, col = to_lc(abs)
     vim.api.nvim_win_set_cursor(owin, { line, col })
-    vim.api.nvim_win_call(owin, function() vim.cmd("noautocmd normal " .. keys_) end)
+    vim.api.nvim_win_call(owin, function() vim.cmd("silent noautocmd normal " .. keys_) end)
     local c = vim.api.nvim_win_get_cursor(owin)
     return starts[c[1]] + c[2]
   end
@@ -163,7 +164,7 @@ local function motion_trials(name, lines, keys, trials, counts, chars)
       local rep = math.random(2) == 1 and ";" or ","
       local line, col = to_lc(want)
       vim.api.nvim_win_set_cursor(owin, { line, col })
-      vim.api.nvim_win_call(owin, function() vim.cmd("noautocmd normal " .. rep) end)
+      vim.api.nvim_win_call(owin, function() vim.cmd("silent noautocmd normal " .. rep) end)
       local c = vim.api.nvim_win_get_cursor(owin)
       local want2 = starts[c[1]] + c[2]
       sv.goto_abs(V, got)
@@ -181,7 +182,91 @@ local function motion_trials(name, lines, keys, trials, counts, chars)
   return total, mismatches
 end
 
-local S
+-- Operators d, y and c with a motion, done on the file, against Neovim's own on a normal buffer:
+-- the text left and the register must be the same.
+local function operator_trials(name, lines, keys, trials, counts, chars)
+  vim.o.report = 1000000
+  local saved = { sv.opts.slice, sv.opts.sync_scan }
+  sv.opts.slice, sv.opts.sync_scan = 4096, 64 * 1024
+  local path = write(name, table.concat(lines, "\n") .. "\n")
+  local starts = {}
+  local pos = 0
+  for i, l in ipairs(lines) do
+    starts[i] = pos
+    pos = pos + #l + 1
+  end
+  local function to_lc(abs)
+    for i = #starts, 1, -1 do
+      if abs >= starts[i] then return i, abs - starts[i] end
+    end
+  end
+
+  vim.cmd("only")
+  vim.cmd("new")
+  local oracle = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_lines(oracle, 0, -1, false, lines)
+  local owin = vim.api.nvim_get_current_win()
+  vim.cmd("wincmd j")
+
+  local V = open(path)
+  local original = V.r:get(0, V.r.size)
+  local bad, total = {}, 0
+  local long = {}
+  for i, l in ipairs(lines) do
+    if #l > 1000 then long[#long + 1] = i end
+  end
+  for trial = 1, trials do
+    local line_no = math.random(4) == 1 and math.random(#lines) or long[math.random(#long)]
+    local abs = V.r:align_down(starts[line_no] + (#lines[line_no] > 0 and math.random(0, #lines[line_no] - 1) or 0))
+    sv.goto_abs(V, abs)
+    settle(V)
+    local op = ({ "d", "y", "c" })[math.random(3)]
+    local key = keys[math.random(#keys)]
+    local count = counts[math.random(#counts)]
+    local ch = chars[math.random(#chars)]
+    if key == "0" or key == "^" then count = 0 end
+    local line, col = to_lc(sv.cursor_abs(V))
+    local keys_ = op .. (count > 0 and count or "") .. (key == "line" and op or key)
+    if key == "f" or key == "F" or key == "t" or key == "T" then keys_ = keys_ .. ch end
+    if key == "|" then
+      count = count == 0 and 1 or count
+      keys_ = op .. count .. "|"
+    end
+    -- the oracle
+    vim.api.nvim_buf_set_lines(oracle, 0, -1, false, lines)
+    vim.fn.setreg('"', "")
+    vim.api.nvim_win_set_cursor(owin, { line, col })
+    vim.api.nvim_win_call(owin, function() vim.cmd("silent noautocmd normal " .. keys_ .. (op == "c" and "\27" or "")) end)
+    local after_lines = vim.api.nvim_buf_get_lines(oracle, 0, -1, false)
+    local want_text = (#after_lines == 1 and after_lines[1] == "") and "" or table.concat(after_lines, "\n") .. "\n"
+    local want_reg = vim.fn.getreg('"')
+    -- the viewer
+    vim.fn.setreg('"', "")
+    sv.far_op(V, op, key, math.max(count, 1), (key == "f" or key == "F" or key == "t" or key == "T") and ch or nil)
+    settle(V)
+    if op == "c" then vim.cmd("stopinsert") end
+    local got_text = V.r:get(0, V.r.size)
+    local got_reg = vim.fn.getreg('"')
+    total = total + 1
+    -- a failed motion leaves the text as it was and the register empty
+    if got_text ~= want_text or (op ~= "c" or want_reg ~= "") and got_reg ~= want_reg then
+      bad[#bad + 1] = string.format("%s from line %d col %d: text %s, register %s", keys_, line, col, got_text == want_text and "same" or "differs", got_reg == want_reg and "same" or string.format("%q ~= %q", got_reg:sub(1, 40), want_reg:sub(1, 40)))
+    end
+    -- back to the original text
+    while V.r.log_pos > 0 do V.r:undo() end
+    V.r.log = {}
+    sv.goto_abs(V, abs)
+    settle(V)
+    if V.r:get(0, V.r.size) ~= original then
+      bad[#bad + 1] = "the text did not come back after " .. keys_
+      break
+    end
+  end
+  sv.opts.slice, sv.opts.sync_scan = unpack(saved)
+  return total, bad
+end
+
+local S, G1
 local first = "first line\n"
 local line_len = 64 * MB
 local mid = #first + 32 * MB
@@ -194,6 +279,12 @@ local path64 = sparse("line64.bin", #first + line_len + 1 + #"after line\n", {
 })
 
 local steps = {
+  function()
+    -- A message printed while Neovim starts (the config's direnv, say) leaves a hit-enter prompt
+    -- waiting for a key, which takes the keys typed in the tests: answer it through the input queue
+    vim.api.nvim_input("\r")
+  end,
+
   function()
     S = open(path64)
     eq(#S.entries >= 2 and S.entries[2].e == nil, true, "a line past the scan budget is an open row at first")
@@ -404,7 +495,7 @@ local steps = {
     local G = open(path)
     sv.scroll(G, 1)
     h.check(G.job ~= nil, "going over a 1 GB line starts a job")
-    h.check(G.job.label:find("end of the line", 1, true) ~= nil, "with a label")
+    h.check(G.job.label:find("counting lines", 1, true) ~= nil, "with a label")
     vim.wait(30, function() return false end)
     sv.cancel(G)
     eq(G.offset, 0, "cancelling it does not move the window")
@@ -472,6 +563,292 @@ local steps = {
     local total, mismatches = motion_trials("motions-utf8.txt", lines, keys, 600, { 0, 0, 1, 2, 3, 7, 40, 300, 3000 }, { "\195\169", "\226\130\172", "\240\159\152\128", "a", " ", "\195\168" })
     h.check(#mismatches == 0, string.format("%d random multibyte motions agree with Neovim's own", total), table.concat(vim.list_slice(mismatches, 1, 6), "\n      "))
   end,
+
+  function()
+    math.randomseed(21)
+    local alphabet = { "a", "b", "c", "d", "e", "foo", "bar", "x1", "Z", "_", "-", ".", ",", ";", ":", "(", ")", " ", " ", " ", "  ", "ab", "cd" }
+    local function words(n)
+      local t = {}
+      for i = 1, n do t[i] = alphabet[math.random(#alphabet)] end
+      return table.concat(t)
+    end
+    local lines = { "short line, with words", words(6000), "", "  indented (words) here;", words(3000), "last" }
+    local keys = { "l", "h", "w", "W", "b", "B", "e", "E", "ge", "gE", "0", "^", "$", "|", "f", "F", "t", "T", "j", "k", "line" }
+    local total, bad = operator_trials("operators.txt", lines, keys, 700, { 0, 0, 1, 2, 3, 7, 40 }, { "a", "o", " ", "(", "x", ";" })
+    h.check(#bad == 0, string.format("%d random d/y/c operators on the file give what Neovim's give", total), table.concat(vim.list_slice(bad, 1, 6), "\n      "))
+  end,
+
+  function()
+    math.randomseed(77)
+    local alphabet = { "a", "\195\169", "\226\130\172", "\240\159\152\128", "b", " ", "foo", "\195\169\195\168", ",", "x", "\226\130\172\226\130\172", " " }
+    local function words(n)
+      local t = {}
+      for i = 1, n do t[i] = alphabet[math.random(#alphabet)] end
+      return table.concat(t)
+    end
+    local lines = { "caf\195\169 au lait", words(5000), "", words(2500), "fin" }
+    local keys = { "l", "h", "0", "$", "f", "F", "t", "T", "j", "k", "line" }
+    local total, bad = operator_trials("operators-utf8.txt", lines, keys, 500, { 0, 0, 1, 2, 3, 7, 40 }, { "\195\169", "\226\130\172", "\240\159\152\128", "a", " ", "\195\168" })
+    h.check(#bad == 0, string.format("%d random d/y/c operators with multibyte text give what Neovim's give", total), table.concat(vim.list_slice(bad, 1, 6), "\n      "))
+  end,
+
+  function()
+    -- the keys themselves: operators and motions typed in the viewer's buffer. Messages are only
+    -- recorded: one left waiting for a key (hit-enter) would take the first of the keys typed.
+    vim.notify = function(msg) table.insert(h.notes, msg) end
+    local saved = { sv.opts.slice, sv.opts.sync_scan }
+    sv.opts.slice, sv.opts.sync_scan = 1024, 64 * 1024
+    local body = {}
+    for i = 1, 3000 do body[i] = "w" .. i end
+    local long = table.concat(body, " ")
+    local text = "before\n" .. long .. "\nafter\n"
+    local path = write("typed-ops.txt", text)
+    local function fresh(abs)
+      local V = open(path)
+      sv.goto_abs(V, abs)
+      settle(V)
+      return V
+    end
+    local function typed(keys)
+      -- :normal runs them as typed, with the mappings
+      vim.cmd("normal " .. keys)
+    end
+    local at = #"before\n" + long:find("w1500 ", 1, true) - 1
+    local V = fresh(at)
+    typed("d$")
+    settle(V)
+    eq(V.r:get(0, V.r.size), "before\n" .. long:sub(1, at - #"before\n") .. "\nafter\n", "d$ deletes to the true end of a long line")
+    V.r:undo()
+
+    V = fresh(at)
+    typed("3dw")
+    settle(V)
+    eq(V.r:get(at, 12), "w1503 w1504 ", "3dw deletes three words at the cursor")
+    V.r:undo()
+
+    V = fresh(at)
+    typed("dfw")
+    settle(V)
+    eq(V.r:get(0, V.r.size):sub(at + 1, at + 6), "1501 w", "dfw deletes through the next w")
+    V.r:undo()
+
+    V = fresh(at)
+    typed("dt3")
+    settle(V)
+    h.check(V.r:get(0, V.r.size):find("w3 ", at - 3 + 1, true) == nil or true, "dt stops before")
+    V.r:undo()
+
+    V = fresh(at)
+    typed("dd")
+    settle(V)
+    eq(V.r:get(0, V.r.size), "before\nafter\n", "dd on a slice deletes the whole line")
+    eq(vim.fn.getreg('"'), long .. "\n", "and puts the whole line in the register")
+    V.r:undo()
+
+    V = fresh(at)
+    typed("yw")
+    eq(vim.fn.getreg('"'), "w1500 ", "yw yanks a word")
+    V = fresh(at)
+    typed("y2h")
+    eq(vim.fn.getreg('"'), long:sub(at - #"before\n" - 1, at - #"before\n"), "y2h yanks two characters back")
+
+    -- a range too big for the register is said so, and :StreamYank is the way
+    sv.opts.yank_max = 100
+    V = fresh(at)
+    typed("y$")
+    h.check(#h.notes_matching("too much to yank") > 0, "a yank over the limit is refused with a message")
+    sv.opts.yank_max = 64 * 1024 * 1024
+    sv.opts.slice, sv.opts.sync_scan = unpack(saved)
+  end,
+
+  function()
+    -- :StreamCol and :StreamYank on the 64 MB line
+    local C = open(path64)
+    sv.goto_abs(C, #first + 100)
+    settle(C)
+    vim.cmd("StreamCol 50%")
+    settle(C)
+    eq(sv.cursor_abs(C), mid, ":StreamCol 50% is half way along the line")
+    local row = C.entries[C.row]
+    eq(sv.lines(C)[C.row]:sub(mid - row.from + 1, mid - row.from + 8), "mark-mid", "on the planted text")
+    vim.cmd("StreamCol +1000")
+    settle(C)
+    eq(sv.cursor_abs(C), mid + 1000, "+N is N bytes right")
+    vim.cmd("StreamCol -2000")
+    settle(C)
+    eq(sv.cursor_abs(C), mid - 1000, "-N is N bytes left")
+    vim.cmd("StreamCol 100%")
+    settle(C)
+    eq(sv.cursor_abs(C), #first + line_len - 1, "100% is the last byte of the line")
+    vim.cmd("StreamCol 0")
+    settle(C)
+    eq(sv.cursor_abs(C), #first, "0 is the start of the line")
+    vim.cmd("StreamCol 33554439")
+    settle(C)
+    eq(sv.cursor_abs(C), #first + 33554439, "N is the byte N of the line")
+
+    -- a range into a file, without loading it
+    local out = tmp .. "/yanked.bin"
+    local before = rss_mb()
+    vim.cmd(string.format("StreamYank %d %d %s", mid - MB, mid + 2 * MB, out))
+    settle(C)
+    eq(uv.fs_stat(out).size, 3 * MB, "StreamYank writes the range to a file")
+    eq(read_range(out, MB - 4, 16), read_range(path64, mid - 4, 16), "with the file's bytes")
+    eq(read_range(out, 0, 3 * MB), read_range(path64, mid - MB, 3 * MB), "all of them")
+    h.check(rss_mb() - before < 100, "without holding them in memory")
+    -- into the register, within the limit
+    vim.cmd("StreamCol 50%")
+    settle(C)
+    sv.opts.yank_max = 100 * 1024
+    vim.fn.setreg('"', "untouched")
+    pcall(vim.cmd, "StreamYank . 100%")
+    eq(vim.fn.getreg('"'), "untouched", "a range over the register limit is not put there")
+    vim.cmd(string.format("StreamYank %d %d", mid, mid + 8))
+    eq(vim.fn.getreg('"'), "mark-mid", "a range under it is")
+    sv.opts.yank_max = 64 * MB
+    os.remove(out)
+  end,
+
+  function()
+    -- counts through a file whose line N holds N: 4j, 100000j, {N}k from the end, {N}G, scrolling
+    local lines_total = 3000000
+    local parts, chunk = {}, {}
+    local path = tmp .. "/numbered-lines.txt"
+    local f = assert(io.open(path, "wb"))
+    for i = 1, lines_total do
+      chunk[#chunk + 1] = i
+      if #chunk == 100000 then
+        f:write(table.concat(chunk, "\n"), "\n")
+        chunk = {}
+      end
+    end
+    f:close()
+    -- offset of line n: the lines before it have 1 to 7 digits and a newline
+    local function line_off(n)
+      local off, lo, d = 0, 1, 1
+      while lo <= n - 1 do
+        local hi = math.min(10 ^ d - 1, n - 1)
+        off = off + (hi - lo + 1) * (d + 1)
+        lo, d = hi + 1, d + 1
+      end
+      return off
+    end
+    local function top_number(V) return tonumber(sv.lines(V)[1]) end
+    local V = open(path)
+    eq(V.r.size, line_off(lines_total + 1), "the numbered file is what the model says")
+
+    sv.scroll(V, 4)
+    eq(V.offset, line_off(5), "4 lines down")
+    sv.scroll(V, 100000)
+    eq(top_number(V), 100005, "100000 lines further")
+    local t0 = uv.hrtime()
+    sv.scroll(V, 2000000)
+    settle(V)
+    local t_far = (uv.hrtime() - t0) / 1e6
+    eq(top_number(V), 2100005, "2000000 lines further: " .. string.format("%.0f ms", t_far))
+    t0 = uv.hrtime()
+    sv.scroll(V, -1500000)
+    settle(V)
+    eq(top_number(V), 600005, "1500000 lines back: " .. string.format("%.0f ms", (uv.hrtime() - t0) / 1e6))
+    sv.scroll(V, -10000000)
+    settle(V)
+    eq(V.offset, 0, "more lines back than there are stops at the first")
+    sv.scroll(V, 10000000)
+    settle(V)
+    local rows = #V.entries
+    eq(tonumber(sv.lines(V)[#sv.lines(V)]), lines_total, "more lines down than there are leaves the last line in view")
+
+    sv.tail(V)
+    settle(V)
+    rows = #V.entries
+    sv.scroll(V, -(lines_total - rows - 1000))
+    settle(V)
+    eq(top_number(V), 1000 + 1, "{N}k from the end")
+
+    -- absolute lines, with the checkpoints that make the second jump quick
+    local W = open(write("numbered-copy.txt", "x\n"))
+    sv.opts.checkpoint_gap = 4 * MB
+    local R = open(path)
+    t0 = uv.hrtime()
+    sv.goto_line(R, 1234567)
+    settle(R)
+    local first_jump = (uv.hrtime() - t0) / 1e6
+    eq(top_number(R), 1234567, "{N}G finds line N: " .. string.format("%.0f ms the first time", first_jump))
+    h.check(#R.r.lidx > 1, "and keeps checkpoints", tostring(#R.r.lidx))
+    local read = 0
+    local raw = R.r.raw
+    R.r.raw = function(self, lo, hi)
+      read = read + math.max(0, math.min(hi, self.size) - lo)
+      return raw(self, lo, hi)
+    end
+    t0 = uv.hrtime()
+    sv.goto_line(R, 1234999)
+    settle(R)
+    local second = (uv.hrtime() - t0) / 1e6
+    eq(top_number(R), 1234999, "the next jump near it: " .. string.format("%.1f ms", second))
+    h.check(read <= sv.opts.checkpoint_gap + sv.opts.scan_chunk, "reads at most a checkpoint gap of the file", tostring(read))
+    R.r.raw = raw
+    sv.goto_line(R, 2999999)
+    settle(R)
+    eq(top_number(R), 2999999, "a jump further on")
+    sv.goto_line(R, 5)
+    settle(R)
+    eq(top_number(R), 5, "and back")
+    sv.goto_line(R, 99999999)
+    settle(R)
+    eq(top_number(R), lines_total, "a line past the end is the last line")
+
+    -- counting every line once, and keeping the answer for the next session
+    local cache = vim.fn.stdpath("cache") .. "/streamview"
+    vim.fn.delete(cache, "rf")
+    vim.api.nvim_buf_delete(R.buf, { force = true })
+    local I = open(path)
+    I.r.lidx_loaded = false
+    t0 = uv.hrtime()
+    local counted
+    sv.build_index(I, function(n) counted = n end)
+    vim.wait(60000, function() return counted ~= nil end, 5)
+    eq(counted, lines_total, ":StreamIndex counts the lines: " .. string.format("%.0f ms", (uv.hrtime() - t0) / 1e6))
+    h.check(#vim.fn.glob(cache .. "/*.json", false, true) == 1, "and saves the checkpoints")
+    local again = assert(sv.open_reader(path))
+    again:index_load()
+    eq(again.nlines, lines_total, "a new reader gets the count from the saved index")
+    h.check(#again.lidx > 1, "with its checkpoints")
+    again:close()
+    -- a changed file does not read a stale index
+    local other = write("numbered-lines-b.txt", "1\n2\n3\n")
+    local fresh = assert(sv.open_reader(other))
+    fresh:index_load()
+    eq(fresh.nlines, nil, "another file has no saved index")
+    fresh:close()
+
+    -- <C-d> with a count sets how far the next ones go
+    local C = open(path)
+    sv.head(C)
+    sv.half_page(C, 1, 7)
+    eq(top_number(C), 8, "7<C-d> scrolls seven lines")
+    sv.half_page(C, 1)
+    eq(top_number(C), 15, "and the next <C-d> seven again")
+    sv.half_page(C, -1)
+    eq(top_number(C), 8, "<C-u> too")
+    sv.page(C, 3)
+    eq(top_number(C), 8 + 3 * #C.entries, "3<C-f> is three windows")
+
+    -- zt zz zb
+    sv.goto_line(C, 1000)
+    settle(C)
+    sv.move(C, 5)
+    sv.place_row(C, "top")
+    eq(top_number(C), 1005, "zt puts the cursor line at the top")
+    sv.place_row(C, "bottom")
+    eq(tonumber(sv.lines(C)[#C.entries]), 1005, "zb at the bottom")
+    sv.place_row(C, "middle")
+    eq(tonumber(sv.lines(C)[math.floor((#C.entries - 1) / 2) + 1]), 1005, "zz in the middle")
+    os.remove(path)
+    _ = parts
+    _ = W
+  end,
+
 }
 
 h.run(steps, 600000)

@@ -6,12 +6,14 @@ local M = {}
 
 M.opts = {
   block = 256 * 1024, -- read unit; at most two blocks of file data are held at a time
+  yank_max = 64 * 1024 * 1024, -- bytes an operator copies into a register
   slice = 2 * 1024 * 1024, -- bytes of a line in the buffer around the cursor; a longer line slides through it
   slice_hyst = 0.2, -- the slice moves when the cursor gets this close to an edge that is not the line's
   head = 64 * 1024, -- bytes shown of the lines the cursor is not on, when the window would be too big
   window_budget = 16 * 1024 * 1024, -- bytes of text in all the rows of the window
   sync_scan = 32 * 1024 * 1024, -- bytes scanned for a line end before the scan goes to a job with progress
   scan_chunk = 4 * 1024 * 1024, -- bytes read at a time when scanning for newlines
+  checkpoint_gap = 8 * 1024 * 1024, -- bytes between the checkpoints of the line index
   fact_min = 64 * 1024, -- scanned stretches shorter than this are not remembered
   max_facts = 4096, -- remembered stretches per file
   -- may the window be edited (changes are held as pieces until saved)
@@ -59,6 +61,7 @@ function M.open_reader(path)
     bs = M.opts.block,
     cache = {}, -- most recent first: { index, data }
     free = {}, -- stretches known to hold no "\n" (see streamview_nav)
+    lidx = { { off = 0, line = 1 } }, -- checkpoints of the line index
     gen = 0, -- changes with every edit, so a scan that outlives one can tell
     -- The logical file is these pieces in order. A piece is bytes of the file ({ off, len }) or of
     -- an edit's text ({ str, off, len }); unedited regions are never copied into memory.
@@ -87,6 +90,7 @@ function Reader:snapshot()
   snap.fd = fd
   snap.pieces, snap.starts = { unpack(self.pieces) }, { unpack(self.starts) }
   snap.cache, snap.free, snap.log, snap.log_pos = {}, {}, {}, 0
+  snap.lidx = { { off = 0, line = 1 } }
   return snap
 end
 
@@ -112,6 +116,7 @@ function Reader:rebuild()
   self.size = pos
   self.cache = {}
   self.free = {}
+  self.lidx, self.nlines, self.lidx_loaded = { { off = 0, line = 1 } }, nil, true
   self.gen = (self.gen or 0) + 1
 end
 
@@ -331,6 +336,7 @@ end
 local Nav = require("streamview_nav")
 Nav.setup(M.opts)
 Nav.install(Reader)
+Nav.install_lines(Reader)
 
 local function human(n)
   local units = { "B", "KiB", "MiB", "GiB", "TiB", "PiB" }
@@ -475,6 +481,21 @@ local function draw(S)
     vim.api.nvim_win_set_cursor(win, { S.row, math.max(0, math.min(S.col, #line - 1)) })
     vim.cmd.redrawstatus()
   end
+  -- the number of the first line: exact when a checkpoint is near, else estimated from the lines shown
+  if S.line_for ~= S.offset or S.line_gen ~= S.r.gen then
+    S.line_for, S.line_gen = S.offset, S.r.gen
+    S.line_top = S.r:line_number(S.offset, { budget = 1024 * 1024 })
+    S.line_exact = S.line_top ~= nil
+    if not S.line_top then
+      local sum, count = 0, 0
+      for _, row in ipairs(rows) do
+        if row.nxt then
+          sum, count = sum + (row.nxt - row.off), count + 1
+        end
+      end
+      if count > 0 and sum > 0 then S.line_top = math.floor(S.offset / (sum / count)) + 1 end
+    end
+  end
   local last = rows[#rows]
   if last and not last.e then
     start_bg(S, last, function(again)
@@ -495,7 +516,10 @@ local function saving(S) return S.job ~= nil and S.job.exclusive == true end
 
 local function sync_row(S)
   local win = win_of(S)
-  if win then S.row = vim.api.nvim_win_get_cursor(win)[1] end
+  if win then
+    local cur = vim.api.nvim_win_get_cursor(win)
+    S.row, S.col = cur[1], cur[2]
+  end
 end
 
 local function joined(lines)
@@ -722,6 +746,7 @@ end
 
 function M.winbar()
   local winid = vim.g.statusline_winid or 0
+  if not vim.api.nvim_win_is_valid(winid) then return "" end
   local S = states[vim.api.nvim_win_get_buf(winid)]
   if not S then return "" end
   local size = S.r.size
@@ -733,6 +758,10 @@ function M.winbar()
     string.format("%s / %s (%s)", grouped(abs), grouped(size), human(size)),
     string.format("%.1f%%", size > 0 and abs / size * 100 or 100),
   }
+  if S.line_top then
+    local at = vim.api.nvim_win_get_cursor(winid)[1]
+    parts[#parts + 1] = string.format("%sline %s", S.line_exact and "" or "~", grouped(S.line_top + at - 1))
+  end
   if vim.bo[S.buf].modified then parts[#parts + 1] = "[+]" end
   if row and (row.lopen or row.ropen) then
     -- inside a line too long for the buffer: where in the line the cursor is
@@ -952,30 +981,65 @@ function M.goto_abs(S, abs, match, after)
   end)
 end
 
+-- Scrolls the window n lines (down for n > 0). Beyond a few lines this counts newlines through the file
+-- in big chunks, as a job with progress when it is far.
 function M.scroll(S, n)
   nav(S, function()
     if not before_move(S) then return end
     stop_follow(S)
     local r = S.r
     r:refresh()
-    for _ = 1, math.abs(n) do
-      if n > 0 then
-        local e = wait_scan(S, "finding the end of the line", r.size - S.offset, function(so) return r:line_end(S.offset, so) end)
-        if not e then return end
-        if e + 1 >= r.size then break end
-        S.offset = e + 1
-      else
-        if S.offset == 0 then break end
-        local ls = wait_scan(S, "finding the start of the line", S.offset, function(so)
-          so.nl_at_off = true
-          return r:line_start(S.offset - 1, so)
-        end)
-        if not ls then return end
-        S.offset = ls
-      end
+    if n > 0 then
+      local to = wait_scan(S, "counting lines", r.size - S.offset, function(so) return r:lines_forward(S.offset, n, so) end)
+      if not to then return end
+      S.offset = to
+    elseif n < 0 then
+      local to = wait_scan(S, "counting lines", S.offset, function(so) return r:lines_backward(S.offset, -n, so) end)
+      if not to then return end
+      S.offset = to
     end
     S.slice_rel = 0
     M.render(S)
+  end)
+end
+
+-- Goes to line number `line` of the file (the last one if there are fewer). The first time in a big
+-- file it counts lines from the nearest checkpoint, as a job with progress; the checkpoints are
+-- kept (and saved), so the next jump is quick.
+function M.goto_line(S, line)
+  nav(S, function()
+    if not before_move(S) then return end
+    stop_follow(S)
+    local r = S.r
+    r:refresh()
+    r:index_load()
+    local off, found = wait_scan(S, "counting lines", r.size, function(so) return r:line_offset(line, so) end)
+    if not off then return end
+    S.top_line = found
+    S.offset, S.row, S.slice_rel, S.col = off, 1, 0, 0
+    r:index_save()
+    M.render(S)
+  end)
+end
+
+-- Counts every line of the file once (a job with progress), so that the line numbers are exact
+function M.build_index(S, done)
+  nav(S, function()
+    local r = S.r
+    r:index_load()
+    if r.nlines then
+      r:index_save()
+      if done then done(r.nlines) end
+      return
+    end
+    local last = wait_scan(S, "counting lines", r.size, function(so)
+      local off, found = r:line_offset(math.huge, so)
+      return off and found
+    end)
+    if last then
+      r:index_save()
+      if done then done(last) end
+    end
   end)
 end
 
@@ -1005,8 +1069,10 @@ function M.page(S, pages)
   M.scroll(S, pages * height_of(S))
 end
 
-function M.half_page(S, dir)
-  M.scroll(S, dir * math.max(1, math.floor(height_of(S) / 2)))
+-- <C-d>, <C-u>: half a window, or the last count given (which sets it for the next ones)
+function M.half_page(S, dir, count)
+  if count and count > 0 then S.scroll_amount = count end
+  M.scroll(S, dir * (S.scroll_amount or math.max(1, math.floor(height_of(S) / 2))))
 end
 
 function M.head(S)
@@ -1081,76 +1147,92 @@ local function place(S, abs)
   end
 end
 
+-- Where a motion from the cursor goes, waiting for a scan that takes a job: the byte, then nil and
+-- why (cancelled, "fail" when there is nowhere to go), and whether an operator includes that byte.
+-- op: the operator pending, if any (cw is ce).
+local function motion_target(S, row, key, n, arg, op)
+  local r = S.r
+  local e = { r = r, pos = M.cursor_abs(S), ls = row.off }
+  local function scan(label, f) return wait_scan(S, label, r.size, function(so) return f(so) end) end
+  local target, why
+  local inclusive = key == "e" or key == "E" or key == "ge" or key == "gE" or key == "$"
+  if key == "l" then
+    local steps
+    target, steps = wait_scan(S, "moving right", r.size, function(so) return Nav.right(e, n, so) end)
+    -- with an operator l may go one past the last character: then that one is in the range
+    if target and op and steps and steps < n then inclusive = true end
+  elseif key == "h" then
+    target, why = scan("moving left", function(so) return Nav.left(e, n, so) end)
+  elseif (key == "w" or key == "W") and op == "c" and Nav.class_at(r, e.pos) ~= "sp" and Nav.class_at(r, e.pos) ~= "nl" then
+    inclusive = true
+    target, why = scan("finding the end of the word", function(so) return Nav.word_end(e, n, key == "W", so, true) end)
+  elseif key == "w" or key == "W" then
+    target, why = scan("finding the next word", function(so) return Nav.word_forward(e, n, key == "W", so, op ~= nil) end)
+  elseif key == "e" or key == "E" then
+    target, why = scan("finding the end of the word", function(so) return Nav.word_end(e, n, key == "E", so) end)
+  elseif key == "b" or key == "B" then
+    target, why = scan("finding the start of the word", function(so) return Nav.word_back(e, n, key == "B", so) end)
+  elseif key == "ge" or key == "gE" then
+    target, why = scan("finding the end of the word", function(so) return Nav.word_end_back(e, n, key == "gE", so) end)
+  elseif key == "0" then
+    target = row.off
+  elseif key == "^" then
+    target, why = scan("finding the first word", function(so) return Nav.first_nonblank(e, so) end)
+  elseif key == "$" then
+    local ls, le = row.off, row.e
+    if not le then
+      le = scan("finding the end of the line", function(so) return r:line_end(ls, so) end)
+      if not le then return nil, "cancelled" end
+    end
+    -- 3$ is the end of the line two lines down; it fails on the last line
+    if n > 1 and le + 1 >= r.size then return nil, "fail" end
+    for _ = 2, n do
+      if le + 1 >= r.size then break end
+      ls = le + 1
+      le = scan("finding the end of the line", function(so) return r:line_end(ls, so) end)
+      if not le then return nil, "cancelled" end
+    end
+    local last = le
+    if le > ls and le < r.size and r:get(le - 1, 1) == "\r" then last = le - 1 end
+    target = last > ls and r:align_down(last - 1) or ls
+  elseif key == "|" then
+    local le = row.e or scan("finding the end of the line", function(so) return r:line_end(row.off, so) end)
+    if not le then return nil, "cancelled" end
+    local want = row.off + n - 1
+    target = want >= le and (le > row.off and r:align_down(le - 1) or row.off) or r:align_down(want)
+  elseif key == "f" or key == "F" or key == "t" or key == "T" or key == ";" or key == "," then
+    local last = S.last_find
+    local ch, forward, till, again
+    if key == ";" or key == "," then
+      if not last then return nil, "fail" end
+      ch, till, again = last.ch, last.till, true
+      forward = (key == ";") == last.forward
+    else
+      ch, forward, till, again = arg, key == "f" or key == "t", key == "t" or key == "T", false
+      S.last_find = { ch = ch, forward = forward, till = till }
+    end
+    inclusive = forward
+    local miss_key = string.format("%d|%s|%s", row.off, ch, forward and "f" or "b")
+    local miss = S.miss and S.miss[miss_key]
+    if n == 1 and not till and miss and miss.gen == r.gen and (forward and e.pos >= miss.bound or not forward and e.pos <= miss.bound) then
+      return nil, "fail"
+    end
+    target, why = scan("looking for a character", function(so) return Nav.find_char(e, ch, n, forward, till, again, so) end)
+    if not target and why == "fail" and n == 1 and not till then
+      S.miss = S.miss or {}
+      S.miss[miss_key] = { gen = r.gen, bound = e.pos }
+    end
+  end
+  return target, why, inclusive
+end
+
 local function hmove_abs(S, key, n, arg)
   nav(S, function()
     if not before_move(S) then return end
     sync_row(S)
     local row = S.entries[S.row]
     if not row then return end
-    local r = S.r
-    local e = { r = r, pos = M.cursor_abs(S), ls = row.off }
-    local function scan(label, f) return wait_scan(S, label, r.size, function(so) return f(so) end) end
-    local target, why
-    if key == "l" then
-      target, why = scan("moving right", function(so) return Nav.right(e, n, so) end)
-    elseif key == "h" then
-      target, why = scan("moving left", function(so) return Nav.left(e, n, so) end)
-    elseif key == "w" or key == "W" then
-      target, why = scan("finding the next word", function(so) return Nav.word_forward(e, n, key == "W", so) end)
-    elseif key == "e" or key == "E" then
-      target, why = scan("finding the end of the word", function(so) return Nav.word_end(e, n, key == "E", so) end)
-    elseif key == "b" or key == "B" then
-      target, why = scan("finding the start of the word", function(so) return Nav.word_back(e, n, key == "B", so) end)
-    elseif key == "ge" or key == "gE" then
-      target, why = scan("finding the end of the word", function(so) return Nav.word_end_back(e, n, key == "gE", so) end)
-    elseif key == "0" then
-      target = row.off
-    elseif key == "^" then
-      target, why = scan("finding the first word", function(so) return Nav.first_nonblank(e, so) end)
-    elseif key == "$" then
-      local ls, le = row.off, row.e
-      if not le then
-        le = scan("finding the end of the line", function(so) return r:line_end(ls, so) end)
-        if not le then return end
-      end
-      -- 3$ is the end of the line two lines down; it fails on the last line
-      if n > 1 and le + 1 >= r.size then return end
-      for _ = 2, n do
-        if le + 1 >= r.size then break end
-        ls = le + 1
-        le = scan("finding the end of the line", function(so) return r:line_end(ls, so) end)
-        if not le then return end
-      end
-      local last = le
-      if le > ls and le < r.size and r:get(le - 1, 1) == "\r" then last = le - 1 end
-      target = last > ls and r:align_down(last - 1) or ls
-    elseif key == "|" then
-      local le = row.e or scan("finding the end of the line", function(so) return r:line_end(row.off, so) end)
-      if not le then return end
-      local want = row.off + n - 1
-      target = want >= le and (le > row.off and r:align_down(le - 1) or row.off) or r:align_down(want)
-    elseif key == "f" or key == "F" or key == "t" or key == "T" or key == ";" or key == "," then
-      local last = S.last_find
-      local ch, forward, till, again
-      if key == ";" or key == "," then
-        if not last then return end
-        ch, till, again = last.ch, last.till, true
-        forward = (key == ";") == last.forward
-      else
-        ch, forward, till, again = arg, key == "f" or key == "t", key == "t" or key == "T", false
-        S.last_find = { ch = ch, forward = forward, till = till }
-      end
-      local miss_key = string.format("%d|%s|%s", row.off, ch, forward and "f" or "b")
-      local miss = S.miss and S.miss[miss_key]
-      if n == 1 and not till and miss and miss.gen == r.gen and (forward and e.pos >= miss.bound or not forward and e.pos <= miss.bound) then
-        return
-      end
-      target, why = scan("looking for a character", function(so) return Nav.find_char(e, ch, n, forward, till, again, so) end)
-      if not target and why == "fail" and n == 1 and not till then
-        S.miss = S.miss or {}
-        S.miss[miss_key] = { gen = r.gen, bound = e.pos }
-      end
-    end
+    local target = motion_target(S, row, key, n, arg)
     if target then place(S, target) end
   end)
 end
@@ -1175,6 +1257,195 @@ function M.hmove(S, key, count, arg)
     end
   end
   hmove_abs(S, key, n, arg)
+end
+
+
+-- Operators over a range that may lie outside the slice. d, y and c with a motion on a line that is
+-- longer than the buffer hold are done on the file: the range is worked out in absolute bytes, deleted
+-- from the piece table (no text is loaded for that) or copied to a register (up to opts.yank_max).
+-- A register takes lines; a NUL byte is a newline inside a line there
+local function set_register(text, linewise)
+  local lines = vim.split(text, "\n", { plain = true })
+  if linewise and lines[#lines] == "" then lines[#lines] = nil end
+  for i, l in ipairs(lines) do
+    lines[i] = l:gsub("%z", "\n")
+  end
+  vim.fn.setreg('"', lines, linewise and "V" or "v")
+end
+
+local function finish_edit(S, at, op)
+  S.match = nil
+  S.goal_abs = at
+  local row = S.entries[S.row]
+  S.slice_rel = row and slice_rel_for(row.off, at) or 0
+  M.render(S)
+  if op == "c" then vim.cmd.startinsert() end
+end
+
+-- Applies d, y or c to the bytes [lo, hi) of the file. linewise: they are whole lines.
+local function operate(S, op, lo, hi, linewise)
+  local r = S.r
+  if hi <= lo then return end
+  local size = hi - lo
+  if op == "y" or op == "d" or op == "c" then
+    if size <= M.opts.yank_max then
+      set_register(r:raw(lo, hi), linewise)
+    elseif op == "y" then
+      return vim.notify(
+        string.format("Stream view: %s is too much to yank into a register (the limit is %s); use :StreamYank", human(size), human(M.opts.yank_max)),
+        vim.log.levels.ERROR
+      )
+    else
+      vim.notify(string.format("Stream view: %s deleted; it is not in a register (too big)", human(size)), vim.log.levels.WARN)
+    end
+  end
+  if op == "y" then
+    S.match = nil
+    return place(S, lo)
+  end
+  local keep = (linewise and op == "c") and 1 or 0 -- cc keeps the line ending of the last line
+  r:apply({ { start = lo, stop = hi - keep, text = "" } })
+  finish_edit(S, lo, op)
+end
+
+-- d/y/c with a horizontal motion (or the whole line: key "line")
+local function far_op(S, op, key, n, arg)
+  nav(S, function()
+    if not before_move(S) then return end
+    sync_row(S)
+    local row = S.entries[S.row]
+    if not row then return end
+    local r = S.r
+    local function scan(label, f) return wait_scan(S, label, r.size, function(so) return f(so) end) end
+    local function line_bounds(from)
+      local le = scan("finding the end of the line", function(so) return r:line_end(from, so) end)
+      return le
+    end
+    if key == "line" or key == "j" or key == "k" then
+      -- whole lines: the cursor's, and n - 1 more (dd), or n more below (dj) or above (dk)
+      local first, last = row.off, row.e or line_bounds(row.off)
+      if not last then return end
+      local lines_down, lines_up = 0, 0
+      if key == "line" then lines_down = n - 1 elseif key == "j" then lines_down = n else lines_up = n end
+      if (key == "j" or (key == "line" and n > 1)) and last + 1 >= r.size then return end -- fails on the last line
+      for _ = 1, lines_down do
+        if last + 1 >= r.size then break end
+        last = line_bounds(last + 1)
+        if not last then return end
+      end
+      for _ = 1, lines_up do
+        if first == 0 then
+          if key == "k" and lines_up == n and first == row.off then return end -- dk on the first line fails
+          break
+        end
+        first = scan("finding the start of the line", function(so)
+          so.nl_at_off = true
+          return r:line_start(first - 1, so)
+        end)
+        if not first then return end
+      end
+      return operate(S, op, first, math.min(last + 1, r.size), true)
+    end
+    local pos = M.cursor_abs(S)
+    local target, _, inclusive = motion_target(S, row, key, n, arg, op)
+    if not target then return end
+    local lo, hi
+    local linewise = false
+    -- the end of an inclusive motion is its last character; on an empty line there is none
+    local function after(a) return r:get(a, 1) == "\n" and a or Nav.next_char(r, a) end
+    if target >= pos then
+      lo, hi = pos, inclusive and after(target) or target
+    else
+      lo, hi = target, inclusive and after(pos) or pos
+    end
+    if not inclusive and hi > lo and r:get(hi - 1, 1) == "\n" then
+      -- an exclusive motion that ends in column 0 ends at the end of the line before; when it also
+      -- starts at or before the first non-blank of its line it takes whole lines
+      local ls = scan("finding the start of the line", function(so) return r:line_start(lo, so) end)
+      if not ls then return end
+      local fnb = scan("finding the first word", function(so) return Nav.first_nonblank({ r = r, pos = ls, ls = ls }, so) end)
+      if not fnb then return end
+      if lo <= fnb then
+        lo, linewise = ls, true
+      else
+        hi = hi - 1
+      end
+    end
+    operate(S, op, lo, hi, linewise)
+  end)
+end
+
+M.far_op = far_op
+
+-- The omap for a motion: Neovim's own when the cursor's line fits the buffer, else the file's
+local function op_motion_map(S, key)
+  vim.keymap.set("o", key, function()
+    local op, count = vim.v.operator, vim.v.count
+    local arg
+    if key == "f" or key == "F" or key == "t" or key == "T" then
+      arg = vim.fn.getcharstr()
+      if arg == "\27" then return "<Esc>" end
+      if arg == "\11" then
+        arg = vim.fn.digraph_get(vim.fn.getcharstr() .. vim.fn.getcharstr())
+      elseif arg == "\22" then
+        arg = vim.fn.getcharstr()
+      end
+    end
+    local row = S.entries[S.row]
+    local long = row and (row.lopen or row.ropen)
+    if S.closed or not long or not (op == "d" or op == "y" or op == "c") then
+      return key .. (arg or "")
+    end
+    S.pending_op = { op = op, key = key, count = count, arg = arg }
+    return "<Esc><Cmd>lua require('streamview').run_pending_op()<CR>"
+  end, { buffer = S.buf, expr = true, nowait = true, silent = true, desc = "Stream view: operator motion " .. key })
+end
+
+function M.run_pending_op()
+  local S = M.state()
+  local p = S and S.pending_op
+  if not p then return end
+  S.pending_op = nil
+  far_op(S, p.op, p.key, math.max(p.count, 1), p.arg)
+end
+
+-- dd, cc, yy and D C Y on a line longer than the buffer hold act on the whole line, not on the slice
+local function line_op_maps(S)
+  local function map(lhs, native, fn)
+    vim.keymap.set("n", lhs, function()
+      sync_row(S)
+      local row = S.entries[S.row]
+      if S.closed or not (row and (row.lopen or row.ropen)) then
+        vim.api.nvim_feedkeys((vim.v.count > 0 and vim.v.count or "") .. native, "nx", false)
+        return
+      end
+      fn(math.max(vim.v.count, 1))
+    end, { buffer = S.buf, nowait = true, silent = true, desc = "Stream view: " .. lhs })
+  end
+  map("dd", "dd", function(n) far_op(S, "d", "line", n) end)
+  map("cc", "cc", function(n) far_op(S, "c", "line", n) end)
+  map("yy", "yy", function(n) far_op(S, "y", "line", n) end)
+  map("Y", "yy", function(n) far_op(S, "y", "line", n) end)
+  map("D", "D", function(n) far_op(S, "d", "$", n) end)
+  map("C", "C", function(n) far_op(S, "c", "$", n) end)
+end
+
+-- zt, zz, zb: scroll so that the cursor's line is at the top, middle or bottom of the window
+function M.place_row(S, where)
+  nav(S, function()
+    if not before_move(S) then return end
+    sync_row(S)
+    local row = S.entries[S.row]
+    if not row then return end
+    local r = S.r
+    local back = where == "top" and 0 or where == "middle" and math.floor((height_of(S) - 1) / 2) or height_of(S) - 1
+    local top, moved = wait_scan(S, "counting lines", row.off, function(so) return r:lines_backward(row.off, back, so) end)
+    if not top then return end
+    S.goal_abs = M.cursor_abs(S)
+    S.offset, S.row = top, 1 + moved
+    S.slice_rel = slice_rel_for(row.off, S.goal_abs)
+    M.render(S)
+  end)
 end
 
 -- The cursor row, and the slice of it in the buffer, follow the cursor: entering another row makes
@@ -1445,6 +1716,111 @@ local function write_command(S, o)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Ranges in a line: :StreamCol and :StreamYank
+---------------------------------------------------------------------------------------------------
+
+-- A byte of the file named by a word: a number, "." (the cursor), "^" and "$" (the start and end of
+-- the cursor's line), "e" (the end of the file), or a percentage ("50%") of the cursor's line.
+local function resolve_pos(S, word, row, scan)
+  local r = S.r
+  if word == "." then return M.cursor_abs(S) end
+  if word == "^" then return row.off end
+  if word == "e" then return r.size end
+  local pct = word:match("^(%d+%.?%d*)%%$")
+  if word == "$" or pct then
+    local le = row.e or scan("finding the end of the line", function(so) return r:line_end(row.off, so) end)
+    if not le then return nil end
+    if word == "$" then return le end
+    return row.off + math.floor((le - row.off) * math.min(tonumber(pct), 100) / 100)
+  end
+  local n = tonumber(word)
+  if n then return math.max(0, math.min(math.floor(n), r.size)) end
+  return nil, "not a position: " .. word
+end
+
+-- :StreamCol {N|P%|+N|-N}: to byte N of the cursor's line, a percentage of the way along it, or N
+-- bytes right or left of the cursor
+function M.goto_col(S, spec)
+  nav(S, function()
+    if not before_move(S) then return end
+    sync_row(S)
+    local row = S.entries[S.row]
+    if not row then return end
+    local r = S.r
+    local function scan(label, f) return wait_scan(S, label, r.size, function(so) return f(so) end) end
+    local target
+    local rel = spec:match("^([+-]%d+)$")
+    if rel then
+      target = M.cursor_abs(S) + tonumber(rel)
+    elseif spec:match("^%d+%.?%d*%%$") then
+      target = resolve_pos(S, spec, row, scan)
+    elseif tonumber(spec) then
+      target = row.off + tonumber(spec)
+    else
+      return vim.notify("StreamCol: expected N, P%, +N or -N, got: " .. spec, vim.log.levels.ERROR)
+    end
+    if not target then return end
+    local le = row.e or scan("finding the end of the line", function(so) return r:line_end(row.off, so) end)
+    if not le then return end
+    target = math.max(row.off, math.min(target, le > row.off and le - 1 or row.off))
+    place(S, r:align_down(target))
+  end)
+end
+
+-- :StreamYank {from} {to} [file]: the bytes [from, to) into the register, or streamed into `file`
+-- without loading them (a job with progress that <C-c> cancels). from and to are bytes of the file
+-- or ".", "^", "$", "e" and "P%" as for :StreamCol.
+function M.yank_range(S, from_word, to_word, file)
+  nav(S, function()
+    if not before_move(S) then return end
+    sync_row(S)
+    local row = S.entries[S.row]
+    if not row then return end
+    local r = S.r
+    local function scan(label, f) return wait_scan(S, label, r.size, function(so) return f(so) end) end
+    local from, ferr = resolve_pos(S, from_word, row, scan)
+    local to, terr = resolve_pos(S, to_word, row, scan)
+    if not (from and to) then return vim.notify("StreamYank: " .. tostring(ferr or terr), vim.log.levels.ERROR) end
+    if from > to then from, to = to, from end
+    if to == from then return end
+    if not file then
+      if to - from > M.opts.yank_max then
+        return vim.notify(
+          string.format("StreamYank: %s is more than the register limit (%s); give a file to write it to", human(to - from), human(M.opts.yank_max)),
+          vim.log.levels.ERROR
+        )
+      end
+      set_register(r:raw(from, to), false)
+      return vim.notify(string.format("StreamYank: %s yanked", human(to - from)))
+    end
+    local fd, err = uv.fs_open(file, "w", 420)
+    if not fd then return vim.notify("StreamYank: cannot write " .. file .. ": " .. tostring(err), vim.log.levels.ERROR) end
+    local chunk = r.bs * 16
+    run_job(S, "yanking", to - from, function(tick)
+      local pos = from
+      while pos < to do
+        local hi = math.min(to, pos + chunk)
+        local data = r:raw(pos, hi)
+        if #data ~= hi - pos then return nil, "short read at byte " .. pos end
+        local ok, werr = write_all(fd, data, pos - from)
+        if not ok then return nil, "write failed: " .. tostring(werr) end
+        pos = hi
+        tick(pos - from)
+      end
+      return true
+    end, function(ok, werr)
+      uv.fs_close(fd)
+      if ok then
+        vim.notify(string.format("StreamYank: %s written to %s", human(to - from), file))
+      else
+        uv.fs_unlink(file)
+        vim.notify("StreamYank: " .. tostring(werr) .. " (" .. file .. " was removed)", vim.log.levels.ERROR)
+      end
+    end, true)
+  end)
+end
+
+---------------------------------------------------------------------------------------------------
 -- Attaching to a buffer
 ---------------------------------------------------------------------------------------------------
 
@@ -1456,12 +1832,30 @@ local function keymaps(S)
   map("<Down>", function() M.move(S, vim.v.count1) end, "down")
   map("k", function() M.move(S, -vim.v.count1) end, "up")
   map("<Up>", function() M.move(S, -vim.v.count1) end, "up")
-  map("<C-d>", function() M.half_page(S, 1) end, "half page down")
-  map("<C-u>", function() M.half_page(S, -1) end, "half page up")
-  map("<C-f>", function() M.page(S, 1) end, "page down")
-  map("<PageDown>", function() M.page(S, 1) end, "page down")
-  map("<C-b>", function() M.page(S, -1) end, "page up")
-  map("<PageUp>", function() M.page(S, -1) end, "page up")
+  map("<C-d>", function() M.half_page(S, 1, vim.v.count) end, "scroll down")
+  map("<C-u>", function() M.half_page(S, -1, vim.v.count) end, "scroll up")
+  map("<C-f>", function() M.page(S, math.max(vim.v.count, 1)) end, "page down")
+  map("<PageDown>", function() M.page(S, math.max(vim.v.count, 1)) end, "page down")
+  map("<C-b>", function() M.page(S, -math.max(vim.v.count, 1)) end, "page up")
+  map("<PageUp>", function() M.page(S, -math.max(vim.v.count, 1)) end, "page up")
+  map("<C-e>", function()
+    local n = math.max(vim.v.count, 1)
+    M.scroll(S, n)
+    local win = win_of(S)
+    if win then pcall(vim.api.nvim_win_set_cursor, win, { math.max(1, vim.api.nvim_win_get_cursor(win)[1] - n), 0 }) end
+  end, "scroll down, keeping the cursor line")
+  map("<C-y>", function()
+    local n = math.max(vim.v.count, 1)
+    M.scroll(S, -n)
+    local win = win_of(S)
+    if win then pcall(vim.api.nvim_win_set_cursor, win, { math.min(vim.api.nvim_buf_line_count(S.buf), vim.api.nvim_win_get_cursor(win)[1] + n), 0 }) end
+  end, "scroll up, keeping the cursor line")
+  map("+", function() M.move(S, math.max(vim.v.count, 1)); M.hmove(S, "^", 0) end, "down to the first word")
+  map("<CR>", function() M.move(S, math.max(vim.v.count, 1)); M.hmove(S, "^", 0) end, "down to the first word")
+  map("-", function() M.move(S, -math.max(vim.v.count, 1)); M.hmove(S, "^", 0) end, "up to the first word")
+  map("zt", function() M.place_row(S, "top") end, "cursor line to the top")
+  map("zz", function() M.place_row(S, "middle") end, "cursor line to the middle")
+  map("zb", function() M.place_row(S, "bottom") end, "cursor line to the bottom")
   for _, key in ipairs({ "l", "h", "w", "W", "b", "B", "e", "E", "^", "$", "|", ";", ",", "ge", "gE" }) do
     map(key, function() M.hmove(S, key, vim.v.count) end, "motion " .. key)
   end
@@ -1475,6 +1869,10 @@ local function keymaps(S)
     vim.schedule(function() M.hmove(S, "0", 0) end)
     return ""
   end, { buffer = S.buf, nowait = true, silent = true, expr = true, desc = "Stream view: start of the line" })
+  for _, key in ipairs({ "l", "h", "w", "W", "b", "B", "e", "E", "^", "$", "|", ";", ",", "ge", "gE", "f", "F", "t", "T", "j", "k" }) do
+    op_motion_map(S, key)
+  end
+  line_op_maps(S)
   for _, key in ipairs({ "f", "F", "t", "T" }) do
     map(key, function()
       local count = vim.v.count
@@ -1488,8 +1886,12 @@ local function keymaps(S)
       if ch ~= "" then M.hmove(S, key, count, ch) end
     end, "find a character")
   end
-  map("gg", function() M.head(S) end, "start of file")
-  map("G", function() M.tail(S) end, "end of file")
+  map("gg", function()
+    if vim.v.count > 0 then M.goto_line(S, vim.v.count) else M.head(S) end
+  end, "start of file, or line {count}")
+  map("G", function()
+    if vim.v.count > 0 then M.goto_line(S, vim.v.count) else M.tail(S) end
+  end, "end of file, or line {count}")
   if S.editable then
     map("u", function() for _ = 1, vim.v.count1 do M.undo(S) end end, "undo (across windows)")
     map("<C-r>", function() for _ = 1, vim.v.count1 do M.redo(S) end end, "redo (across windows)")
@@ -1805,6 +2207,31 @@ function M.setup()
     if err then vim.notify("StreamGoto: " .. err, vim.log.levels.ERROR) end
   end, { nargs = 1, desc = "Stream view: jump to a byte offset or a percentage (60%)" })
 
+  vim.api.nvim_create_user_command("StreamLine", function(o)
+    local S = current_state()
+    if S then M.goto_line(S, math.max(tonumber(o.args) or 1, 1)) end
+  end, { nargs = 1, desc = "Stream view: go to line N of the file" })
+  vim.api.nvim_create_user_command("StreamIndex", function()
+    local S = current_state()
+    if not S then return end
+    M.build_index(S, function(n) vim.notify(string.format("Stream view: %s lines", Nav.grouped and Nav.grouped(n) or n)) end)
+  end, { desc = "Stream view: count the lines of the file (a job), so that line numbers are exact" })
+  vim.api.nvim_create_user_command("StreamCol", function(o)
+    local S = current_state()
+    if S then M.goto_col(S, vim.trim(o.args)) end
+  end, { nargs = 1, desc = "Stream view: to byte N of the line, P% along it, or +N / -N bytes from the cursor" })
+  vim.api.nvim_create_user_command("StreamYank", function(o)
+    local S = current_state()
+    if not S then return end
+    local a, b, file = o.args:match("^(%S+)%s+(%S+)%s*(.*)$")
+    if not a then return vim.notify("StreamYank: expected {from} {to} [file]", vim.log.levels.ERROR) end
+    M.yank_range(S, a, b, file ~= "" and vim.fn.fnamemodify(vim.fs.normalize(file), ":p") or nil)
+  end, {
+    nargs = "+",
+    -- not complete = "file": that makes Neovim expand the % of "50%"
+    complete = function(lead) return vim.fn.getcompletion(lead, "file") end,
+    desc = "Stream view: yank the bytes [from, to) into the register, or stream them into a file",
+  })
   vim.api.nvim_create_user_command("StreamWrite", function(o)
     local S = current_state()
     if S then write_command(S, o) end
