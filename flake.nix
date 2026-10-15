@@ -2094,6 +2094,7 @@
                 luajit ${./.}/tests/lua/test_streamsearch_regex.lua
                 touch $out
               '';
+              streamsearchint = nvimTest "streamsearchint";
               streamview = nvimTest "streamview";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
