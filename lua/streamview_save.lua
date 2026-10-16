@@ -332,6 +332,10 @@ function Journal:zero(off, len) self:append("Z " .. off .. " " .. len .. "\n") e
 
 -- Makes the journal complete and durable.
 function Journal:commit()
+  -- the records must be on disk before the C line: a C line that reached the disk first would make
+  -- a journal with lost records look complete
+  local first, ferr = uv.fs_fsync(self.fd)
+  if not first then error("cannot sync the journal " .. self.path .. ": " .. tostring(ferr), 0) end
   local line = string.format("C %d %d\n", self.records, self.pos)
   local ok, err = write_all(self.fd, line, self.pos)
   if not ok then error("cannot write the journal " .. self.path .. ": " .. tostring(err), 0) end

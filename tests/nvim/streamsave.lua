@@ -619,6 +619,29 @@ local steps = {
     eq(read(path), model, "so the file has all the edits")
     eq(uv.fs_stat(save_mod.journal_path(path)), nil, "and the journal is gone")
     vim.cmd("bwipeout!")
+
+    -- the journal's records are synced before its C line is written
+    path = write("inplace-sync-order.txt", content)
+    S = open(path)
+    model = content
+    replace(at("line 3\n"), "LINE 3\n")
+    local journal, seen_sync = save_mod.journal_path(path), {}
+    local real_fsync = uv.fs_fsync
+    uv.fs_fsync = function(fd, ...)
+      local jf = io.open(journal, "rb")
+      if jf then
+        local text = jf:read("*a")
+        jf:close()
+        if text:find("D %d+ %d+\n") then seen_sync[#seen_sync + 1] = text:find("\nC %d+ %d+\n$") ~= nil end
+      end
+      return real_fsync(fd, ...)
+    end
+    res = save(S, { strategy = "inplace" })
+    uv.fs_fsync = real_fsync
+    h.check(res.ok, "the save finishes", vim.inspect(res))
+    eq(seen_sync[1], false, "the first sync after the records comes before the C line is written")
+    eq(seen_sync[2], true, "and the C line is synced after it", vim.inspect(seen_sync))
+    vim.cmd("bwipeout!")
   end,
 
   function()
