@@ -3,7 +3,10 @@
 //! The searched range is cut into chunks. Each chunk owns the matches that
 //! START inside it and reads `overlap` extra bytes past its end so a match
 //! straddling the boundary is still found whole. One byte before the chunk is
-//! read as well so `^`, `\b` and look-behind see the real context. Workers
+//! read as well so `^`, `\b` and look-behind see the real context. Matching
+//! starts `overlap` bytes before the chunk and drops matches that start
+//! earlier, so a match straddling the boundary is not also reported as its
+//! shorter suffix. Workers
 //! scan chunks in parallel; results are emitted strictly in search order.
 
 use crate::cli::Config;
@@ -234,13 +237,24 @@ fn scan_chunk(
             return Ok(ChunkOut::default());
         }
     }
-    let read_start = lo.saturating_sub(1);
+    // A chunk cannot know where the previous one's last match ended, so it
+    // starts matching `overlap` bytes early, discards what starts before
+    // `lo`, and so lines up with a sequential scan once past any match that
+    // straddles `lo`. Matches cannot be longer than the overlap window.
+    let floor = if ctx.forward {
+        ctx.plan.anchor
+    } else {
+        ctx.plan.limit
+    };
+    let warm = floor.max(lo.saturating_sub(ctx.overlap as u64));
+    let read_start = warm.saturating_sub(1);
     let window_end = up.saturating_add(ctx.overlap as u64);
     let filled = read_window(ctx, read_start, window_end, buf)?;
     let hay = buf.get(..filled).unwrap_or_default();
     let more_after_window = read_start.saturating_add(filled as u64) < ctx.plan.file_len;
     let owned_end = usize::try_from(up.saturating_sub(read_start)).unwrap_or(usize::MAX);
-    let mut at = usize::try_from(lo.saturating_sub(read_start)).unwrap_or(0);
+    let mut at = usize::try_from(warm.saturating_sub(read_start)).unwrap_or(0);
+    let owned_start = usize::try_from(lo.saturating_sub(read_start)).unwrap_or(usize::MAX);
 
     let mut hits: VecDeque<Hit> = VecDeque::new();
     let mut count = 0u64;
@@ -256,7 +270,7 @@ fn scan_chunk(
         }
         // Empty matches carry no position worth showing, and would flood.
         at = if e > s { e } else { e.saturating_add(1) };
-        if e == s {
+        if e == s || s < owned_start {
             continue;
         }
         count = count.saturating_add(1);
@@ -418,7 +432,11 @@ pub fn run<W: Write>(
         (false, None) => Mode::Search,
     };
     let keep = usize::try_from(cfg.limit).unwrap_or(usize::MAX);
-    let chunk_buf = cfg.chunk.saturating_add(cfg.overlap).saturating_add(1);
+    let chunk_buf = cfg
+        .chunk
+        .saturating_add(cfg.overlap)
+        .saturating_add(cfg.overlap)
+        .saturating_add(1);
     let sh = Shared {
         state: Mutex::new(State {
             next: 0,

@@ -901,3 +901,57 @@ fn count_and_nth_on_a_giant_single_line_stay_bounded() {
         1
     );
 }
+
+fn search_with(engine: &str, pat: &str, chunk: usize, data: &[u8], d: &Path) -> Vec<Span> {
+    let f = write_file(d, "c.dat", data);
+    let chunk = chunk.to_string();
+    let args = [
+        engine,
+        "--chunk-bytes",
+        &chunk,
+        "--threads",
+        "1",
+        "--progress-ms",
+        "0",
+        pat,
+    ];
+    run(&args, &f).0
+}
+
+#[test]
+fn match_across_chunk_boundary_is_reported_once() {
+    let d = dir();
+    let data = b"xxaaaaaayy\n";
+    for (engine, pat) in [("--regex", "a+"), ("--regex", "[a-z]+"), ("--fixed", "aa")] {
+        let want = search_with(engine, pat, 1 << 20, data, d.path());
+        for chunk in 1..=20 {
+            assert_eq!(
+                search_with(engine, pat, chunk, data, d.path()),
+                want,
+                "{engine} {pat} chunk={chunk}"
+            );
+        }
+    }
+    assert_eq!(
+        search_with("--regex", "a+", 3, data, d.path()),
+        vec![(2, 8)]
+    );
+    assert_eq!(
+        search_with("--fixed", "aa", 3, data, d.path()),
+        vec![(2, 4), (4, 6), (6, 8)]
+    );
+    let f = write_file(d.path(), "n.dat", data);
+    let n = count_of(
+        &[
+            "--regex",
+            "--chunk-bytes",
+            "3",
+            "--threads",
+            "1",
+            "--count",
+            "a+",
+        ],
+        &f,
+    );
+    assert_eq!(n, 1);
+}
