@@ -955,3 +955,18 @@ fn match_across_chunk_boundary_is_reported_once() {
     );
     assert_eq!(n, 1);
 }
+
+#[test]
+fn pcre_is_utf8_aware_like_regex() {
+    let d = dir();
+    let data = "café\n".as_bytes();
+    let want = search_with("--regex", "[é]", 1 << 20, data, d.path());
+    assert_eq!(want, vec![(3, 5)]);
+    for chunk in 1..=8 {
+        assert_eq!(
+            search_with("--pcre", "[é]", chunk, data, d.path()),
+            want,
+            "pcre chunk={chunk}"
+        );
+    }
+}

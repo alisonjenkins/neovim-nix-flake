@@ -64,6 +64,10 @@ impl Matcher {
             Syntax::Pcre => pcre2::bytes::RegexBuilder::new()
                 .caseless(caseless)
                 .multi_line(true)
+                // ucp implies utf and, in the pcre2 crate, match-invalid-utf,
+                // so a non-UTF-8 line is skipped by the engine, not an error.
+                .utf(true)
+                .ucp(true)
                 .jit_if_available(true)
                 .build(need_text()?)
                 .map(Self::Pcre)
