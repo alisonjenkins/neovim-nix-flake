@@ -730,8 +730,10 @@ local steps = {
       end
       return real_fsync(fd, ...)
     end
-    res = save(S, { strategy = "inplace" })
+    local saved, res_or_err = pcall(save, S, { strategy = "inplace" })
     uv.fs_fsync = real_fsync
+    if not saved then error(res_or_err, 0) end
+    res = res_or_err
     h.check(res.ok, "the save finishes", vim.inspect(res))
     eq(seen_sync[1], false, "the first sync after the records comes before the C line is written")
     eq(seen_sync[2], true, "and the C line is synced after it", vim.inspect(seen_sync))
