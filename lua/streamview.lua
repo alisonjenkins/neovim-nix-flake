@@ -1886,12 +1886,14 @@ function M.yank_range(S, from_word, to_word, file, force)
         pos = hi
         tick(pos - from)
       end
+      local synced, serr
+      uv.fs_fsync(fd, function(sync_err)
+        synced, serr = true, sync_err
+      end)
+      while not synced do coroutine.yield() end
+      if serr then return nil, "fsync failed: " .. tostring(serr) end
       return true
     end, function(ok, werr)
-      if ok then
-        local synced, serr = uv.fs_fsync(fd)
-        if not synced then ok, werr = nil, "fsync failed: " .. tostring(serr) end
-      end
       uv.fs_close(fd)
       if ok then
         local renamed, rerr = uv.fs_rename(tmp, dest)
