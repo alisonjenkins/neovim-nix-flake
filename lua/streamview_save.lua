@@ -790,6 +790,11 @@ function M.write(S, opts, done)
   local same = dest == (uv.fs_realpath(S.path) or S.path)
   local existing = uv.fs_stat(dest)
 
+  -- a rename would replace a device, fifo or directory by a regular file, even with !
+  if existing and existing.type ~= "file" then
+    return finish(false, string.format("%s is a %s, not a regular file; it is not replaced", dest, existing.type))
+  end
+
   if same and not opts.force and r:changed_on_disk() then
     return finish(false, S.path .. " changed on disk since it was opened; use ! to overwrite it")
   end

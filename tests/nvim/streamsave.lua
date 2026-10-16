@@ -276,6 +276,40 @@ local steps = {
   end,
 
   function()
+    -- R2: a fifo, a directory and a symlink to one are not replaced, not even with !
+    local path = write("nonreg-src.txt", numbered(20))
+    local fifo = tmp .. "/nonreg.fifo"
+    local dirpath = tmp .. "/nonreg.dir"
+    local link = tmp .. "/nonreg.link"
+    os.remove(fifo)
+    os.remove(link)
+    vim.fn.delete(dirpath, "rf")
+    h.check(vim.system({ "mkfifo", fifo }):wait().code == 0, "a fifo can be made")
+    assert(uv.fs_mkdir(dirpath, 493))
+    assert(uv.fs_symlink(fifo, link))
+    S = open(path)
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { "NONREG EDIT" })
+    for _, target in ipairs({ fifo, dirpath, link }) do
+      for _, force in ipairs({ false, true }) do
+        local res = save(S, { path = target, force = force })
+        h.check(
+          not res.ok and res.err:find("not a regular file", 1, true),
+          string.format("saving over %s (force=%s) is refused", vim.fs.basename(target), tostring(force)),
+          vim.inspect(res)
+        )
+      end
+    end
+    eq(uv.fs_stat(fifo).type, "fifo", "the fifo is still a fifo")
+    eq(uv.fs_lstat(link).type, "link", "the symlink is still a symlink")
+    eq(uv.fs_stat(dirpath).type, "directory", "the directory is still a directory")
+    eq(read(path), numbered(20), "and the viewed file is untouched")
+    eq(leftovers(tmp), {}, "no temp file is left")
+    os.remove(fifo)
+    os.remove(link)
+    vim.fn.delete(dirpath, "rf")
+  end,
+
+  function()
     -- R2: a failed chown is reported instead of silently changing the owner
     local path = write("own.txt", numbered(20))
     S = open(path)
