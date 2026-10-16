@@ -310,6 +310,61 @@ local steps = {
   end,
 
   function()
+    -- :StreamYank into a file never loses a file that is already there
+    local text = numbered(400)
+    local path = write("yank-src.txt", text)
+    local target = write("yank-target.txt", "precious\n")
+    local function yank_leftovers()
+      local found = {}
+      for name in vim.fs.dir(tmp) do
+        if name:find(".streamyank-", 1, true) then found[#found + 1] = name end
+      end
+      return found
+    end
+    S = open(path)
+    h.capture_notify()
+    h.notes = {}
+    vim.cmd("StreamYank 0 100 " .. vim.fn.fnameescape(path))
+    settle(S)
+    eq(read(path), text, "yanking onto the viewed file leaves it as it was")
+    h.check(#h.notes_matching("being viewed") > 0, "and says why", vim.inspect(h.notes))
+    h.notes = {}
+    vim.cmd("StreamYank! 0 100 " .. vim.fn.fnameescape(path))
+    settle(S)
+    eq(read(path), text, "also with !")
+    local link = tmp .. "/yank-link.txt"
+    os.remove(link)
+    assert(uv.fs_symlink(path, link))
+    vim.cmd("StreamYank! 0 100 " .. vim.fn.fnameescape(link))
+    settle(S)
+    eq(read(path), text, "and through a symlink to it")
+    os.remove(link)
+    h.notes = {}
+    vim.cmd("StreamYank 0 100 " .. vim.fn.fnameescape(target))
+    settle(S)
+    eq(read(target), "precious\n", "yanking onto an existing file without ! leaves it unchanged")
+    h.check(#h.notes_matching("exists") > 0, "and says so", vim.inspect(h.notes))
+    local restore = slow_slices()
+    vim.cmd("StreamYank! 0 3000 " .. vim.fn.fnameescape(target))
+    h.check(S.job ~= nil, "a yank with ! runs as a job")
+    sv.cancel(S)
+    restore()
+    eq(read(target), "precious\n", "a cancelled yank leaves the existing file untouched")
+    eq(yank_leftovers(), {}, "and removes its temp file")
+    vim.cmd("StreamYank! 0 100 " .. vim.fn.fnameescape(target))
+    settle(S)
+    eq(read(target), text:sub(1, 100), "a finished yank with ! replaces it")
+    eq(yank_leftovers(), {}, "without a temp file left")
+    local fresh = tmp .. "/yank-fresh.txt"
+    os.remove(fresh)
+    vim.cmd("StreamYank 0 100 " .. vim.fn.fnameescape(fresh))
+    settle(S)
+    eq(read(fresh), text:sub(1, 100), "a new file needs no !")
+    os.remove(fresh)
+    os.remove(target)
+  end,
+
+  function()
     -- R2: a failed chown is reported instead of silently changing the owner
     local path = write("own.txt", numbered(20))
     S = open(path)

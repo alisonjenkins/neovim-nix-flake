@@ -1823,8 +1823,9 @@ end
 
 -- :StreamYank {from} {to} [file]: the bytes [from, to) into the register, or streamed into `file`
 -- without loading them (a job with progress that <C-c> cancels). from and to are bytes of the file
--- or ".", "^", "$", "e" and "P%" as for :StreamCol.
-function M.yank_range(S, from_word, to_word, file)
+-- or ".", "^", "$", "e" and "P%" as for :StreamCol. An existing `file` is only replaced when `force`
+-- (:StreamYank!), never the viewed file.
+function M.yank_range(S, from_word, to_word, file, force)
   nav(S, function()
     if not before_move(S) then return end
     sync_row(S)
@@ -1847,8 +1848,24 @@ function M.yank_range(S, from_word, to_word, file)
       set_register(r:raw(from, to), false)
       return vim.notify(string.format("StreamYank: %s yanked", human(to - from)))
     end
-    local fd, err = uv.fs_open(file, "w", 420)
-    if not fd then return vim.notify("StreamYank: cannot write " .. file .. ": " .. tostring(err), vim.log.levels.ERROR) end
+    -- the bytes go to a temp file beside the target, renamed over it when complete, so that a
+    -- failed or cancelled yank never touches a file that was already there
+    local dest = uv.fs_realpath(file) or file
+    local existing = uv.fs_stat(dest)
+    if existing then
+      if dest == (uv.fs_realpath(S.path) or S.path) then
+        return vim.notify("StreamYank: " .. dest .. " is the file being viewed; it is not overwritten", vim.log.levels.ERROR)
+      end
+      if existing.type ~= "file" then
+        return vim.notify(string.format("StreamYank: %s is a %s, not a regular file; it is not replaced", dest, existing.type), vim.log.levels.ERROR)
+      end
+      if not force then
+        return vim.notify("StreamYank: " .. dest .. " exists; use :StreamYank! to overwrite it", vim.log.levels.ERROR)
+      end
+    end
+    local tmp = string.format("%s/.%s.streamyank-%d.tmp", vim.fs.dirname(dest), vim.fs.basename(dest), uv.os_getpid())
+    local fd, err = uv.fs_open(tmp, "wx", 420)
+    if not fd then return vim.notify("StreamYank: cannot write " .. tmp .. ": " .. tostring(err), vim.log.levels.ERROR) end
     local chunk = r.bs * 16
     run_job(S, "yanking", to - from, function(tick)
       local pos = from
@@ -1865,11 +1882,12 @@ function M.yank_range(S, from_word, to_word, file)
     end, function(ok, werr)
       uv.fs_close(fd)
       if ok then
-        vim.notify(string.format("StreamYank: %s written to %s", human(to - from), file))
-      else
-        uv.fs_unlink(file)
-        vim.notify("StreamYank: " .. tostring(werr) .. " (" .. file .. " was removed)", vim.log.levels.ERROR)
+        local renamed, rerr = uv.fs_rename(tmp, dest)
+        if renamed then return vim.notify(string.format("StreamYank: %s written to %s", human(to - from), dest)) end
+        ok, werr = nil, "cannot rename " .. tmp .. " to " .. dest .. ": " .. tostring(rerr)
       end
+      uv.fs_unlink(tmp)
+      vim.notify(string.format("StreamYank: %s (%s was not changed)", tostring(werr), dest), vim.log.levels.ERROR)
     end, true)
   end)
 end
@@ -2299,9 +2317,10 @@ function M.setup()
     if not S then return end
     local a, b, file = o.args:match("^(%S+)%s+(%S+)%s*(.*)$")
     if not a then return vim.notify("StreamYank: expected {from} {to} [file]", vim.log.levels.ERROR) end
-    M.yank_range(S, a, b, file ~= "" and vim.fn.fnamemodify(vim.fs.normalize(file), ":p") or nil)
+    M.yank_range(S, a, b, file ~= "" and vim.fn.fnamemodify(vim.fs.normalize(file), ":p") or nil, o.bang)
   end, {
     nargs = "+",
+    bang = true,
     -- not complete = "file": that makes Neovim expand the % of "50%"
     complete = function(lead) return vim.fn.getcompletion(lead, "file") end,
     desc = "Stream view: yank the bytes [from, to) into the register, or stream them into a file",
