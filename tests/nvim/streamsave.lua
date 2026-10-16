@@ -355,6 +355,11 @@ local steps = {
     settle(S)
     eq(read(target), text:sub(1, 100), "a finished yank with ! replaces it")
     eq(yank_leftovers(), {}, "without a temp file left")
+    assert(uv.fs_chmod(target, tonumber("600", 8)))
+    vim.cmd("StreamYank! 0 100 " .. vim.fn.fnameescape(target))
+    settle(S)
+    eq(read(target), text:sub(1, 100), "the target is replaced again")
+    eq(uv.fs_stat(target).mode % 4096, tonumber("600", 8), "and keeps its mode 0600")
     local fresh = tmp .. "/yank-fresh.txt"
     os.remove(fresh)
     vim.cmd("StreamYank 0 100 " .. vim.fn.fnameescape(fresh))

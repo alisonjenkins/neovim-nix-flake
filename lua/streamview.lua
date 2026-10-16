@@ -1866,6 +1866,14 @@ function M.yank_range(S, from_word, to_word, file, force)
     local tmp = string.format("%s/.%s.streamyank-%d.tmp", vim.fs.dirname(dest), vim.fs.basename(dest), uv.os_getpid())
     local fd, err = uv.fs_open(tmp, "wx", 420)
     if not fd then return vim.notify("StreamYank: cannot write " .. tmp .. ": " .. tostring(err), vim.log.levels.ERROR) end
+    if existing then
+      local chmod_ok, chmod_err = uv.fs_fchmod(fd, existing.mode % 4096)
+      if not chmod_ok then
+        uv.fs_close(fd)
+        uv.fs_unlink(tmp)
+        return vim.notify(string.format("StreamYank: cannot keep the mode of %s: %s (it was not changed)", dest, tostring(chmod_err)), vim.log.levels.ERROR)
+      end
+    end
     local chunk = r.bs * 16
     run_job(S, "yanking", to - from, function(tick)
       local pos = from
@@ -1880,6 +1888,10 @@ function M.yank_range(S, from_word, to_word, file, force)
       end
       return true
     end, function(ok, werr)
+      if ok then
+        local synced, serr = uv.fs_fsync(fd)
+        if not synced then ok, werr = nil, "fsync failed: " .. tostring(serr) end
+      end
       uv.fs_close(fd)
       if ok then
         local renamed, rerr = uv.fs_rename(tmp, dest)
