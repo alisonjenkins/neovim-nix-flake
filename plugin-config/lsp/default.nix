@@ -118,9 +118,9 @@ in
         '';
       };
 
-      lua_ls = {
+      emmylua_ls = {
         enable = true;
-        cmd = mux "${lspWrappers.lua-language-server}/bin/lua-language-server";
+        cmd = mux "${lspWrappers.emmylua-ls}/bin/emmylua-ls";
       };
 
       nushell = {
