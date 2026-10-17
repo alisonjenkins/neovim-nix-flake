@@ -24,6 +24,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    # Fork carrying the LuaLS-parity patches (integration/parity-8). Bump with
+    # `nix flake lock --override-input emmylua-analyzer-rust github:alisonjenkins/emmylua-analyzer-rust/<rev>`.
+    emmylua-analyzer-rust = {
+      url = "github:alisonjenkins/emmylua-analyzer-rust/7a80081bfd95573f1723fa328384f954b14db245";
+      flake = false;
+    };
   };
 
   outputs =
@@ -1756,6 +1762,14 @@
             golangci-lint-langserver = pkgs.golangci-lint-langserver;
             gopls = pkgs.gopls;
             lua-language-server = pkgs.lua-language-server;
+            # A release emmylua_ls unpacks its std stubs into a directory keyed
+            # only by the crate version, so a stale copy hides std fixes from a
+            # newer build. Key the directory by this build's store hash instead.
+            emmylua-ls = pkgs.writeShellScriptBin "emmylua-ls" ''
+              exec ${pkgs.emmylua-ls}/bin/emmylua_ls \
+                --resources-path "''${XDG_DATA_HOME:-$HOME/.local/share}/emmylua_ls/resources-${builtins.substring 0 32 (baseNameOf pkgs.emmylua-ls)}" \
+                "$@"
+            '';
             nixd = pkgs.nixd;
             pylsp = pkgs.python3Packages.python-lsp-server;
             rust-analyzer = pkgs.rust-analyzer;
@@ -1950,6 +1964,19 @@
                   ];
                   cargoHash = "sha256-Um4BZ1QTHCilOslo/GR7cGvPCX1xNitf6WU8QaehAaE=";
                   meta.mainProgram = "lspmux";
+                };
+              })
+              (final: _prev: {
+                emmylua-ls = final.rustPlatform.buildRustPackage {
+                  pname = "emmylua-ls";
+                  version = "0.30.0-parity-8";
+                  src = inputs.emmylua-analyzer-rust;
+                  cargoLock.lockFile = inputs.emmylua-analyzer-rust + "/Cargo.lock";
+                  cargoBuildFlags = [ "--package" "emmylua_ls" ];
+                  # The suites exercise the language server, not these crates'
+                  # unit tests, and the test run regenerates tracked std files.
+                  doCheck = false;
+                  meta.mainProgram = "emmylua_ls";
                 };
               })
               (final: prev: {

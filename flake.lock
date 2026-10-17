@@ -15,6 +15,23 @@
         "type": "github"
       }
     },
+    "emmylua-analyzer-rust": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792203098,
+        "narHash": "sha256-HaXpIj+zDAwkH0Sqpq5xbEBYEe+0BZGFQy98irXbTyE=",
+        "owner": "alisonjenkins",
+        "repo": "emmylua-analyzer-rust",
+        "rev": "7a80081bfd95573f1723fa328384f954b14db245",
+        "type": "github"
+      },
+      "original": {
+        "owner": "alisonjenkins",
+        "repo": "emmylua-analyzer-rust",
+        "rev": "7a80081bfd95573f1723fa328384f954b14db245",
+        "type": "github"
+      }
+    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -269,6 +286,7 @@
     },
     "root": {
       "inputs": {
+        "emmylua-analyzer-rust": "emmylua-analyzer-rust",
         "flake-parts": "flake-parts",
         "neovim-nightly-overlay": "neovim-nightly-overlay",
         "nixpkgs": "nixpkgs_2",
