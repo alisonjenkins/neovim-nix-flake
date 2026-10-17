@@ -248,6 +248,30 @@ fn straddling_every_boundary_offset() {
                 "NEEDLE-(?=X)XYZ",
             ];
             assert_eq!(run(&pargs, &f).0, want, "pcre shift={shift}");
+            for (engine, pat) in [
+                ("--fixed", "NEEDLE-XYZ"),
+                ("--regex", "NEEDLE-X.Z"),
+                ("--pcre", "NEEDLE-(?=X)XYZ"),
+            ] {
+                let bargs = [
+                    "--backward",
+                    engine,
+                    "--chunk-bytes",
+                    "64",
+                    "--threads",
+                    threads,
+                    "--max-match-bytes",
+                    "16",
+                    "--progress-ms",
+                    "0",
+                    pat,
+                ];
+                assert_eq!(
+                    run(&bargs, &f).0,
+                    want,
+                    "backward {engine} shift={shift} threads={threads}"
+                );
+            }
         }
     }
 }
