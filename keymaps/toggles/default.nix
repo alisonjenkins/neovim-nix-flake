@@ -56,6 +56,15 @@
   }
   {
     mode = "n";
+    key = "<leader>.v";
+    action = "<cmd>StreamView<CR>";
+    options = {
+      desc = "Open the file in the stream viewer";
+      silent = true;
+    };
+  }
+  {
+    mode = "n";
     key = "<leader>.z";
     action = "<cmd>ZenMode<CR>";
     options = {

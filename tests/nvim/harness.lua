@@ -11,6 +11,41 @@ function M.check(ok, name, detail)
   end
 end
 
+-- A known bug: the check is expected to fail. It is reported as XFAIL while the bug is there, and
+-- fails as XPASS once it is fixed, so whoever fixes it removes the marker.
+function M.xfail(name, ok, detail)
+  if ok then
+    M.check(false, "XPASS " .. name .. ": the bug is fixed, remove the xfail marker")
+  else
+    io.stdout:write("XFAIL  " .. name .. (detail and ("\n       " .. detail) or "") .. "\n")
+  end
+end
+
+function M.skip(name)
+  io.stdout:write("SKIP  " .. name .. "\n")
+end
+
+-- True when `dir` holds sparse files, i.e. one can be made far larger than the disk. The tests of
+-- multi-gigabyte files skip otherwise: without holes they would fill the disk.
+local sparse
+function M.sparse_supported(dir)
+  if sparse ~= nil then return sparse end
+  local uv = vim.uv
+  local path = dir .. "/.sparse-probe"
+  local fd = uv.fs_open(path, "w", 420)
+  sparse = false
+  if fd then
+    uv.fs_ftruncate(fd, 64 * 1024 * 1024)
+    uv.fs_write(fd, "x", 0)
+    uv.fs_fsync(fd)
+    local st = uv.fs_fstat(fd)
+    uv.fs_close(fd)
+    sparse = st ~= nil and st.blocks * 512 < st.size / 4
+  end
+  uv.fs_unlink(path)
+  return sparse
+end
+
 function M.finish()
   io.stdout:write(string.format("\n%d failed\n", #M.failures))
   vim.cmd(#M.failures == 0 and "qa!" or "cquit 1")
