@@ -1154,6 +1154,9 @@
               end,
             })
 
+            -- Files too big for memory open in a paged viewer instead of being loaded
+            require("streamview").setup()
+
             -- Terraform/OpenTofu tools: docs lookup and security scanning
             require("terraform-tools").setup()
             require("terraform-search").setup()
@@ -1194,6 +1197,12 @@
 
           extraFiles = {
             "ftplugin/http.lua".text = import ./ftplugin/http.lua.nix;
+            "lua/streamsearch_regex.lua".source = ./lua/streamsearch_regex.lua;
+            "lua/streamview.lua".source = ./lua/streamview.lua;
+            "lua/streamview_fs.lua".source = ./lua/streamview_fs.lua;
+            "lua/streamview_nav.lua".source = ./lua/streamview_nav.lua;
+            "lua/streamview_save.lua".source = ./lua/streamview_save.lua;
+            "lua/streamview_search.lua".source = ./lua/streamview_search.lua;
             "lua/terraform-search.lua".source = ./lua/terraform-search.lua;
             "lua/terraform-tools.lua".source = ./lua/terraform-tools.lua;
             # Patched Python highlights query without "except*" keyword
@@ -1243,6 +1252,7 @@
                 shfmt
                 sqlite
                 stable.tectonic
+                (callPackage ./streamsearch/package.nix { })
                 stylua
                 terraform
                 tfsec
@@ -1689,6 +1699,7 @@
         let
           nixvimLib = nixvim.lib.${system};
           nixvim' = nixvim.legacyPackages.${system};
+          streamsearch = pkgs.callPackage ./streamsearch/package.nix { };
           nvim = nixvim'.makeNixvimWithModule {
             inherit pkgs;
             module = config;
@@ -2072,13 +2083,16 @@
             let
               # perSystemArgs.config, not `config`: that name is the nixvim module in this file
               treefmtCfg = perSystemArgs.config.treefmt;
-              nvimTest = name: pkgs.runCommand "nvim-test-${name}"
+              nvimTestWith = timeout: name: pkgs.runCommand "nvim-test-${name}"
                 {
-                  nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.git ];
+                  # acl and attr: streamsave checks that ACLs and extended attributes survive a save
+                  nativeBuildInputs = [ pkgs.acl pkgs.attr pkgs.bash pkgs.coreutils pkgs.git ];
+                  NVIM_TEST_TIMEOUT = toString timeout;
                 } ''
                 bash ${./tests/nvim}/run.sh ${nvim}/bin/nvim ${./tests/nvim}/${name}.lua
                 touch $out
               '';
+              nvimTest = nvimTestWith 300;
             in
             {
               default = nixvimLib.check.mkTestDerivationFromNvim {
@@ -2098,6 +2112,35 @@
               git-async = nvimTest "git-async";
               git-hooks = nvimTest "git-hooks";
               lazyload = nvimTest "lazyload";
+              streamedit = nvimTest "streamedit";
+              streamfuzz = nvimTest "streamfuzz";
+              # Differential tests against stock Neovim, probes and scale budgets for the viewer's
+              # motions; see docs/streamview-motions.md. Known failures are xfail in
+              # tests/nvim/streammotions_status.lua.
+              streammotions-edit1 = nvimTestWith 900 "streammotions_edit1";
+              streammotions-edit2 = nvimTestWith 900 "streammotions_edit2";
+              streammotions-misc = nvimTestWith 900 "streammotions_misc";
+              streammotions-nav = nvimTestWith 900 "streammotions_nav";
+              streammotions-scale = nvimTestWith 900 "streammotions_scale";
+              streammotions-scale-huge = nvimTestWith 3600 "streammotions_scale_huge";
+              streammotions-search = nvimTestWith 900 "streammotions_search";
+              streammotions-txt1 = nvimTestWith 900 "streammotions_txt1";
+              streammotions-txt2 = nvimTestWith 900 "streammotions_txt2";
+              streamnav = nvimTest "streamnav";
+              streamrobust = nvimTest "streamrobust";
+              streamsave = nvimTest "streamsave";
+              # The package build runs the cargo tests (doCheck); this adds the Lua translator
+              # tests, which also drive the built binary.
+              streamsearch = pkgs.runCommand "streamsearch-test"
+                {
+                  nativeBuildInputs = [ pkgs.luajit ];
+                  STREAMSEARCH_BIN = "${streamsearch}/bin/streamsearch";
+                } ''
+                luajit ${./.}/tests/lua/test_streamsearch_regex.lua
+                touch $out
+              '';
+              streamsearchint = nvimTest "streamsearchint";
+              streamview = nvimTest "streamview";
               terraform-tools = pkgs.runCommand "terraform-tools-test"
                 {
                   nativeBuildInputs = [ pkgs.luajit ];
@@ -2111,6 +2154,7 @@
             default = nvim;
             nvim = nvim;
             lspmux = pkgs.lspmux;
+            inherit streamsearch;
           };
 
           # Export LSP wrappers for external consumers (Claude Code, etc.)
