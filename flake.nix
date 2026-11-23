@@ -1849,7 +1849,7 @@
                       # alisonjenkins/neovim#2: measure the line on first use, not on Insert start
                       (forkPatch { pr = 2; rev = "52d4128e6116d0847470db94871518dc4ce715e2"; hash = "sha256-kNA0H72kXWV+VHe/urKewR+21HNJCDEuZf/cFdLVW8M="; })
                       # alisonjenkins/neovim#3: skip runs of printable ASCII when measuring columns
-                      (forkPatch { pr = 3; rev = "0f20305d52a3236ca4cea076ceb3afef6c5e4f09"; hash = "sha256-SE29PByNgZcDhKQqnnFwdxxge+73htrqOSHaGUl+XT4="; })
+                      (forkPatch { pr = 3; rev = "5d9da2ef737e3f2bfd81fd252187f4a02affd6ae"; hash = "sha256-MnTYmsVSDIBelrgD+sLCBdDYMSv9MOemSFVwHUV0plY="; })
                       # alisonjenkins/neovim#4: faster runtime path scans (glob, 'runtimepath', script lookup); apply in this order
                       (forkPatch { pr = 4; rev = "b78d5f2e7a6fe1dab6673fcfb2654b97aaad0380"; hash = "sha256-Gr2JBfbssOdwj96WATpn7/L1NuJcNZS6v8rbB7Z8awE="; })
                       (forkPatch { pr = 4; rev = "a1cd1f46953bdc36b72c5ab46f19c9cb91dee915"; hash = "sha256-SD04n+I1etEyQVcBzObWepZDGcS9URJ9u8PjJc36zG0="; })
